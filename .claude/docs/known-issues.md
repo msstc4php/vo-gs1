@@ -20,3 +20,20 @@
 - `Gtin::gs1Prefix()` decodes the 14-digit form, so equal GTINs agree: six leading zeros mean a GTIN-8 (GS1-8 table).
 - No key strips spaces or hyphens.
 - GenSpecs text has no example for GDTI, GCN, GSIN, GSRN, GINC, CPID; their tests use computed check digits (see GS1.md).
+
+## Element strings (Task 5)
+
+- The `yymmd0`/`yymmdd` linters choose the century from the **current** UTC year at parse time (as `lint_yymmd0.c`
+  does), so the validity of `YY = 00`, 29 February flips once the window moves 2000 → 2100 (from 2050). The accessors
+  take `$today` instead and throw `InvalidElementStringException` when that century has no such day.
+- `ElementStringBuilder::with()` refuses a backslash at once: `X\` followed by the next `(` would otherwise be read as
+  an escaped `(` and merge two AIs into one valid serial.
+- Lost GS separators are only detectable when the swallowed data breaks the AI's length or charset: `10ABC21XYZ`
+  (separator lost) is a valid batch `ABC21XYZ`. That is the GS1 engine's behaviour too; never split at max length.
+- `req` is checked per string, but GS1 says pairings are evaluated over all carriers of an item: one barcode of a
+  multi-barcode label (or the 2D part of a composite) can be refused; callers must concatenate reads first.
+- `iso4217`: vo-base `CurrencyCode` lacks the ISO non-currency codes 955-965, 994, 999 that GS1's linter accepts; they
+  are listed in `AiLinters::ISO_4217_NON_CURRENCY`. vo-base also accepts withdrawn codes the linter refuses (lenient).
+- GS1 Syntax Engine clone used for quotes: `main` at `58c1dc8` (its newest tags are 2023); cite the commit.
+- Infection: ~57 escaped mutants in the new code are equivalent (redundant guards in `Gs1Dates::isDate`, length
+  arithmetic in error messages); Covered Code MSI 95%.

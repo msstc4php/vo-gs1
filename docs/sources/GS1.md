@@ -11,6 +11,7 @@ and are not part of the repository. Later tasks extend the sections they impleme
 | [GS1 General Specifications](https://ref.gs1.org/standards/genspecs/) | Release 26.0, Ratified, Jan 2026 | 2026-11-19 | read (PDF, 579 pages) |
 | [GS1 Barcode Syntax Dictionary](https://github.com/gs1/gs1-syntax-dictionary) | release `2026-01-27`, commit `8ad003f83a4ba6c2179ce15d578fae27d6580909` | 2026-11-19 | vendored, Apache-2.0 |
 | [GS1 Barcode Syntax Resource](https://ref.gs1.org/tools/gs1-barcode-syntax-resource/) | web page | 2026-11-19 | read |
+| [GS1 Barcode Syntax Engine](https://github.com/gs1/gs1-syntax-engine) | `main`, commit `58c1dc85d9ff4eb9368293bcf5264a9fe70bfc72` (2026-10-08) | 2026-11-19 | read (C sources and headers), Apache-2.0 |
 | [GS1 Digital Link Standard: URI Syntax](https://ref.gs1.org/standards/digital-link/uri-syntax/) | Release 1.7.0, Ratified Aug 2026 | 2026-11-19 | read (HTML) |
 | [EPC Tag Data Standard](https://ref.gs1.org/standards/tds/) | Release 2.3, Ratified, Oct 2025 | 2026-11-19 | downloaded (PDF); read in Task 6 |
 | [ANSI/HIBC 2.6 Supplier Labeling Standard](https://www.hibcc.org/wp-content/uploads/SLS-2.6-Final.pdf) | ANSI/HIBC 2.6-2016 (R2026) | 2026-11-19 | read (PDF) |
@@ -207,6 +208,104 @@ syntax the generator implements:
 
 The GS1 linters (`src/lint_*.c` at the same tag, Apache-2.0) are the reference for the named checks; their test
 vectors are used as test data (`lint_csumalpha.c`: `1987654Ad4X4bL5ttr2310c2K`, `12345678901234567890123NT`, …).
+
+### Element strings (Task 5) — `ElementString\ElementString`, `Internal\ElementStringSyntax`
+
+Bracketed notation is the human readable interpretation, section 1.4.2:
+
+> surrounded by parentheses e.g., (01)09521234500001(10)ABC123(11)250504. Parentheses are not a part of the GS1
+> Application Identifier and are only used to aid readability.
+
+and section 4.14: "parentheses SHALL surround AIs in HRI". A `(` inside data is escaped as the GS1 Barcode Syntax
+Engine does (<https://github.com/gs1/gs1-syntax-engine>, `src/c-lib/gs1encoders.h`, `gs1_encoder_setAIdataStr()`,
+commit `58c1dc85d9ff4eb9368293bcf5264a9fe70bfc72`, Apache-2.0):
+
+> Any "(" characters in AI element values must be escaped as "\(" to avoid conflating them with the start of the
+> next AI.
+
+Unbracketed data: FNC1 is transmitted as GS (section 7.8.4, quoted above); `^` is the engine's notation
+(`gs1_encoder_setDataStr()`):
+
+> A "^" character at the start of the input indicates that the data is in GS1 Application Identifier syntax. In this
+> case, all subsequent instances of the "^" character represent the FNC1 non-data characters that are used to
+> separate fields that are not specified as being pre-defined length from subsequent fields.
+
+Symbology identifiers, section 5.1.3, Table 5-2 ("If used, the symbology identifier is transmitted as a prefix to the
+data message"): `]C1` GS1-128, `]e0` GS1 DataBar, `]d2` GS1 DataMatrix, `]Q3` GS1 QR Code, `]J1` GS1 DotCode, each
+"Standard AI element strings". `]d1` and `]Q1` carry a GS1 Digital Link URI and are refused here (Task 6).
+
+Splitting unbracketed data follows the engine's `gs1_processAIdata()` (`src/c-lib/ai.c`): an AI of predefined length
+(dictionary flag `*`) takes its fixed length, any other AI runs to the next FNC1 or the end ("r points to the next
+FNC1 or end of string"), and data still left after an FNC1-terminated AI is refused (`AI_DATA_IS_TOO_LONG`). So data
+whose separators were lost is never cut at a guessed length. The engine also skips a separator after a
+predefined-length AI ("Skip FNC1, even at end of fixed-length AIs"), which is accepted here too.
+
+Repeated AIs, `validateAIrepeats()` in `ai.c`:
+
+> AI validation routine that ensure that any repeated AIs in the data have the same value. (Repeated AIs may occur
+> when the AI data from reads of multiple symbol carriers on the same label is concatenated.)
+
+Association rules: `req` and `ex` exactly as the dictionary header states them (section 2), matched as the engine's
+`existsInAIdata()` does (an AI pattern of the same length, `n` any digit, never the AI itself). The header adds:
+
+> Note: Invalid and mandatory AI pairings should be evaluated over the combined data received from all GS1 carriers
+> marking a physical item.
+
+so an element string holding the data of only one of several carriers (e.g. the 2D part of a composite) can be
+refused; combine the reads first. **Not enforced:** the engine's `validateDigSigRequiresSerialisedKey()` (AI 8030 with
+a serial on 253/255/8003) is an engine rule, not a dictionary attribute.
+
+CSET 64 (type `Z`, AI 8030), Table 7-22, Note 1: "the upper-case letters A-Z, lower-case letters a-z, digits 0-9,
+hyphen (-), low line/underscore/underline (_) and the equals character (=) as a special pad character". Enforced: those
+characters, `=` only as up to two trailing pad characters (the reference `lint_cset64.c` also refuses padding unless
+the length is a multiple of 3; that check is not applied).
+
+Dates: `DD = 00` and the century window are section 3.4.2 and 7.12 above. The `yymmd0` and `yymmdd` linters pick the
+century from the current year at parse time ("Convert YY to a year using a horizon based on CURRENT_YEAR",
+`lint_yymmd0.c`); `expiryDate()` / `productionDate()` take the reference day as an argument instead.
+
+#### Linters
+
+Every linter the dictionary names on an AI component. "Enforced" ones follow the reference implementation
+(`src/lint_<name>.c` of the dictionary repository at tag `2026-01-27`, its `@brief` quoted); "not enforced" ones always
+pass and the AI is checked for format only. `AiLintersTest` fails when the dictionary names a linter missing here.
+
+| Linter | Status | Source quote or reason |
+|---|---|---|
+| `csum` | enforced | GenSpecs 7.9.1 check digit (`Internal\Gs1CheckDigit`) |
+| `csumalpha` | enforced | GenSpecs 7.9.5 check character pair; `lint_csumalpha.c` accepts `22` as the pair of an empty body |
+| `gcppos1` | enforced | "checks whether an input starts with a GS1 Company Prefix": the four leading digits (`GCP_MIN_LENGTH`); the registry lookup (`GS1_LINTER_CUSTOM_GCP_LOOKUP`) is registry data and not used |
+| `gcppos2` | enforced | as `gcppos1` "from its second character position" |
+| `yymmd0` | enforced | "ensures that the data represents a meaningful date, in YYMMDD format, additionally permitting YYMM00 format indicating an unspecified day" |
+| `yymmdd` | enforced | "ensures that the data represents a meaningful date, in YYMMDD format" (day `00` refused) |
+| `yyyymmdd` | enforced | "ensures that the data represents a meaningful date, in YYYYMMDD format" |
+| `hh` | enforced | "ensures that the given data is a meaningful hour number in a day" (00-23) |
+| `mi` | enforced | "ensures that the given data is a meaningful minute number in an hour" (00-59) |
+| `ss` | enforced | "ensures that the given data is a meaningful second number in a minute" (00-59) |
+| `hhmi` | enforced | "ensures that the given data is meaningful time as hours and minutes, in HHMI format" |
+| `iso3166` | enforced | ISO 3166-1 "num-3" codes; vo-base `CountryCode::fromNumeric` (same 249 codes as the linter's table) |
+| `iso3166999` | enforced | "an ISO 3166 "num-3" country code, or the value "999"" |
+| `iso3166alpha2` | enforced | ISO 3166-1 "alpha-2" codes; vo-base `CountryCode` (same 249 codes) |
+| `iso4217` | enforced | ISO 4217 three-digit codes: vo-base `CurrencyCode::fromNumeric`, plus the linter's codes vo-base does not carry (955-965, 994, 999: funds, metals, testing, no currency); withdrawn codes vo-base knows are accepted, though the linter's table has only current ones |
+| `iso5218` | enforced | ""0" (not known), "1" (male), "2" (female) or "9" (not applicable)" |
+| `zero` | enforced | "ensures that the given data has a zero value" |
+| `nonzero` | enforced | "ensures that the given data has a non-zero value" |
+| `nozeroprefix` | enforced | "ensures that the given data does not start with a zero" |
+| `yesno` | enforced | "either "0" (no) or "1" (yes)" |
+| `winding` | enforced | ""0" (face out), "1" (face in) or "9" (undefined)" |
+| `pieceoftotal` | enforced | "a concatenation of non-zero piece number follow by an equal-width, non-zero total number of pieces" (piece not above total) |
+| `hasnondigit` | enforced | "ensures that the given data contains a non-digit character" |
+| `posinseqslash` | enforced | "a meaningful position in a sequence in the format "`<pos>/<end>`"" (no leading zeros, position not above end) |
+| `latitude` | enforced | "the latitude component of a WGS84 coordinate expressed as a 10-digit number" (at most 1800000000) |
+| `longitude` | enforced | "the longitude component of a WGS84 coordinate expressed as a 10-digit number" (at most 3600000000) |
+| `hyphen` | enforced | "ensures that the given data contains only hyphens" |
+| `importeridx` | enforced | "a valid Importer Index … used in the EU 2018/574 system": one of `-`, `0-9`, `A-Z`, `_`, `a-z` |
+| `pcenc` | enforced | "ensures that the data has correct percent-encoding" (RFC 3986 section 2.1) |
+| `mediatype` | not enforced | AIDC media type code list (ICCBBA and GS1 assignments, many ranges "Reserved for future assignment"): a newer list would make a refused value valid |
+| `packagetype` | not enforced | UN/ECE Recommendation 21 codes "extended with additional GS1 code values", a list GS1 maintains: a newer list would make a refused value valid |
+| `iban` | not enforced | the per-country IBAN structure belongs to the finance wave (plan: wave 2) |
+| `couponcode` | not enforced | the North American coupon code structure (AI 8110) is out of scope of this wave |
+| `couponposoffer` | not enforced | the positive offer file coupon structure (AI 8112) is out of scope of this wave |
 
 ## 3. GS1 Digital Link URI Syntax, Release 1.7.0 (Task 6)
 

@@ -11,3 +11,10 @@
   a match arm would escape it (Infection mutates a copy, the test reads the file on disk).
 - Check-digit tests use the source's own examples (GenSpecs Table 7-9 and keys quoted in it, Figure 7-15 for the GMN,
   HIBCC Appendix B `+A123BJC5D6E71` → `G`) plus the GS1 linter test vectors.
+- Element-string messages: `Element string AI (NN) …` — the AI number of a known AI is fine; an unknown AI is never
+  echoed ("contains an unknown AI"), nor is any data.
+- A new linter in a dictionary release fails `AiLintersTest` until it is implemented in `AiLinters` or added to
+  `NOT_ENFORCED` **and** to the linter table in `docs/sources/GS1.md` (rows `| \`name\` | enforced |` /
+  `| \`name\` | not enforced | reason |`; the test matches that shape).
+- Tests that run code of another `src/` class need `#[UsesClass]` for it: `beStrictAboutCoverageMetadata` only bites
+  with coverage on, i.e. in Infection, not in plain `make test`.
