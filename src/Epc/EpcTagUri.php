@@ -1,0 +1,96 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MSSTC4PHP\ValueObject\Gs1\Epc;
+
+use MSSTC4PHP\ValueObject\Gs1\Internal\EpcSyntax;
+use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
+use Override;
+
+/**
+ * An EPC Tag URI, `urn:epc:tag:[control fields:]<encoding>:<filter>.<components>`: the pure identity URI of its
+ * scheme plus the binary encoding, the filter value and optional control fields (`[att=xNN]`, `[umi=B]`,
+ * `[xpc=xNNNN]`, in that order). The filter must fit its field (any value, reserved or not, is accepted), the GS1
+ * Company Prefix length must have a row in the encoding's partition table, and the fields must fit the encoding
+ * (Table 12-2). The binary and hex forms are out of scope.
+ *
+ * @see https://ref.gs1.org/standards/tds/ EPC Tag Data Standard 2.3, sections 10, 12 and 14.6
+ * @see docs/sources/GS1.md "EPC Tag Data Standard"
+ */
+final class EpcTagUri extends AbstractStringValueObject
+{
+    /**
+     * The tag URI of `$uri` in `$encoding` (TDS 12.3.2), without control fields.
+     */
+    public static function fromPureIdentityUri(EpcPureIdentityUri $uri, EpcTagEncoding $encoding, ?int $filter): self
+    {
+        $scheme = $uri->scheme();
+        if ($encoding->scheme() !== $scheme) {
+            throw EpcSyntax::fail(\sprintf('EPC Tag URI encoding %s is not one of scheme %s.', $encoding->value, $scheme->value));
+        }
+
+        if ($encoding->hasFilter() !== ($filter !== null)) {
+            throw EpcSyntax::fail(\sprintf($filter === null ? 'EPC Tag URI encoding %s needs a filter value.' : 'EPC Tag URI encoding %s has no filter value.', $encoding->value));
+        }
+
+        if ($filter < 0) {
+            throw EpcSyntax::fail('EPC Tag URI filter value must not be negative.');
+        }
+
+        return new self('urn:epc:tag:' . $encoding->value . ':' . ($filter === null ? '' : $filter . '.') . EpcSyntax::pure($uri->value)[1]);
+    }
+
+    public function scheme(): EpcScheme
+    {
+        return $this->encoding()->scheme();
+    }
+
+    public function encoding(): EpcTagEncoding
+    {
+        return EpcSyntax::tag($this->value)[0];
+    }
+
+    /**
+     * Null for GID-96, which has no filter.
+     */
+    public function filter(): ?int
+    {
+        return EpcSyntax::tag($this->value)[1];
+    }
+
+    /**
+     * The partition value: 12 minus the digits of the GS1 Company Prefix (0 to 6); null for the encodings without a
+     * partition table (GID, USDOD, ADI).
+     */
+    public function partition(): ?int
+    {
+        [$encoding, , $body] = EpcSyntax::tag($this->value);
+        if (!$encoding->isPartitioned()) {
+            return null;
+        }
+
+        return 12 - \strlen(EpcSyntax::components($encoding->scheme(), $body)[0]);
+    }
+
+    /**
+     * The URI without encoding, filter and control fields (TDS 12.3.3).
+     */
+    public function toPureIdentityUri(): EpcPureIdentityUri
+    {
+        [$encoding, , $body] = EpcSyntax::tag($this->value);
+
+        return new EpcPureIdentityUri('urn:epc:id:' . $encoding->scheme()->value . ':' . $body);
+    }
+
+    #[Override]
+    protected function parse(string $value): string
+    {
+        $canonical = EpcSyntax::canonical($value);
+        [$encoding, , $body] = EpcSyntax::tag($canonical);
+        $pure = new EpcPureIdentityUri('urn:epc:id:' . $encoding->scheme()->value . ':' . $body);
+        EpcSyntax::checkEncoding($encoding, EpcSyntax::components($pure->scheme(), $body));
+
+        return $canonical;
+    }
+}

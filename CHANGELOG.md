@@ -15,3 +15,7 @@
 - `ElementString\ElementString` (GS1 element strings: bracketed, unbracketed and scanner notations, linters, `req`/`ex`
   association rules, GS1 date century window) and the immutable `ElementString\ElementStringBuilder`; unmet
   mandatory AI pairs are reported by `unmetRequirements()` (`ElementString\UnmetRequirement`), not refused.
+- `DigitalLink\DigitalLink`: uncompressed GS1 Digital Link URIs (URI Syntax 1.7.0) on any domain, both ways with
+  element strings, `primaryKey()`, `toCanonical()`; non-GS1 query parameters are kept; compressed links are refused.
+- `Epc\EpcPureIdentityUri` (all twenty schemes of EPC Tag Data Standard 2.3, `EpcScheme`, element string both ways),
+  `Epc\EpcTagUri` (tag URIs of the 22 encodings of `EpcTagEncoding`, with filter, partition and field limits).

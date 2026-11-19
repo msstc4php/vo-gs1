@@ -11,4 +11,10 @@
 - vo-base `I18n\CountryCode` (`fromNumeric`, `tryFrom` alpha-2) and `I18n\CurrencyCode::fromNumeric` back the
   `iso3166*`/`iso4217` linters; the ISO 3166 lists match the GS1 linter tables exactly (249 codes, checked 2026-11-19).
 - GS1 Barcode Syntax Engine (<https://github.com/gs1/gs1-syntax-engine>, commit `58c1dc8`): source of the `\(`
-  escape, the `^` notation, the splitting rules and the repeated-AI rule. Not a dependency, quoted in GS1.md only.
+  escape, the `^` notation, the splitting rules and the repeated-AI rule, and of the Digital Link parsing procedure
+  (`src/c-lib/dl.c`: backward key scan, `URIescape`/`URIunescape`, duplicate and should-be-in-path checks). Not a
+  dependency, quoted in GS1.md only.
+- vo-base `Network\Url`: `DigitalLink` validates with `Url::tryFrom()` (its `InvalidUrlException` uses `excerpt()`,
+  so it is never propagated) and exposes `url()`.
+- GS1 Digital Link URI Syntax 1.7.0 (HTML) and EPC Tag Data Standard 2.3 (PDF): read 2026-11-19, quotes in GS1.md
+  sections 3 and 4.

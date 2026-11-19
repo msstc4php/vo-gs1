@@ -16,5 +16,9 @@
 - A new linter in a dictionary release fails `AiLintersTest` until it is implemented in `AiLinters` or added to
   `NOT_ENFORCED` **and** to the linter table in `docs/sources/GS1.md` (rows `| \`name\` | enforced |` /
   `| \`name\` | not enforced | reason |`; the test matches that shape).
+- Digital Link / EPC messages: `GS1 Digital Link …` / `EPC …`; a wrapped element string failure appends the
+  (input-free) element string message and keeps it as `previous`.
+- Value objects whose identity is not the string (Digital Link) override `equals()` with a serialized "identity" of
+  the parsed parts; keep the stored value as given when the standard defines no normal form.
 - Tests that run code of another `src/` class need `#[UsesClass]` for it: `beStrictAboutCoverageMetadata` only bites
   with coverage on, i.e. in Infection, not in plain `make test`.

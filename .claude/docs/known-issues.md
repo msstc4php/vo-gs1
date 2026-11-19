@@ -43,3 +43,29 @@
 - GS1 Syntax Engine clone used for quotes: `main` at `58c1dc8` (its newest tags are 2023); cite the commit.
 - Infection: ~57 escaped mutants in the new code are equivalent (redundant guards in `Gs1Dates::isDate`, length
   arithmetic in error messages); Covered Code MSI 95%.
+
+## Digital Link and EPC (Task 6)
+
+- URI Syntax 1.7.0 has no compression; RE2 also matches plain-number segments, so "is compressed" is only the message
+  for a no-key path whose last segment has a letter, `_` or `-` (or starts `eh`/`ex`).
+- The parser follows GS1's engine `dl.c` where the standard is silent: backward scan for the last primary-key pair,
+  unknown AI in the scan stops it (`/01/X/foo/bar` has no key), `/414/…/01/…` makes `/414/…` the stem, a repeated AI
+  is refused although section 3 only says "should not … be repeated", a query AI that would fit the path is refused.
+  `+` is a space only in the query (`/10/A+B` is `A+B`).
+- Zero-suppressed GTIN is padded only for AI (01), not for (02) or other 14-digit AIs (engine behaviour).
+- AiTable `spec('10')`-style lookups are fine, but `array_keys()` of an AI-keyed array turns `'10'` into int `10`;
+  `array_intersect()` compares string forms, so `arrange()` still works.
+- `equals()` of Digital Link compares scheme+authority lower-cased (userinfo included, a simplification), stem path,
+  decoded path data, attributes sorted by AI, raw extensions in order, fragment (`#` vs none differ).
+- TDS 12.4 grammar omits `GSRNPTagURIBody` (only `GSRNPEncName`); `gsrnp-96` is accepted per Table 12-2.
+- TDS 7.1 ("CompanyPrefix … SHALL include the 4- or 5-digit GCP and the following 2 or 1 digits") makes 6..12 digits
+  the pure-URI rule, so the tag partition check never sees another length; `partition()` = 12 − L.
+- CPI-96 reference: within 3+P digits the value is always below 2^(11..31) bits, so only the digit limit is checked;
+  GIAI-96 needs both (2^42 < 10^13).
+- SGLN extension `0` means "no extension": `(254)0` → EPC `…0` → element string without (254) (asymmetric, by TDS).
+- CPI serial is a TDS NumericComponent (`0` allowed) but AI (8011) is `nozeroprefix`: `urn:epc:id:cpi:….0` is refused through
+  the element string check.
+- EPC parse validates GS1 schemes by building the element string, so GenSpecs limits (serial ≤ 20, piece ≤ total,
+  CSET 82) apply to EPC URIs too.
+- Infection: ~11 escaped mutants in Task 6 code are equivalent (regex capture positions of unused components,
+  `(int)` of the whole filter match, sort keys of control fields, stem-path slice offsets used only in identity).

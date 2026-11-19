@@ -18,6 +18,12 @@ core.
 | `Internal\AiLinters` | GS1 linters: `IMPLEMENTED`, `NOT_ENFORCED` (always pass), `passes(name, data)` throws `LogicException` on an unknown name; `isCset64()` |
 | `Internal\Gs1Dates` | GenSpecs 7.12 century window, `DD = 00`, `toDate()` at 00:00 UTC |
 | `Internal\AiElement` | One AI + unescaped data |
+| `DigitalLink\DigitalLink` | String VO, value = URI as given; `equals()` overridden (data identity, see known-issues); `toElementString()`, `primaryKey()`, `toCanonical()`, `url()`, `fromElementString($es, $domain)` |
+| `Internal\DigitalLinkSyntax` | Parse (engine's backward scan for the primary key, `dlpkey` ordered subsets, query rules), `render()`, `arrange()` (ES → path/query), `keyFor()` (AI → key class) |
+| `Internal\DigitalLinkParts` | Readonly: lower-case scheme/authority, stem path, path elements, attributes, raw extensions, fragment |
+| `Epc\EpcScheme`, `Epc\EpcTagEncoding` | Backed enums of the 20 pure identity schemes and 22 tag encodings; `hasElementString()`, `filterBits()`, `isPartitioned()` |
+| `Epc\EpcPureIdentityUri`, `Epc\EpcTagUri` | String VOs, value = URI with upper-case escape hex; tag parse re-validates the embedded pure URI |
+| `Internal\EpcSyntax` | Per-scheme grammar (one regex each), CP 6..12, ES mapping both ways, tag parse, control fields, field limits per encoding |
 
 Helpers throw `\LogicException` (message without input) on a precondition violation: the value objects check the
 format first.

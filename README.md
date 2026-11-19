@@ -98,6 +98,89 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
   of scope). The registry part of `gcppos1`/`gcppos2` (is this a real GS1 Company Prefix) is never checked. See
   [`docs/sources/GS1.md`](docs/sources/GS1.md), "Linters".
 
+## GS1 Digital Link
+
+`MSSTC4PHP\ValueObject\Gs1\DigitalLink\DigitalLink` is an uncompressed GS1 Digital Link URI (URI Syntax 1.7.0) on any
+http or https domain, built on vo-base `Network\Url`.
+
+```php
+use MSSTC4PHP\ValueObject\Gs1\DigitalLink\DigitalLink;
+use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
+
+$link = DigitalLink::from('https://example.com/01/09520123456788/10/ABC1?17=201225&linkType=gs1:pip');
+(string) $link->toElementString();   // (01)09520123456788(10)ABC1(17)201225
+$link->primaryKey();                  // Gtin 09520123456788
+(string) $link->toCanonical();        // https://id.gs1.org/01/09520123456788/10/ABC1?17=201225
+
+DigitalLink::fromElementString(ElementString::from('(01)09520123456788(17)201225(10)ABC1'));
+// https://id.gs1.org/01/09520123456788/10/ABC1?17=201225
+```
+
+- **Path:** the primary key is the last `/AI/value` pair whose AI is a primary key; anything before it is the
+  domain's own path. Key qualifiers must follow the dictionary's order (`/01/…/22/…/10/…/21/…`), a trailing slash is
+  tolerated. Values are percent-decoded; in the query `+` is a space.
+- **Query:** all-numeric keys are AIs and must be GS1 Digital Link data attributes (an AI that fits the path is
+  refused there, an all-numeric key that is no AI is refused, an AI may appear once); `&` and `;` separate parameters.
+  Every other parameter (`linkType`, `context`, your own) is kept as given, in order, and does not enter the element
+  string.
+- **Value and equality:** the value is the URI exactly as given; the standard defines no normal form short of the
+  canonical URI, which drops the domain and the extra parameters. `equals()` treats as one link: scheme and authority
+  in any case, the same stem path, the same path data (a zero-suppressed GTIN equals its 14-digit form, `%41` equals
+  `A`), the same data attributes in any order, the same non-GS1 parameters in the same order and the same fragment.
+  `toCanonical()` gives section 4.12's canonical URI: `https://id.gs1.org`, 14-digit GTIN, attributes in lexical
+  order of the AI, nothing else.
+- **`toElementString()`** lists the path AIs, then the query AIs in query order. `primaryKey()` returns the key class
+  of the path AI (an ITIP, AI 8006, gives its GTIN).
+- **`fromElementString($elementString, $domain = 'https://id.gs1.org')`** needs a primary key AI: the first one is
+  the path key, with the longest qualifier sequence the data carries; every other AI must be a data attribute and goes
+  to the query in the order given. The domain may carry a path stem but no query or fragment.
+- **Refused:** compressed links (`/ARHKVAdpQgTSoTF0`, `/eh…`, `/ex…`): URI Syntax 1.7.0 no longer defines
+  compression, the legacy algorithm is "not approved for use in open supply chain standards" and its successor is a
+  separate standard; convenience alphas (`/gtin/…`, removed in 1.3.0). **Accepted** for old links: a GTIN-8, -12 or
+  -13 without its leading zeros in AI (01).
+- At most 14178 characters (twice the element string data cap).
+
+## EPC URIs
+
+`MSSTC4PHP\ValueObject\Gs1\Epc\` covers the URI forms of the EPC Tag Data Standard 2.3. Binary and hex tag encodings
+and the EPC Raw and Class URIs are out of scope.
+
+```php
+use MSSTC4PHP\ValueObject\Gs1\Epc\EpcPureIdentityUri;
+use MSSTC4PHP\ValueObject\Gs1\Epc\EpcScheme;
+use MSSTC4PHP\ValueObject\Gs1\Epc\EpcTagEncoding;
+use MSSTC4PHP\ValueObject\Gs1\Epc\EpcTagUri;
+
+$epc = EpcPureIdentityUri::from('urn:epc:id:sgtin:9521141.012345.32a%2Fb');
+$epc->scheme();                       // EpcScheme::Sgtin
+(string) $epc->toElementString();     // (01)09521141123454(21)32a/b
+EpcPureIdentityUri::fromElementString(ElementString::from('(01)09521141123454(21)32a/b'), EpcScheme::Sgtin, 7);
+
+$tag = EpcTagUri::from('urn:epc:tag:sgtin-96:3.9521141.012345.4711');
+$tag->filter();                       // 3
+$tag->partition();                    // 5
+(string) $tag->toPureIdentityUri();   // urn:epc:id:sgtin:9521141.012345.4711
+EpcTagUri::fromPureIdentityUri($epc, EpcTagEncoding::Sgtin198, 3);
+```
+
+- **`EpcPureIdentityUri`:** `urn:epc:id:<scheme>:…` for all twenty schemes (`EpcScheme`: sgtin, sscc, sgln, grai,
+  giai, gsrn, gsrnp, gdti, cpi, sgcn, ginc, gsin, itip, upui, pgln, gid, usdod, adi, bic, imovn), each checked against
+  its TDS grammar. In the schemes with a GS1 key the company prefix component has 6 to 12 digits (TDS 7.1: a 4- or
+  5-digit prefix is written as 6 digits) and the data must give a valid element string (`toElementString()`; null for
+  gid, usdod, adi, bic, imovn). `fromElementString()` needs the company prefix length, a registry fact: 6 for a 4- or
+  5-digit prefix, 8 for a GTIN-8, 12 for an individually assigned key; AIs the scheme does not use are ignored.
+- **Value and equality:** the URI with the hex digits of percent escapes in upper case, the one normalisation TDS
+  section 6.1 names; `A` and `%41` stay different EPCs.
+- **`EpcTagUri`:** `urn:epc:tag:[att=xNN][umi=B][xpc=xNNNN]:<encoding>:<filter>.…` for the 22 encodings of
+  `EpcTagEncoding` (sgtin-96, sgtin-198, sscc-96, …, gid-96, usdod-96, adi-var; the TDS 2.0 `+`/`++` encodings define
+  no tag URI). Control fields are optional and in that order. The filter is any value of its field, reserved or not:
+  0-7, 0-63 for adi-var, none for gid-96. The company prefix length gives the partition (`partition()`, 0-6). Each
+  encoding's field limits apply (for example `sgtin-96`: a serial without leading zeros below 2^38; `giai-96`: digits
+  and bits by partition).
+- **Format only:** the BIC check digit (ISO 6346) and the IMO number check digit are not in TDS; the usdod-96 filter
+  is defined by the US DoD guide (any number up to 18 digits); TDS 7.3.3/7.3.4 (no SGTIN from RCN-8 or company
+  internal numbering) is not enforced.
+
 ## GS1 Application Identifier table
 
 The AI table (data formats, FNC1 rule, linters, mandatory and invalid AI pairs) is generated from the

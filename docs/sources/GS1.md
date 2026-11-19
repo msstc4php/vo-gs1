@@ -13,7 +13,7 @@ and are not part of the repository. Later tasks extend the sections they impleme
 | [GS1 Barcode Syntax Resource](https://ref.gs1.org/tools/gs1-barcode-syntax-resource/) | web page | 2026-11-19 | read |
 | [GS1 Barcode Syntax Engine](https://github.com/gs1/gs1-syntax-engine) | `main`, commit `58c1dc85d9ff4eb9368293bcf5264a9fe70bfc72` (2026-10-08) | 2026-11-19 | read (C sources and headers), Apache-2.0 |
 | [GS1 Digital Link Standard: URI Syntax](https://ref.gs1.org/standards/digital-link/uri-syntax/) | Release 1.7.0, Ratified Aug 2026 | 2026-11-19 | read (HTML) |
-| [EPC Tag Data Standard](https://ref.gs1.org/standards/tds/) | Release 2.3, Ratified, Oct 2025 | 2026-11-19 | downloaded (PDF); read in Task 6 |
+| [EPC Tag Data Standard](https://ref.gs1.org/standards/tds/) | Release 2.3, Ratified, Oct 2025 | 2026-11-19 | read (PDF, 448 pages) |
 | [ANSI/HIBC 2.6 Supplier Labeling Standard](https://www.hibcc.org/wp-content/uploads/SLS-2.6-Final.pdf) | ANSI/HIBC 2.6-2016 (R2026) | 2026-11-19 | read (PDF) |
 | [HIBCC Mod 43 Check Character](https://www.hibcc.org/wp-content/uploads/Mod-43-Check-Character.pdf) | Appendix B of ANSI/HIBC 2.5-2015 | 2026-11-19 | read; same text as 2.6 Appendix B |
 | [HIBC Basic UDI-DI](https://www.hibcc.org/wp-content/uploads/HIBCC-Basic-UDI-DI.pdf) | undated | 2026-11-19 | read (PDF) |
@@ -320,9 +320,13 @@ pass and the AI is checked for format only. `AiLintersTest` fails when the dicti
 | `couponcode` | not enforced | the North American coupon code structure (AI 8110) is out of scope of this wave |
 | `couponposoffer` | not enforced | the positive offer file coupon structure (AI 8112) is out of scope of this wave |
 
-## 3. GS1 Digital Link URI Syntax, Release 1.7.0 (Task 6)
+## 3. GS1 Digital Link URI Syntax, Release 1.7.0 (Task 6) — `DigitalLink\DigitalLink`
 
-Compression is **not** defined in the URI Syntax any more. Section 1 points to a separate standard:
+Read from the HTML edition of Release 1.7.0, Ratified Aug 2026. The parser follows the GS1 Barcode Syntax Engine
+(`src/c-lib/dl.c`, `gs1_parseDLuri()`, commit `58c1dc8`), GS1's reference implementation, where the standard leaves
+the procedure open.
+
+**Compression.** It is **not** defined in the URI Syntax any more. Section 1 points to a separate standard:
 
 > This document [ DL-CompressionEPC ] explains how GS1 identifiers in EPC binary syntax can be expressed as a special
 > compressed form of a GS1 Digital Link URI … This specification supersedes the compression/decompression algorithm
@@ -333,18 +337,175 @@ Section 6.1.2:
 > Compressed GS1 Digital Link URIs that use the legacy specification are not expected to be used in any future
 > Application Standards and are not approved for use in open supply chain standards.
 
-So compressed links fall outside the URI Syntax edition; Task 6 refuses them and the README says why. Section 4.1:
+So compressed links fall outside the edition and are refused. RE2 and RE3 of section 6.1.2 (`/[0-9A-Za-z_-]{10,}$`,
+`/(eh[0-9a-f]*|ex[a-zA-Z0-9_-]*)$`) only choose the message ("is compressed") when no primary key is found; an
+all-digit last segment does not count, because the standard warns that RE2 also matches non-compressed URLs.
+
+**Legacy forms.** Section 4.1:
 
 > As of version 1.4.0 , the GS1 Digital Link standard: URI syntax now expects the GTIN value to be expressed using 14
 > digits
 
-with "only existing infrastructure … SHOULD continue to support legacy expressions" (shorter GTINs, convenience
-alphas, removed in 1.3.0).
+> For reasons of backwards compatibility, only existing infrastructure for GS1 Digital Link SHOULD continue to support
+> legacy expressions of GS1 Digital Link URIs. Legacy expressions of GS1 Digital Link URIs include GTIN values with
+> fewer than 14 digits and the deprecated convenience alphas.
 
-## 4. EPC Tag Data Standard (Task 6)
+A zero-suppressed GTIN (8, 12, 13 digits) in AI (01) is accepted and padded to 14 digits in the element string, as the
+engine's `permitZeroSuppressedGTINinDLuris` does (old links stay readable). Convenience alphas ("removed completely as
+of version 1.3.0") are refused: the engine disables them by default, and the AI table has no alpha names.
+
+**Path.** Section 4.3 lists the primary keys, 4.4 the key qualifiers, 4.9 their order:
+
+> The square bracket notation indicates that the enclosed key qualifier component may be omitted but the sequence in
+> which they appear is important and must be preserved.
+
+> `gtin-path = gtin-comp [cpv-comp] [lot-comp] [ser-comp]`
+
+The keys and qualifier sequences come from the dictionary's `dlpkey` attribute (`dlpkey=22,10,21|235` for AI 01), so
+they follow the AI table release. Any ordered subset of one sequence is accepted, as the engine's
+`gs1_populateDLkeyQualifiers()` builds it. Section 4.11:
+
+> Note that zero or more path segments are permitted to appear after the hostname or domain name and before the start
+> of the gs1uriPattern defined in this specification.
+
+The primary key is the last `/AI/value` pair of the path whose AI is a primary key, scanning back from the end over
+known AIs (engine). A trailing slash is tolerated (section 4.12):
+
+> a resolver should tolerate https://example.com/8003/0{grai}/ even though that final / character is not allowed by the
+> formal ABNF.
+
+**Percent-encoding.** Section 4.2: "The following characters must be represented using percent-encoding (see section
+2.1 of RFC 3986 …) when used as literal characters within URIs" (`#`, `/`, `%`, `&`, `+`, `,`, `!`, `(`, `)`, `*`,
+`'`, `:`, `;`, `<`, `=`, `>`, `?`). Values are percent-decoded; in the query `+` is a space (engine
+`URIunescape()`). Writing encodes every character but the RFC 3986 unreserved ones (engine `URIescape()`).
+
+**Query.** Section 4.10:
+
+> Data attributes and their values SHALL be expressed via the URI query string as key=value pairs.
+
+Only AIs with the dictionary flag `?` ("AI that is permitted as a GS1 Digital Link data attribute") are accepted
+there. An attribute that would form a valid path with the qualifiers present is refused ("AI_SHOULD_BE_IN_PATH_INFO"
+in the engine). Section 4.10.1:
+
+> Any key=value pairs used for extension data SHALL NOT use all-numeric keys to avoid conflict with existing and
+> future keys used for GS1 Application Identifiers
+
+so an all-numeric key that is no AI is refused; every other parameter is an extension and is kept as given. The
+delimiters are `queryStringDelim = "&" / ";"` (section 4.11). A repeated AI is refused, as the engine does
+(`DUPLICATE_AI`); section 3 says only that "no key=value pair should be repeated with the same primary identification
+key".
+
+**Canonical URI.** Section 4.12: "the scheme SHALL be HTTPS; the domain name SHALL be id.gs1.org; … GTIN-8, GTIN-12
+and GTIN-13 SHALL remain padded to 14 digits; the URI query string (if present) SHALL NOT contain any other key=value
+pairs except for keys that are GS1 Application Identifiers; key=value pairs, if present, should be sorted in lexical,
+not numeric, order of the key" and "A canonical GS1 Digital Link URI SHALL NOT include a trailing slash."
+`toCanonical()` builds it. The standard defines no normal form for other URIs; section 5.7 calls URIs whose attributes
+differ only in order "equivalent", which is what `equals()` compares (with scheme and authority case-insensitive, RFC
+3986 section 6.2.2.1).
+
+**Examples.** Section 5 (5.1-5.11) gives the test values, URI and element string both ways. Section 5.5 lists the
+element string as `(01)…(17)180426(10)ABC1(21)12345`; `toElementString()` keeps path then query order, so it gives
+`(01)…(10)ABC1(21)12345(17)180426` (the same data; element string equality is order-sensitive).
+
+## 4. EPC Tag Data Standard, Release 2.3 (Task 6) — `Epc\`
 
 `https://ref.gs1.org/standards/tds/` serves "EPC Tag Data Standard TDS … Release 2.3, Ratified, Oct 2025" (its log:
-"Introduction of twelve new ‘++’ EPC schemes, SGTIN++ and DSGTIN++ …"). Read in Task 6.
+"Introduction of twelve new ‘++’ EPC schemes, SGTIN++ and DSGTIN++ …"). Read from the PDF (448 pages).
+
+**Schemes.** Section 6.3, `EPC-URI = SGTIN-URI / SSCC-URI / SGLN-URI / GRAI-URI / GIAI-URI / GSRN-URI / GDTI-URI /
+CPI-URI / SGCN-URI / GINC-URI / GSIN-URI / ITIP-URI / UPUI-URI / PGLN-URI / GID-URI / DOD-URI / ADI-URI / BIC-URI /
+IMOVN-URI`, plus `gsrnp` (Figure 6-1 and 6.3.7): `Epc\EpcScheme`, twenty cases. "Note that no new Pure Identity EPC
+URI formats are defined for the new EPC schemes and binary encodings introduced in TDS 2.0." The EPC Class URI
+(`urn:epc:class:lgtin:`, 6.4) is not a pure identity URI and is not covered.
+
+**Grammar.** Section 5:
+
+> GS3A3Char = Digit / UpperAlpha / LowerAlpha / OtherChar / Escape
+
+> CPRefChar = Digit / UpperAlpha / "-" / "%2F" / "%23"
+
+with `OtherChar = "!" / "'" / "(" / ")" / "*" / "+" / "," / "-" / "." / ":" / ";" / "=" / "_"` and
+`Escape = "%" HexChar HexChar`. Every scheme's rule is taken from its subsection of 6.3, with the digit totals stated
+there, for example 6.3.1: "The number of characters in the two PaddedNumericComponent fields must total 13" (SSCC,
+GSRN, GSRNP 17; SGLN, GRAI, GDTI, SGCN, PGLN 12; GSIN 16; ITIP 13 plus two 2-digit fields). `%s"urn:epc:id:"` is
+case-sensitive.
+
+**Company prefix.** Section 7.1:
+
+> The GS1 Company Prefix (GCP) is a 4- to 12-digit number … In the EPC URI, the GCP is encoded in the CompanyPrefix
+> component, which SHALL include the 4- or 5-digit GCP and the following 2 or 1 digits of the GS1 key, as though it
+> were a 6-digit GCP.
+
+So the CompanyPrefix component of the schemes with a GS1 key has 6 to 12 digits. GTIN-8 (7.3.2): "the GS1 Company
+Prefix portion of the EPC is eight digits and shall be 00000N1N2N3". Not enforced: 7.3.3/7.3.4 forbid SGTINs from
+RCN-8 and company internal numbering (prefixes `04`, `0001`-`0007`); telling those apart needs the GS1 prefix ranges
+applied to the EPC form and is left out.
+
+**Element strings.** Section 7 (7.3-7.17) gives each correspondence and its example, used as test values: SGTIN
+`(01)`+`(21)`, SSCC `(00)`, SGLN `(414)` with `(254)` unless the extension is `0` ("If the entire GLN Extension is just
+a single zero digit, it indicates that the SGLN stands for a GLN, without an extension"), GRAI `(8003)` with the extra
+`0`, GIAI `(8004)`, GSRN `(8018)`, GSRNP `(8017)`, GDTI `(253)`, CPI `(8010)`+`(8011)`, SGCN `(255)`, GINC `(401)`, GSIN
+`(402)`, ITIP `(8006)`+`(21)`, UPUI `(01)`+`(235)`, PGLN `(417)`. The check digit is computed (7.3 step 3). Percent
+escapes map to characters by Table A-1, whose "URI Form" escapes `"`, `%`, `&`, `/`, `<`, `>`, `?`. A URI whose data
+gives no valid element string (a serial of 21 characters, a piece above its total) is refused.
+
+**Equality.** Section 6.1:
+
+> the question may be answered simply by comparing the full EPC URI strings as specified in [RFC3986], Section 6.2. In
+> most cases, the "simple string comparison" method suffices, though if a URI contains percent-encoding triplets the
+> hexadecimal digits may require case normalisation as described in [RFC3986], Section 6.2.2.1.
+
+The canonical value upper-cases the hex digits of escapes and changes nothing else.
+
+**Tag URI.** Section 12.4:
+
+> TagURI = %s"urn:epc:tag:" TagURIControlBody
+> TagURIControlBody = 0*1( ControlField+ ":" ) TagURIBody
+
+with the encoding names `sgtin-96`, `sgtin-198`, `sscc-96`, `sgln-96`, `sgln-195`, `grai-96`, `grai-170`, `giai-96`,
+`giai-202`, `gsrn-96`, `gsrnp-96`, `gdti-96`, `gdti-113`, `gdti-174`, `cpi-96`, `cpi-var`, `sgcn-96`, `itip-110`,
+`itip-212`, `gid-96`, `usdod-96`, `adi-var` (`Epc\EpcTagEncoding`). The grammar defines `GSRNPEncName` but omits a
+`GSRNPTagURIBody`; Table 12-2 and the GSRNP-96 coding table (14.6.7) define the tag form, so it is accepted like
+GSRN-96. Control fields: `ControlName = %s"att" / %s"umi" / %s"xpc"`, `ControlValue = BinaryControlValue /
+HexControlValue`, and section 12.2.2: "any control information fields that appear in a URI must occur in alphabetical
+order".
+
+**Filter.** Section 12.2.1: "the filter value is indicated as an additional field following the scheme name and
+preceding the remainder of the EPC"; 10.1: "Implementations of the encoding and decoding rules specified herein SHALL
+accept any value of the filter values, whether reserved or not." So any value that fits the field is accepted: 3 bits
+(0-7) in every coding table, 6 bits (0-63) for ADI-var (Table 10-11); GID-96 has none ("The GID EPC scheme does not
+provide for the use of filter values", 10.12). USDOD-96: "Filter values for US DoD EPC Tags are as specified in
+[USDOD]" — format only (a number without leading zeros, at most 18 digits so it fits an int).
+
+**Partition tables** (14.6, "SGTIN Partition Table" and the tables of the other schemes): partition values 0-6 map to
+GS1 Company Prefix lengths 12-6, for example
+
+| Partition Value (P) | GS1 Company Prefix Digits (L) | Indicator/Pad Digit and Item Reference Digits |
+|---|---|---|
+| 0 | 12 | 1 |
+| 6 | 6 | 7 |
+
+A prefix length outside 6-12 has no partition and is refused (it is refused in the pure identity URI as well, by 7.1).
+`partition()` is `12 - L`.
+
+**Field limits** (Table 12-2 "EPC Binary Coding Schemes and their limitations" and the coding tables):
+
+| Encoding | Rule as quoted |
+|---|---|
+| `sgtin-96`, `grai-96`, `itip-110` | "Numeric-only, no leading zeros, decimal value must be less than 2^38" |
+| `sgln-96`, `gdti-96` | "Numeric-only, no leading zeros, decimal value must be less than 2^41" |
+| `gdti-113` | "up to 17 decimal digits, with or without leading zeros" |
+| `giai-96` | "GIAI-96 Partition Table": P 0-6 gives Max Digits (K) 13-19 and Bits (N) 42, 45, 48, 52, 55, 58, 62 |
+| `cpi-96` | "CPI-96 Partition Table": Maximum Digits 3-9 for P 0-6; serial "less than 2^31"; within those digits the reference is always below its 11-31 bits |
+| `gid-96` | GID-96 coding table: 28, 24 and 36 bits for manager number, object class and serial |
+| `adi-var` | "The number of characters in the Part Number segment must be greater than or equal to zero and less than or equal to 32"; serial "greater than or equal to one and less than or equal to 30" |
+
+The long encodings (`sgtin-198`, `sgln-195`, `grai-170`, `giai-202`, `gdti-174`, `cpi-var`, `itip-212`) allow
+"All values permitted by GS1 General Specifications", which the pure identity URI already checks through its element
+string. Binary and hex tag encodings and the EPC Raw URI are out of scope.
+
+**Examples.** Section 6.3 and Annex E: every scheme and every encoding has a test value from them where TDS gives one
+(`gdti-113` has none; its test reuses the GDTI example of 7.10).
 
 ## 5. HIBCC (Task 7) — `Internal\Mod43`
 
