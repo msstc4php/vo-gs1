@@ -297,4 +297,5 @@ The operator's knowledge base on markirovka.ru ("Официальный сайт
 |---|---|---|---|
 | EUR-Lex (2016/161, 2018/574) | 2026-11-19 | HTML, PDF and ELI URLs: HTTP 202, empty body | text read on legislation.gov.uk; retry in Task 8 |
 | ICCBBA ST-011 v1.9.0 | 2026-11-19 | the registry page linking it is on a host outside the sandbox allowlist | ST-017 covers the UDI-DI structure; Task 7 |
-| GS1 prefix allocation list (MO per prefix) | 2026-11-19 | not fetched yet | Task 4 |
+| GS1 prefix allocation list (MO per prefix) | 2026-11-19 | not fetched | `Gs1Prefix` decodes the General Specifications tables only; Member Organisations are not named |
+| CSET 39 definition (`Cpid`) | 2026-11-19 | not quoted from the General Specifications | the dictionary names AI 8010 as type `Y` (CSET 39); the set `#-/0-9A-Z` is in `Internal\Gs1Charsets` and should be confirmed against the General Specifications |

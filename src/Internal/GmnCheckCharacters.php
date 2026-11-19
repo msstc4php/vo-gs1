@@ -17,8 +17,6 @@ use LogicException;
  */
 final class GmnCheckCharacters
 {
-    private const string CSET_82 = '!"%&\'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
-
     private const string CSET_32 = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
     /** @var list<positive-int> */
@@ -30,13 +28,13 @@ final class GmnCheckCharacters
     public static function compute(string $body): string
     {
         $length = \strlen($body);
-        if ($length === 0 || $length > \count(self::PRIMES) || \strspn($body, self::CSET_82) !== $length) {
+        if ($length === 0 || $length > \count(self::PRIMES) || \strspn($body, Gs1Charsets::CSET_82) !== $length) {
             throw new LogicException('GMN check character input must be 1 to 23 characters of GS1 CSET 82.');
         }
 
         $sum = 0;
         foreach (\str_split(\strrev($body)) as $position => $character) {
-            $sum += \strcspn(self::CSET_82, $character) * self::PRIMES[$position];
+            $sum += \strcspn(Gs1Charsets::CSET_82, $character) * self::PRIMES[$position];
         }
 
         $value = $sum % 1021;

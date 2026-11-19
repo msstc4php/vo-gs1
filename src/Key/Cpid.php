@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MSSTC4PHP\ValueObject\Gs1\Key;
+
+use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1Charsets;
+use MSSTC4PHP\ValueObject\Gs1\Internal\KeyRules;
+use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
+use Override;
+
+/**
+ * Component/Part Identifier (AI 8010): the GS1 Company Prefix followed by the component or part reference, up to 30 characters of CSET 39 (digits, capital letters, `#`, `-`, `/`).
+ * It has no check digit, and its first digits are the company prefix, so {@see gs1Prefix()} reads them.
+ *
+ * @see https://github.com/gs1/gs1-syntax-dictionary GS1 Barcode Syntax Dictionary, AI 8010 (`Y..30`)
+ */
+final class Cpid extends AbstractStringValueObject implements IdentificationKey
+{
+    private const string TYPE = 'CPID';
+
+    private const int MAX = 30;
+
+    public static function fromParts(string $companyPrefix, string $reference): self
+    {
+        return new self(KeyRules::textBody(self::TYPE, $companyPrefix, $reference));
+    }
+
+    #[Override]
+    public function gs1Prefix(): Gs1Prefix
+    {
+        return Gs1Prefix::fromDigits(KeyRules::leadingDigits($this->value));
+    }
+
+    #[Override]
+    protected function parse(string $value): string
+    {
+        KeyRules::text($value, self::TYPE, Gs1Charsets::CSET_39, self::MAX);
+        KeyRules::startsWithPrefixDigits($value, self::TYPE);
+
+        return $value;
+    }
+}

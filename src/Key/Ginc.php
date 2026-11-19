@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MSSTC4PHP\ValueObject\Gs1\Key;
+
+use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1Charsets;
+use MSSTC4PHP\ValueObject\Gs1\Internal\KeyRules;
+use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
+use Override;
+
+/**
+ * Global Identification Number for Consignment (AI 401): the GS1 Company Prefix followed by the consignment reference, up to 30 characters of CSET 82.
+ * It has no check digit, and its first digits are the company prefix, so {@see gs1Prefix()} reads them.
+ *
+ * @see https://github.com/gs1/gs1-syntax-dictionary GS1 Barcode Syntax Dictionary, AI 401 (`X..30`)
+ */
+final class Ginc extends AbstractStringValueObject implements IdentificationKey
+{
+    private const string TYPE = 'GINC';
+
+    private const int MAX = 30;
+
+    public static function fromParts(string $companyPrefix, string $reference): self
+    {
+        return new self(KeyRules::textBody(self::TYPE, $companyPrefix, $reference));
+    }
+
+    #[Override]
+    public function gs1Prefix(): Gs1Prefix
+    {
+        return Gs1Prefix::fromDigits(KeyRules::leadingDigits($this->value));
+    }
+
+    #[Override]
+    protected function parse(string $value): string
+    {
+        KeyRules::text($value, self::TYPE, Gs1Charsets::CSET_82, self::MAX);
+        KeyRules::startsWithPrefixDigits($value, self::TYPE);
+
+        return $value;
+    }
+}

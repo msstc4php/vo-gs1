@@ -10,3 +10,5 @@
 - Internal check-digit helpers (GS1 standard check digit, GMN check character pair, HIBC Mod 43) and the GS1
   Application Identifier table generated from the GS1 Barcode Syntax Dictionary release 2026-01-27.
 - Source notes `docs/sources/GS1.md`.
+- GS1 identification keys `Gtin`, `Gln`, `Sscc`, `Grai`, `Giai`, `Gsrn`, `Gdti`, `Gcn`, `Ginc`, `Gsin`, `Cpid`, `Gmn`,
+  and `Gs1Prefix`, `GtinFormat`, `IdentificationKey`.
