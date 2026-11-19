@@ -22,10 +22,10 @@ use MSSTC4PHP\ValueObject\Gs1\Udi\HibcDateFormat;
 final class HibcSyntax
 {
     /**
-     * Primary 24 + "/" + lot secondary 35 (`$$9` + 5-digit quantity + flag 4 + 8-digit date + 18) + supplemental /S 20,
-     * /16D 12, /14D 12, /Q 7 + check character: 112. A serial secondary is 36 but excludes /S.
+     * Primary 24 + "/" + serial secondary 36 (`$$+` + `9` and a 5-digit quantity + flag `4` + 8-digit date + 18) +
+     * supplemental /S 20, /16D 12, /14D 12, /Q 7 + check character: 113.
      */
-    private const int MAX_LENGTH = 112;
+    private const int MAX_LENGTH = 113;
 
     /** "+", LIC 4, product number up to 18, unit of measure, check character. */
     private const int PRIMARY_LENGTH = 25;
@@ -279,10 +279,6 @@ final class HibcSyntax
                 throw self::fail(\sprintf('repeats the supplemental data identifier %s', $identifier));
             }
 
-            if ($identifier === 'S' && $data->serial !== null) {
-                throw self::fail('supplemental serial number S is for a lot secondary, the secondary data carries a serial number');
-            }
-
             $values[$identifier] = $content;
         }
 
@@ -299,6 +295,7 @@ final class HibcSyntax
             $data->expiryDateFormat ?? ($expiry instanceof DateTimeImmutable ? HibcDateFormat::Yyyymmdd : null),
             isset($values['16D']) ? self::date(HibcDateFormat::Yyyymmdd, $values['16D']) : null,
             $data->quantity ?? (isset($values['Q']) ? \max(0, \min(99999, (int) $values['Q'])) : null),
+            self::nonEmpty($values['S'] ?? ''),
         );
     }
 

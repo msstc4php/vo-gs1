@@ -620,8 +620,9 @@ the symbol is refused as ambiguous rather than guessed.
 > The Secondary Supplemental Data field is constructed with a “/” character followed by a Data Identifier (DI),
 > followed by data. Multiple Secondary Supplemental data fields are possible.
 
-DIs: `S` serial ("an1 + an18", 2.3.2.1, headed "Serial number when Lot number is used" — so `/S` is refused when the
-secondary data already carries a serial number), `16D` date of manufacture ("an3+n8 … (YYYYMMDD)"), `14D` expiry
+DIs: `S` serial ("an1 + an18", 2.3.2.1, headed "Serial number when Lot number is used"; the standard has no sentence
+forbidding `/S` beside a serial secondary, so it is accepted, and it does not say which serial wins when both are
+present: `serial()` returns the secondary's, `supplementalSerial()` the `/S` one), `16D` date of manufacture ("an3+n8 … (YYYYMMDD)"), `14D` expiry
 ("an3+n8 … (YYYYMMDD)"), `Q` quantity ("an1+n1...n5"); "Quantity must be the last field in supplemental data". Other
 DIs are refused (the standard names no others). Examples: `+A99912345/$$52001510X3/16D20111212/S77DEFG457`,
 `+A99912345/$10X3/16D20111231/14D202001313`, `+A99912349/$10X3/16D20111231/14D20200131/Q500Z`.

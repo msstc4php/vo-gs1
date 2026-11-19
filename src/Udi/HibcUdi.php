@@ -87,13 +87,25 @@ final class HibcUdi extends AbstractStringValueObject implements Udi
     }
 
     /**
-     * The serial number of the secondary data, else of the supplemental data identifier `S`.
+     * The serial number of the secondary data (`$+`, `$$+`), else of the supplemental data identifier `S`. When both are
+     * present HIBC does not say which one wins: this returns the secondary data's, {@see supplementalSerial()} the
+     * other.
      *
      * @return non-empty-string|null
      */
     public function serial(): ?string
     {
         return $this->data()->serial;
+    }
+
+    /**
+     * The supplemental data identifier `S`.
+     *
+     * @return non-empty-string|null
+     */
+    public function supplementalSerial(): ?string
+    {
+        return $this->data()->supplementalSerial;
     }
 
     /**

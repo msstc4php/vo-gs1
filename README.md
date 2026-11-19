@@ -220,12 +220,14 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   verified. A secondary symbol alone is not a UDI: pass both symbols to `fromSymbols()`, which checks the link
   character and stores the concatenated form, so both labels of an item give equal values. `deviceIdentifier()` is the
   primary data structure with its check character; `labelerIdentificationCode()`, `productNumber()`,
-  `unitOfMeasure()`, `lot()`, `serial()` (secondary data, else `S`), `expiryDate()` (secondary data, else `14D`),
-  `expiryDateFormat()` (`HibcDateFormat`), `manufactureDate()` (`16D`), `quantity()` (`Q`). Every format of Appendix F
+  `unitOfMeasure()`, `lot()`, `serial()` (secondary data, else `S`), `supplementalSerial()` (`S`), `expiryDate()`
+  (secondary data, else `14D`), `expiryDateFormat()` (`HibcDateFormat`), `manufactureDate()` (`16D`), `quantity()`
+  (secondary data, else `Q`). Every format of Appendix F
   is read, including the legacy `$`, `$+` and five-digit Julian forms, and the pre-2.6 quantity forms `$$8`/`$$9`
   (Appendix H: "Existing labels are still valid but should not be used for Unique Device Identification"; layout
-  and examples from ANSI/HIBC 2.3-2009, quantity in `quantity()`). `/S` is refused next to a serial secondary ("Serial
-  number when Lot number is used"). In a separate secondary symbol with supplemental data the link character may stand
+  and examples from ANSI/HIBC 2.3-2009, quantity in `quantity()`). `/S` is accepted next to a serial secondary; HIBC does not
+  say which serial wins, so `serial()` returns the secondary data's (else `/S`) and `supplementalSerial()` the `/S`
+  one. In a separate secondary symbol with supplemental data the link character may stand
   after the lot/serial or before the check character; two valid readings are refused as ambiguous. **Not in the standard, chosen here:** two-digit
   years are 20YY (no clock dependence), an MMYY expiry is the last day of the month, dates are UTC with the hour where
   the format has one. The check character may be a space or `/`; the value keeps it.
@@ -254,7 +256,7 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
 - **Format only:** ISBT 128 specified compound sequences other than 034-037 (their order is in ICCBBA's RT017, not
   public); non-UDI ISBT 128 data structures; the alternatively formatted NDC of 207.33(b)(4) is not accepted (no
   published format).
-- Size limits before parsing: HIBC 112 characters, ISBT 128 2048 characters and 99 data structures, NDC 13.
+- Size limits before parsing: HIBC 113 characters, ISBT 128 2048 characters and 99 data structures, NDC 13.
 
 ## GS1 Application Identifier table
 

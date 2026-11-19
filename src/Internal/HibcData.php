@@ -22,6 +22,7 @@ final readonly class HibcData
      * @param non-empty-string|null $lot
      * @param non-empty-string|null $serial
      * @param int<0, 99999>|null $quantity
+     * @param non-empty-string|null $supplementalSerial the serial number of the supplemental data identifier S
      */
     public function __construct(
         public string $primary,
@@ -34,6 +35,7 @@ final readonly class HibcData
         public ?HibcDateFormat $expiryDateFormat = null,
         public ?DateTimeImmutable $manufactureDate = null,
         public ?int $quantity = null,
+        public ?string $supplementalSerial = null,
     ) {
     }
 }

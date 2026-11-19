@@ -104,5 +104,6 @@
 - PhpStorm MCP inspections were not available in the Task 7 session (no `mcp__phpstorm__*` tools).
 - Fix round 1 rulings: ISBT messages no longer echo `aa`/`bbb` (input); `UdiFactory` strips `]xx` and routes `+`/`=`/`&`
   on the rest (GS1 gets the original); legacy HIBC quantity `$$8`/`$$9` accepted (Appendix H), layout quoted
-  from ANSI/HIBC 2.3-2009 via an Internet Archive copy (fix round 2; quantity-only `+$$848GQ` has no date flag); `/S` refused with a serial secondary; HIBC cap 112 (lot form with `$$9`
-  quantity + all supplementals); `Gs1Udi::gtin()` guard is a `LogicException`.
+  from ANSI/HIBC 2.3-2009 via an Internet Archive copy (fix round 2; quantity-only `+$$848GQ` has no date flag); `/S` beside a serial secondary accepted (fix round 3: only a heading,
+  no prohibition), exposed as `supplementalSerial()`; HIBC cap 113 (serial form with `$$+9` quantity + all
+  supplementals); `Gs1Udi::gtin()` guard is a `LogicException`.
