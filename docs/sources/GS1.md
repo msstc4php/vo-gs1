@@ -363,7 +363,7 @@ Both legacy expressions are accepted (controller ruling: still in circulation), 
   8013, `grai` 8003, `gsin` 402, `gsrn` 8018, `gsrnp` 8017, `gtin` 01, `itip` 8006, `lot` 10, `party` 417, `refno`
   8020, `ser` 21, `srin` 8019, `sscc` 00. As in the engine, the query takes numeric AI keys only (an alpha key there
   is an extension parameter). Section 4.1: "Convenience alphas were marked as deprecated in version 1.2 of the
-  standard and have been removed completely as of version 1.3.0." 
+  standard and have been removed completely as of version 1.3.0."
 
 **Path.** Section 4.3 lists the primary keys, 4.4 the key qualifiers, 4.9 their order:
 

@@ -28,9 +28,9 @@ core.
 | `Udi\Gs1Udi` | String VO over `ElementString`, must have AI (01); value = bracketed form |
 | `Udi\HibcUdi`, `Internal\HibcSyntax`, `Internal\HibcData` | HIBC LIC primary / concatenated (+ supplemental `/S`, `/16D`, `/14D`, `/Q`); value = concatenated form; `fromSymbols()` joins two symbols via the link character; accessors re-parse |
 | `Udi\IsbtUdi`, `Internal\IsbtSyntax`, `Internal\IsbtData` | ISBT 128 (ST-017): compound `=+aabbb` or HRI in, value = HRI (header dropped); `toCompoundMessage()` |
-| `Udi\UdiFactory` | First character → class (`+` HIBC, `=` ISBT, `(` `]` digit GS `^` GS1), else `InvalidUdiException` |
+| `Udi\UdiFactory` | Strips a leading `]xx`, then routes on the next character: `+` HIBC, `=`/`&` ISBT (both built from the data without the identifier), `(` / digit / GS / `^` or data behind an identifier GS1 (given whole); else `InvalidUdiException` |
 | `Udi\BasicUdiDi\*` | `BasicUdiDi` interface (`issuingEntity()`), one class per entity with its check characters; `BasicUdiDiFactory` tries all, 0 → invalid, >1 → `AmbiguousValueException` |
-| `Udi\Ndc`, `Udi\NdcConfiguration`, `Udi\Ndc12` | NDC 10/11 digits, hyphens required; bare digits → `AmbiguousValueException([Ndc::class])` + `Ndc::candidates()`; `Ndc12` 6-4-2 |
+| `Udi\Ndc`, `Udi\NdcConfiguration`, `Udi\Ndc12` | NDC, 10 digits in five configurations (4-4-2, 5-3-2, 5-4-1, 6-3-2, 6-4-1), hyphens required; bare digits → `AmbiguousValueException([Ndc::class])` + `Ndc::candidates()`; `Ndc12` 6-4-2 |
 | `Internal\Iso7064Mod37`, `Internal\IfaMod97`, `Internal\UdiDates` | ICCBBA MOD 37-2 (Horner), IFA mod 97 over ASCII, UTC calendar/ordinal dates (null when the day does not exist) |
 | `Marking\RU\MarkingCode`, `MarkingIdentifier`, `MarkingCodeStructure` | String VOs over `Internal\RuMarkingSyntax` (+ readonly `RuMarkingParts`); code canonical = pack as is / GS1 barcode data with GS; identifier canonical = 25 pack chars / bracketed `(01)…(21)…[(8005)…]` |
 | `Internal\RuMarkingSyntax` | Pack-like (29, 14 digits, no GS/`^`; prefix `]d1`/`]d2`/GS stripped) incl. the 5-char-serial lost-GS ambiguity; GS1: lost-GS rule (`PUBLISHED_NEXT`) first, then published structures by the AI after (21) (91/93/8005), else `GenericGs1`; `identifier()` canonical-only, `documentForm()` with ambiguity |

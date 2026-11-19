@@ -4,8 +4,9 @@ Value objects for GS1 identification keys (GTIN, GLN, SSCC and the others), GS1 
 and EPC URIs, medical-device UDI (GS1, HIBCC, ICCBBA) and the US NDC, and Russian and EU marking codes. Built on
 [`msstc4php/vo-base`](https://github.com/msstc4php/vo-base); PHP >= 8.4.
 
-Work in progress: the value objects arrive with the 0.1.0 release. Every check digit and structural rule cites its
-official source; the notes, with quotes, are in [`docs/sources/GS1.md`](docs/sources/GS1.md).
+Every check digit and structural rule cites its official source; the notes, with quotes, are in
+[`docs/sources/GS1.md`](docs/sources/GS1.md). What a class cannot check from a published source is checked for
+format only and listed under "Format only" below.
 
 ## Install
 
@@ -24,6 +25,61 @@ Not on Packagist yet; register the GitHub repositories:
 ```
 
 Runtime requirement: `msstc4php/vo-base ^1.2`. No framework.
+
+## Usage
+
+```php
+use MSSTC4PHP\ValueObject\Gs1\DigitalLink\DigitalLink;
+use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
+use MSSTC4PHP\ValueObject\Gs1\Key\Gtin;
+use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingCode;
+use MSSTC4PHP\ValueObject\Gs1\Udi\Ndc;
+use MSSTC4PHP\ValueObject\Gs1\Udi\UdiFactory;
+
+$gtin = Gtin::from('4006381333931');             // an EAN-13 is a GTIN-13
+$gtin->format()->name;                           // Gtin13
+$gtin->equals(Gtin::from('04006381333931'));     // true: equality compares the 14-digit form
+
+$scan = ElementString::from("]d201095060001343521721122510ABC\x1D21XYZ");   // scanner output
+(string) $scan;                                  // (01)09506000134352(17)211225(10)ABC(21)XYZ
+
+DigitalLink::from('https://example.com/01/09520123456788/10/ABC1?17=201225')->toCanonical();
+// https://id.gs1.org/01/09520123456788/10/ABC1?17=201225
+
+UdiFactory::fromString('(01)09506000134352(17)201225(10)ABC123');   // Gs1Udi
+Ndc::from('10010-001-01')->toBillingFormat();    // "10010000101"
+```
+
+The sections below give each family in full, with more examples.
+
+## Classes
+
+All value objects are string value objects (`AbstractStringValueObject`): `(string) $vo` and `jsonSerialize()` give the
+canonical value, `equals()` compares it (Digital Link overrides this, see its section). A failure is an exception of the
+area's family in `MSSTC4PHP\ValueObject\Gs1\Exception\`, all extending vo-base `InvalidValueObjectException`; a value
+that fits several classes throws vo-base `AmbiguousValueException`. Exception messages never contain the input.
+
+| Class | Checks | Source |
+|---|---|---|
+| `Key\Gtin`, `Gln`, `Sscc`, `Gsrn`, `Gsin`, `Grai`, `Gdti`, `Gcn` | length, digits, GS1 check digit | GS1 General Specifications 26.0 |
+| `Key\Giai`, `Ginc`, `Cpid` | length and character set (CSET 82; CSET 39 for `Cpid`), company-prefix position | General Specifications, dictionary `gcppos1` |
+| `Key\Gmn` | character set, the two check characters (MOD 1021,32) | General Specifications 26.0 |
+| `Key\Gs1Prefix`, `GtinFormat` | decoding of the GS1 Prefix and of the GTIN format; never refuses | General Specifications 26.0 (GS1 Prefix and GTIN tables) |
+| `ElementString\ElementString` | AI table: data format, character set, linters, invalid pairs (`ex`), repeats, dates; reports `req` | GS1 Barcode Syntax Dictionary, General Specifications 26.0 |
+| `ElementString\ElementStringBuilder`, `UnmetRequirement` | immutable builder; one unmet mandatory pair | same |
+| `DigitalLink\DigitalLink` | uncompressed URI: path key and qualifier order, query attributes | GS1 Digital Link URI Syntax 1.7.0 |
+| `Epc\EpcPureIdentityUri`, `EpcTagUri` (+ `EpcScheme`, `EpcTagEncoding`) | TDS grammar of 20 schemes and 22 tag encodings, field limits, partition | EPC Tag Data Standard 2.3 |
+| `Udi\Gs1Udi` | an element string with AI (01) | General Specifications 26.0 (AI 01 as the device identifier) |
+| `Udi\HibcUdi` | LIC primary, secondary and supplemental data, Mod 43 | ANSI/HIBC 2.6 |
+| `Udi\IsbtUdi` | data structures, counts, sequence 034-037, dates | ICCBBA ST-017 |
+| `Udi\UdiFactory`, `IssuingAgency` | picks the agency by the leading characters | the three classes above |
+| `Udi\BasicUdiDi\Gs1BasicUdiDi`, `HibccBasicUdiDi`, `IccbbaBasicUdiDi`, `IfaBasicUdiDi`, `BasicUdiDiFactory` | structure and check characters of each issuing entity | GS1, HIBCC, ICCBBA and IFA documents (GS1.md) |
+| `Udi\Ndc`, `NdcConfiguration` | hyphenated 10-digit forms (five configurations) | 21 CFR 207.33 |
+| `Udi\Ndc12` | the 6-4-2 format | FDA final rule of 2026-03-05 (91 FR, doc 2026-04368) |
+| `Marking\RU\MarkingCode`, `MarkingIdentifier`, `MarkingCodeStructure` | the published code structures, lost GS detection, AI table | Government decrees per product group, operator's methodology pages |
+| `Marking\EU\FmdPackCode` | GS1 form or IFA format 06 of the unique identifier | Delegated Regulation (EU) 2016/161, IFA |
+| `Marking\EU\Ppn` | PRA Code, product number, IFA modulo 97, PZN check | IFA PPN-Code Specification 3.06 |
+| `Marking\EU\TobaccoUnitIdentifier`, `TobaccoUnitIdentifierWithoutTimeStamp` | length, alphanumeric, UTC time stamp | Implementing Regulation (EU) 2018/574 |
 
 ## Identification keys
 
@@ -93,10 +149,8 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
   marking a physical item", so `(10)ABC` alone (its GTIN in another barcode) is a valid element string.
   `unmetRequirements()` lists each `req` attribute the string does not meet (`UnmetRequirement`: `ai`, `alternatives`,
   `describe()` → `(01) or (02) or …`); check it on the combined data of an item.
-- **Format only** (the AI is checked for length and character set, its linter is not run): `mediatype`, `packagetype`
-  (code lists that grow), `iban` (per-country structure: later wave), `couponcode`, `couponposoffer` (coupons are out
-  of scope). The registry part of `gcppos1`/`gcppos2` (is this a real GS1 Company Prefix) is never checked. See
-  [`docs/sources/GS1.md`](docs/sources/GS1.md), "Linters".
+- **Format only:** see [Format only](#format-only) (`mediatype`, `packagetype`, `iban`, coupon AIs, the registry half of
+  `gcppos1`/`gcppos2`); linter details in [`docs/sources/GS1.md`](docs/sources/GS1.md), "Linters".
 
 ## GS1 Digital Link
 
@@ -181,9 +235,7 @@ EpcTagUri::fromPureIdentityUri($epc, EpcTagEncoding::Sgtin198, 3);
   0-7, 0-63 for adi-var, none for gid-96. The company prefix length gives the partition (`partition()`, 0-6). Each
   encoding's field limits apply (for example `sgtin-96`: a serial without leading zeros below 2^38; `giai-96`: digits
   and bits by partition).
-- **Format only:** the BIC check digit (ISO 6346) and the IMO number check digit are not in TDS; the usdod-96 filter
-  is defined by the US DoD guide (any number up to 18 digits); TDS 7.3.3/7.3.4 (no SGTIN from RCN-8 or company
-  internal numbering) is not enforced.
+- **Format only:** see [Format only](#format-only) (BIC and IMO check digits, `usdod-96` filter, TDS 7.3.3/7.3.4).
 
 ## Medical devices: UDI, Basic UDI-DI, NDC
 
@@ -253,9 +305,7 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   labeler code, for which HIPAA defines no conversion), `toNdc12()`.
 - **`Ndc12`:** the 6-4-2 format of the FDA final rule of 2026-03-05 (effective 2033-03-07), hyphenated or 12 bare
   digits (one configuration), stored hyphenated.
-- **Format only:** ISBT 128 specified compound sequences other than 034-037 (their order is in ICCBBA's RT017, not
-  public); non-UDI ISBT 128 data structures; the alternatively formatted NDC of 207.33(b)(4) is not accepted (no
-  published format).
+- **Format only:** see [Format only](#format-only) (ISBT 128 sequences and non-UDI structures, the alternatively formatted NDC).
 - Size limits before parsing: HIBC 113 characters, ISBT 128 2048 characters and 99 data structures, NDC 13.
 
 ## Marking codes: Russia («Честный знак») and the EU
@@ -311,12 +361,7 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   meat, caviar, pet food, vegetable oils, sports nutrition, construction materials, household goods, cosmetics and
   household chemicals, toys, bicycles, technical rehabilitation equipment, radio-electronics, electronic nicotine
   delivery systems, motor oils, cables, optical fibre, polymer pipes.
-- **Not covered** (structure not read; such codes parse as `GenericGs1` when their separators are intact): auto parts, pharmaceutical raw materials, frozen and semi-finished food,
-  heating appliances, titanium products, fertilisers, pyrotechnics, fire safety equipment, printed matter, wheelchairs
-  (listed as a group of its own), fur coats (an RFID КиЗ, not a Data Matrix code) and alcohol (EGAIS excise stamps,
-  another system). Their codes still parse when they
-  have one of the four structures above; the operator's pages for these groups were not found by search or by the
-  group index on 2026-11-19 (UTC).
+- **Not covered:** see [Not covered](#not-covered); such codes parse as `GenericGs1` when their separators are intact.
 - **`EU\FmdPackCode`** (Delegated Regulation (EU) 2016/161): a GS1 element string with (01), (21), (10), (17), or the
   IFA format `[)>` RS `06` GS `9N…` GS `S…` GS `1T…` GS `D…` RS EOT (ISO/IEC 15434 format 06, ASC data identifiers;
   the trailer is optional on input, 8P may repeat, other DIs are kept). `productCode(): Gtin|Ppn`, `serial()`,
@@ -335,14 +380,57 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   `withTimeStamp($manufacturedAt)` builds the full UI (UTC hour).
 - Size limits before parsing: Russian codes and identifiers 255 characters, FMD pack codes 512.
 
+## Format only
+
+One list for the whole package: where no published source gives a rule, the class checks the format and no more.
+
+| What | Why |
+|---|---|
+| `mediatype`, `packagetype` | code lists that grow; GS1 itself checks the format |
+| `iban` | the per-country structure belongs to a later wave |
+| `couponcode`, `couponposoffer` | coupons are out of scope |
+| Registry half of `gcppos1`/`gcppos2` | whether a prefix is a real GS1 Company Prefix is a registry fact; decoding never refuses |
+| BIC check digit (ISO 6346) and IMO number check digit in EPC schemes `bic`, `imovn` | not in the EPC TDS; ISO 6346 and IMO checks arrive in wave 3 (`vo-identifiers`) |
+| `usdod-96` filter; TDS 7.3.3/7.3.4 (no SGTIN from RCN-8 or internal numbering) | defined by the US DoD guide / not enforced |
+| ISBT 128 compound sequences other than 034-037; non-UDI ISBT 128 data structures | the order is in ICCBBA's RT017, not public |
+| Alternatively formatted NDC (21 CFR 207.33(b)(4)) | no published format; not accepted |
+| Russian crypto tail (AI 91/92/93 contents) | verifying it needs the operator's keys; only its format is checked |
+| `GenericGs1` marking codes | AI table only: no page publishes their lengths |
+| EU `TobaccoUnitIdentifier` beyond length, character set and time stamp | the rest is each ID issuer's own, possibly encrypted |
+| Digital Link extension parameters | kept as given; their meaning is not GS1's |
+
+## Not covered
+
+- Russian product groups whose structure page was not found (auto parts, pharmaceutical raw materials, frozen and
+  semi-finished food, heating appliances, titanium products, fertilisers, pyrotechnics, fire safety equipment, printed
+  matter, wheelchairs). Their codes still parse as `GenericGs1` or a published structure when the separators are intact.
+- Fur coats (an RFID code, not a Data Matrix code) and alcohol (EGAIS excise stamps, another system).
+- Compressed GS1 Digital Link: URI Syntax 1.7.0 dropped it, so such links are refused.
+- Binary and hex EPC tag encodings, EPC Raw and Class URIs.
+- Verification of cryptographic signatures and tails (Russian marking, FMD).
+- GS1 Member Organisation names for a GS1 Prefix: the allocation list is not in the General Specifications.
+- Coupons beyond the format check.
+
+## With the bridges
+
+Every class is a string value object, so `ValueObjectMapper` (vo-base) and the framework bridges map it with no codec:
+the stored value is the canonical string. Marking and FMD codes carry control characters (GS, RS, EOT) that must be
+stored as they are; an element string is stored in its bracketed form, which has none. For Doctrine use
+[`msstc4php/vo-gs1-doctrine`](https://github.com/msstc4php/vo-gs1-doctrine) (31 ORM and ODM types, `gs1_<snake_name>`).
+
 ## GS1 Application Identifier table
 
 The AI table (data formats, FNC1 rule, linters, mandatory and invalid AI pairs) is generated from the
 [GS1 Barcode Syntax Dictionary](https://github.com/gs1/gs1-syntax-dictionary), release 2026-01-27, which is vendored
-unmodified under `resources/` (Apache License 2.0, see [`NOTICE`](NOTICE)). A new dictionary release is picked up
-with `php tools/generate-ai-table.php` and ships as a minor release. Regenerating needs a development checkout with
-the dev dependencies installed: the generator lives in `tests/Support/` and the script in `tools/`, both
-export-ignored (`.gitattributes`), so the Composer package ships neither.
+unmodified under `resources/` (Apache License 2.0, see [`NOTICE`](NOTICE)). Update policy:
+
+- The dictionary release is pinned (recorded in the header of `src/Internal/AiTable.php`); the generator refuses any
+  other release until its constants are updated.
+- A new release is picked up with `php tools/generate-ai-table.php` and ships as a minor release.
+- Accessors re-parse stored values against the installed table, so a value stored under an older release can be
+  refused by an accessor after an update (see Element strings).
+- Regenerating needs a development checkout with the dev dependencies installed: the generator lives in `tests/Support/` and the script in `tools/`, both
+  export-ignored (`.gitattributes`), so the Composer package ships neither.
 
 ## License
 

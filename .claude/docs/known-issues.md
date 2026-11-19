@@ -11,26 +11,29 @@
   zeroes"); the plan's fallback applies (keep the given form, compare the 14-digit form).
 - EUR-Lex answered 202 with an empty body (bot challenge) on 2026-11-19 UTC; EU texts were read on legislation.gov.uk.
 
-## Identification keys (Task 4)
+## Identification keys
 
 - `Cpid` (AI 8010) is CSET 39 (Table 7-21, dictionary `Y..30`), not CSET 82; `Internal\Gs1Charsets` holds both sets.
-- `Grai::assetType()` / `Gdti::documentType()` return the key without serial (14 / 13 digits), i.e. the AI value minus its serial; the company prefix is never split off.
+- `Grai::assetType()` / `Gdti::documentType()` return the key without serial (14 / 13 digits), i.e. the AI value minus
+  its serial; the company prefix is never split off.
 - `Gs1Prefix` has no Member Organisation names: the allocation list is not in the General Specifications.
-- Company prefixes are 4 to 12 digits (GenSpecs 1.2.3.3; 3 for the GS1-8 Prefix of a GTIN-8); `Giai`, `Ginc`, `Cpid`, `Gmn` start with 4 digits (dictionary `gcppos1`).
+- Company prefixes are 4 to 12 digits (GenSpecs 1.2.3.3; 3 for the GS1-8 Prefix of a GTIN-8); `Giai`, `Ginc`, `Cpid`,
+  `Gmn` start with 4 digits (dictionary `gcppos1`).
 - `Gtin::gs1Prefix()` decodes the 14-digit form, so equal GTINs agree: six leading zeros mean a GTIN-8 (GS1-8 table).
 - No key strips spaces or hyphens.
-- GenSpecs text has no example for GDTI, GCN, GSIN, GSRN, GINC, CPID; their tests use computed check digits (see GS1.md).
+- GenSpecs text has no example for GDTI, GCN, GSIN, GSRN, GINC, CPID; their tests use computed check digits (see
+  GS1.md).
 
-## Element strings (Task 5)
+## Element strings
 
-- Parse-time date validity is clock-free (controller ruling, fix round 1): `yymmd0`/`yymmdd` check MM/DD with
+- Parse-time date validity is clock-free (owner ruling): `yymmd0`/`yymmdd` check MM/DD with
   `YY % 4 === 0` as leap (so `000229` always parses), unlike `lint_yymmd0.c`, which uses `CURRENT_YEAR`. The century
   is applied only in `Gs1Dates::toDate()`; the accessors throw when the chosen century lacks the day (2100-02-29).
 - `ElementStringBuilder::with()` refuses a backslash at once: `X\` followed by the next `(` would otherwise be read as
   an escaped `(` and merge two AIs into one valid serial.
 - Lost GS separators are only detectable when the swallowed data breaks the AI's length or charset: `10ABC21XYZ`
   (separator lost) is a valid batch `ABC21XYZ`. That is the GS1 engine's behaviour too; never split at max length.
-- `req` is **not** refused (controller ruling, fix round 1): GS1 evaluates pairings over all carriers of an item, so
+- `req` is **not** refused (owner ruling): GS1 evaluates pairings over all carriers of an item, so
   `(10)ABC` parses and `unmetRequirements()` reports it. `ex` stays refused.
 - Association checks run over distinct AIs and look patterns up by expansion (`35nn` → 100 keys), so repeats cannot
   make them quadratic; input is capped at 14178 characters before parsing and data at 7089 (GS1 QR Code capacity).
@@ -44,13 +47,14 @@
 - Infection: ~57 escaped mutants in the new code are equivalent (redundant guards in `Gs1Dates::isDate`, length
   arithmetic in error messages); Covered Code MSI 95%.
 
-## Digital Link and EPC (Task 6)
+## Digital Link and EPC
 
 - URI Syntax 1.7.0 has no compression; RE2 also matches plain-number segments, so "is compressed" is only the message
   for a no-key path whose last segment has a letter, `_` or `-` (or starts `eh`/`ex`).
 - The parser follows GS1's engine `dl.c` where the standard is silent: backward scan for the last primary-key pair,
-  unknown AI in the scan stops it (`/01/X/foo/bar` has no key), `/414/…/01/…` makes `/414/…` the stem, a query AI that would fit the path is refused.
-- Controller rulings (fix round 1), where they depart from the engine: a repeated query attribute is valid, last value
+  unknown AI in the scan stops it (`/01/X/foo/bar` has no key), `/414/…/01/…` makes `/414/…` the stem, a query AI that
+  would fit the path is refused.
+- Rulings, where they depart from the engine: a repeated query attribute is valid, last value
   wins (section 3; engine: `DUPLICATE_AI`); a query AI repeating a path AI stays refused; convenience alphas in the
   path are accepted via the engine's `alpha_ai_map` (engine default: off); short GTINs are padded for (01), (02), (03),
   not for (8006)/(8026) (GTIN + piece/total); a bare numeric query key (`?17`) is refused.
@@ -75,20 +79,21 @@
   "has no filter value"; otherwise leading zero / more than 18 digits / above the field width.
 - EPC parse validates GS1 schemes by building the element string, so GenSpecs limits (serial ≤ 20, piece ≤ total,
   CSET 82) apply to EPC URIs too.
-- Infection: ~11 escaped mutants in Task 6 code are equivalent (regex capture positions of unused components,
+- Infection: ~11 escaped mutants in Digital Link/EPC code are equivalent (regex capture positions of unused components,
   `(int)` of the whole filter match, sort keys of control fields, stem-path slice offsets used only in identity).
 
-## UDI, Basic UDI-DI, NDC (Task 7)
+## UDI, Basic UDI-DI, NDC
 
 - vo-base `AmbiguousValueException` is **final**: no subclass can carry the NDC configurations. The NDC throws it with
   candidates `[Ndc::class]` and the configurations in the type string; callers recover them via `Ndc::candidates()`
   and build with `Ndc::fromDigits()`. The exception is not an `InvalidUdiException` (both are
   `InvalidValueObjectException`).
-- `Ndc::toBillingFormat()` is `?string` (brief said `string`): HIPAA's 5-4-2 has no conversion for 6-digit labeler
+- `Ndc::toBillingFormat()` is `?string` (not `string`): HIPAA's 5-4-2 has no conversion for 6-digit labeler
   codes (FDA: "outside the scope of FDA authority"), so it returns null for 6-3-2 / 6-4-1.
 - HIBC: the check character can be a space or `/`, so always strip the last character before splitting on `/`. With
   supplemental data a separate secondary symbol's link character is accepted before the first `/` or second to last
-  (controller ruling, fix round 1); both valid → refused as ambiguous. Two-digit years = 20YY, MMYY = last day of month: package decisions, not HIBCC's.
+  (owner ruling); both valid → refused as ambiguous. Two-digit years = 20YY, MMYY = last day of month: package
+  decisions, not HIBCC's.
 - HIBC `isSecondary()`: a digit or `$` after `+` (Table 2 Note 1); so a primary-looking LIC starting with a digit is
   reported as "secondary data only".
 - HIBC Basic UDI-DI check = `GmnCheckCharacters` over the whole string **including `++`** (HIBCC Table 1 = CSET 82,
@@ -98,28 +103,27 @@
   though 3.1 says medical devices set `00`. Dates: year = 2000 + `cyy` (from the example "019032 refers to 1 Feb 2019").
 - ICCBBA MOD 37-2 checksum is two **digits** 00-36 although 3.1's table types `bb` as alphanumeric.
 - `PP1234500000007005` is a valid ICCBBA and IFA Basic UDI-DI at once (test fixture for the ambiguity path).
-- Infection: 21 escaped mutants in Task 7 code are equivalent — `substr` length overshoots in HIBC date offsets,
+- Infection: 21 escaped mutants in UDI code are equivalent — `substr` length overshoots in HIBC date offsets,
   no-op `max/min` clamps that give PHPStan `int<0, 9>` / `int<0, 99999>`, unreachable `LogicException` guards,
   `ppic` in the required list (always first), `(int)` before string arithmetic, `calendar(…, 2)` before "last day of".
-- PhpStorm MCP inspections were not available in the Task 7 session (no `mcp__phpstorm__*` tools).
-- Fix round 1 rulings: ISBT messages no longer echo `aa`/`bbb` (input); `UdiFactory` strips `]xx` and routes `+`/`=`/`&`
-  on the rest (GS1 gets the original); legacy HIBC quantity `$$8`/`$$9` accepted (Appendix H), layout quoted
-  from ANSI/HIBC 2.3-2009 via an Internet Archive copy (fix round 2; quantity-only `+$$848GQ` has no date flag); `/S` beside a serial secondary accepted (fix round 3: only a heading,
-  no prohibition), exposed as `supplementalSerial()`; HIBC cap 113 (serial form with `$$+9` quantity + all
-  supplementals); `Gs1Udi::gtin()` guard is a `LogicException`.
+- Rulings: ISBT messages no longer echo `aa`/`bbb` (input); `UdiFactory` strips `]xx` and routes `+`/`=`/`&` on the
+  rest (GS1 gets the original); legacy HIBC quantity `$$8`/`$$9` accepted (Appendix H), layout quoted from ANSI/HIBC
+  2.3-2009 via an Internet Archive copy (quantity-only `+$$848GQ` has no date flag); `/S` beside a serial secondary
+  accepted (only a heading, no prohibition), exposed as `supplementalSerial()`; HIBC cap 113 (serial form with `$$+9`
+  quantity + all supplementals); `Gs1Udi::gtin()` guard is a `LogicException`.
 
-## Marking codes (Task 8)
+## Marking codes
 
 - No operator page prints a real code; tests build codes from the published format lines (GTIN `04600439931256`).
-- Fix round 1 rulings: intact-GS codes outside the published structures are `GenericGs1` (AI table only; needs
+- Rulings: intact-GS codes outside the published structures are `GenericGs1` (AI table only; needs
   (01), (21) first and (92) or (93)). Published lengths serve the pack and lost-GS detection only.
 - Lost GS: `ElementStringSyntax` never splits, so (21) swallows the rest up to the next GS. `RuMarkingSyntax::
   PUBLISHED_NEXT` refuses a group of an **unpublished** length that holds, at a published length, the AI a published
   structure puts next (e.g. tobacco group `21` + 7 + `8005…` GS `93…` → a 17-character serial runs into 8005 at 7).
-  Fix round 2 ruling: groups of a published length are never checked (20-char random serials contain `93` etc. a few
+  Ruling: groups of a published length are never checked (20-char random serials contain `93` etc. a few
   percent of the time). Remaining cost: a would-be `GenericGs1` code with such a sequence at such an offset is
   refused. Identifiers apply the same rule, so canonical round trips stay consistent.
-- Opposite residual (fix round 3, controller ruling: no new heuristic): a `GenericGs1` code with an unpublished serial
+- Opposite residual (ruling: no new heuristic): a `GenericGs1` code with an unpublished serial
   length whose GS after (21) was lost can swallow the next AIs into the serial and be accepted as a different code.
   Undetectable without the separators; a "(92) without (91)" refusal was rejected (would refuse valid generic codes).
 - `MarkingIdentifier::from()` reads any 25 pack-shaped characters as a pack КИ; its check-digit failure message points
@@ -129,7 +133,7 @@
   `04606203086627` for the non-ambiguous case.
 - `MarkingIdentifier::from()` takes only canonical forms (25 pack chars, bracketed); `fromDocumentForm()` handles
   `01…21…` and the ambiguity. `MarkingCode::identifier()` therefore never throws.
-- Decree No. 224: current edition (29.12.2025, in force 01.03.2026) read on the КонтурЭкстерн mirror in fix round 1;
+- Decree No. 224: current edition (29.12.2025, in force 01.03.2026) read on the КонтурЭкстерн mirror;
   pp. 43-45 unchanged. The CSET 82 pack charset rests on a comment answer on the operator's water page.
 - EU tobacco: Art 21(4) allows the time stamp outside the carrier → `TobaccoUnitIdentifierWithoutTimeStamp`; never
   strip trailing digits by guess. `withTimeStamp()` refuses years outside 2000-2099.
@@ -138,10 +142,8 @@
 - IFA expiry `DD = 00` → last day of the month (package decision, IFA only says "month and year"); century 2000-2099
   per IFA. Tobacco UI century 2000: package decision.
 - `FmdPackCode::pzn()` reads NTIN-DE `04150` + PZN; productCode equality between the formats = `Ppn::toNtin()`
-  equals the GTIN (the types differ, so the brief's "same productCode()" is that comparison plus `pzn()`).
-- EUR-Lex still blank on 2026-11-19 (Task 8 retry); publication.pravo.gov.ru and legalacts.ru close the socket.
-- PhpStorm MCP inspections were not available in the Task 8 session either; `/acc:code-review` not run (subagents
-  not allowed for this task), self-review instead.
-- Infection: escaped mutants in Task 8 code are equivalent or unreachable (negative string offset × 0 in the PZN
+  equals the GTIN (the types differ, so "same product code" is that comparison plus `pzn()`).
+- EUR-Lex stayed blank on a retry; publication.pravo.gov.ru and legalacts.ru close the socket.
+- Infection: escaped mutants in the marking code are equivalent or unreachable (negative string offset × 0 in the PZN
   loop, `(int)` casts, `substr` length overshoot in the IFA day, unreachable `LogicException`s, the unused
   `identifier` field of a parsed identifier).
