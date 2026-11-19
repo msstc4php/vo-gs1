@@ -245,14 +245,15 @@ Repeated AIs, `validateAIrepeats()` in `ai.c`:
 > AI validation routine that ensure that any repeated AIs in the data have the same value. (Repeated AIs may occur
 > when the AI data from reads of multiple symbol carriers on the same label is concatenated.)
 
-Association rules: `req` and `ex` exactly as the dictionary header states them (section 2), matched as the engine's
+Association rules: `req` and `ex` as the dictionary header states them (section 2), matched as the engine's
 `existsInAIdata()` does (an AI pattern of the same length, `n` any digit, never the AI itself). The header adds:
 
 > Note: Invalid and mandatory AI pairings should be evaluated over the combined data received from all GS1 carriers
 > marking a physical item.
 
-so an element string holding the data of only one of several carriers (e.g. the 2D part of a composite) can be
-refused; combine the reads first. **Not enforced:** the engine's `validateDigSigRequiresSerialisedKey()` (AI 8030 with
+An invalid pair (`ex`) is invalid in any part of that data, so it is refused. A mandatory partner (`req`) may sit in
+another carrier of the item, so a missing one is **not** refused: `ElementString::unmetRequirements()` reports it (the
+engine likewise lets `gs1_encoder_vREQUISITE_AIS` be disabled, while `vMUTEX_AIS` is locked on). **Not enforced:** the engine's `validateDigSigRequiresSerialisedKey()` (AI 8030 with
 a serial on 253/255/8003) is an engine rule, not a dictionary attribute.
 
 CSET 64 (type `Z`, AI 8030), Table 7-22, Note 1: "the upper-case letters A-Z, lower-case letters a-z, digits 0-9,
@@ -260,9 +261,21 @@ hyphen (-), low line/underscore/underline (_) and the equals character (=) as a 
 characters, `=` only as up to two trailing pad characters (the reference `lint_cset64.c` also refuses padding unless
 the length is a multiple of 3; that check is not applied).
 
-Dates: `DD = 00` and the century window are section 3.4.2 and 7.12 above. The `yymmd0` and `yymmdd` linters pick the
-century from the current year at parse time ("Convert YY to a year using a horizon based on CURRENT_YEAR",
-`lint_yymmd0.c`); `expiryDate()` / `productionDate()` take the reference day as an argument instead.
+Dates: `DD = 00` and the century window are section 3.4.2 and 7.12 above. The reference `lint_yymmd0.c` picks the
+century from the clock before checking the day ("Convert YY to a year using a horizon based on CURRENT_YEAR"); here the
+`yymmd0` and `yymmdd` linters check month and day only, with 29 February valid for every `YY` divisible by four (`00`
+included), so whether a value parses never depends on the day it is parsed. The century is applied only by
+`expiryDate()` / `productionDate()`, relative to their `$today` argument; a 29 February that the chosen century lacks
+(`00` read as 2100) throws there.
+
+Size bound, section 5.7.4.1 (GS1 QR Code square format):
+
+> The largest symbol (177 X 177 modules, Error Correction Level = L) can encode up to 7089 digits or 4296
+> alphanumeric characters technically, however permissible data is specified by the application standards.
+
+That is the largest capacity the General Specifications state for a GS1 data carrier (GS1 DataMatrix: "Numeric data:
+3116 digits", section 5.6.2; GS1-128: 48), so the unbracketed data (GS separators included) is limited to 7089
+characters. Input is refused before parsing above twice that (14178): no notation more than doubles the data.
 
 #### Linters
 

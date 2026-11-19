@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace MSSTC4PHP\ValueObject\Gs1\Internal;
 
+use MSSTC4PHP\ValueObject\Gs1\ElementString\UnmetRequirement;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 
 /**
  * @internal
  *
  * Reads a GS1 element string in any of its notations and checks it against the AI table: data format, linters,
- * repeated AIs and the dictionary's `ex` and `req` association rules. Messages name the AI and the reason, never the
+ * repeated AIs and the dictionary's `ex` rule; unmet `req` rules are reported, not refused. Messages name the AI and the reason, never the
  * data, and never an AI that is not in the table.
  *
  * Notations: bracketed (`(01)…(10)…`, a literal `(` in data escaped as `\(`), and unbracketed with FNC1 written as
@@ -24,7 +25,16 @@ final class ElementStringSyntax
 {
     public const string GS = "\x1D";
 
+    /**
+     * Section 5.7.4.1: the largest GS1 QR Code "can encode up to 7089 digits", the largest capacity the General
+     * Specifications state for any GS1 data carrier; no element string is longer.
+     */
+    public const int MAX_DATA_LENGTH = 7089;
+
     private const string CARET = '^';
+
+    /** No notation more than doubles the data: an escaped `(` is two characters, `(NN)` adds two to an AI. */
+    private const int MAX_INPUT_LENGTH = 2 * self::MAX_DATA_LENGTH;
 
     /** @var non-empty-list<non-empty-string> Table 5-2: "Standard AI element strings" */
     private const array SYMBOLOGY_IDENTIFIERS = [']C1', ']e0', ']d2', ']Q3', ']J1'];
@@ -34,14 +44,22 @@ final class ElementStringSyntax
      */
     public static function parse(string $input): array
     {
+        if (\strlen($input) > self::MAX_INPUT_LENGTH) {
+            throw self::fail(\sprintf('Element string must have at most %d characters, got %d.', self::MAX_INPUT_LENGTH, \strlen($input)));
+        }
+
         $elements = \str_starts_with($input, '(') ? self::bracketed($input) : self::unbracketed($input);
         if ($elements === []) {
             throw self::fail('Element string is empty.');
         }
 
-        self::checkRepeats($elements);
-        self::checkExclusions($elements);
-        self::checkRequirements($elements);
+        $length = \strlen(self::barcodeData($elements));
+        if ($length > self::MAX_DATA_LENGTH) {
+            throw self::fail(\sprintf('Element string data must have at most %d characters, got %d.', self::MAX_DATA_LENGTH, $length));
+        }
+
+        $specs = self::checkRepeats($elements);
+        self::checkExclusions($specs);
 
         return $elements;
     }
@@ -93,6 +111,34 @@ final class ElementStringSyntax
     public static function spec(string $ai): AiSpec
     {
         return AiTable::spec($ai) ?? throw self::fail('Element string contains an unknown AI.');
+    }
+
+    /**
+     * The `req` attributes no alternative of which is present: each attribute needs one of its alternatives, and an
+     * alternative needs all of its AIs. GS1 evaluates them over every carrier of an item, so they are reported, not
+     * refused.
+     *
+     * @param non-empty-list<AiElement> $elements
+     *
+     * @return list<UnmetRequirement>
+     */
+    public static function unmetRequirements(array $elements): array
+    {
+        $specs = [];
+        foreach ($elements as $element) {
+            $specs['ai' . $element->spec->ai] = $element->spec;
+        }
+
+        $unmet = [];
+        foreach ($specs as $spec) {
+            foreach ($spec->requires as $alternatives) {
+                if (!self::anySatisfied($specs, $alternatives, $spec->ai)) {
+                    $unmet[] = new UnmetRequirement($spec->ai, $alternatives);
+                }
+            }
+        }
+
+        return $unmet;
     }
 
     /**
@@ -269,66 +315,51 @@ final class ElementStringSyntax
      * An AI may repeat (data read from several carriers of one item) only with the same data.
      *
      * @param non-empty-list<AiElement> $elements
+     *
+     * @return non-empty-array<non-empty-string, AiSpec> each AI once, keyed `ai<AI>` (no numeric keys)
      */
-    private static function checkRepeats(array $elements): void
+    private static function checkRepeats(array $elements): array
     {
-        $seen = [];
+        $values = [];
+        $specs = [];
         foreach ($elements as $element) {
             $key = 'ai' . $element->spec->ai;
-            if (isset($seen[$key]) && $seen[$key] !== $element->value) {
+            if (isset($values[$key]) && $values[$key] !== $element->value) {
                 throw self::fail(\sprintf('Element string repeats AI (%s) with a different value.', $element->spec->ai));
             }
 
-            $seen[$key] = $element->value;
+            $values[$key] = $element->value;
+            $specs[$key] = $element->spec;
         }
+
+        return $specs;
     }
 
     /**
-     * @param non-empty-list<AiElement> $elements
+     * @param non-empty-array<non-empty-string, AiSpec> $specs each AI once
      */
-    private static function checkExclusions(array $elements): void
+    private static function checkExclusions(array $specs): void
     {
-        foreach ($elements as $element) {
-            foreach ($element->spec->excludes as $pattern) {
-                $other = self::find($elements, $pattern, $element->spec->ai);
+        foreach ($specs as $spec) {
+            foreach ($spec->excludes as $pattern) {
+                $other = self::find($specs, $pattern, $spec->ai);
                 if ($other !== null) {
-                    throw self::fail(\sprintf('Element string AI (%s) must not appear with AI (%s).', $element->spec->ai, $other));
+                    throw self::fail(\sprintf('Element string AI (%s) must not appear with AI (%s).', $spec->ai, $other));
                 }
             }
         }
     }
 
     /**
-     * Each `req` attribute needs one of its alternatives, and an alternative needs all of its AIs.
-     *
-     * @param non-empty-list<AiElement> $elements
-     */
-    private static function checkRequirements(array $elements): void
-    {
-        foreach ($elements as $element) {
-            foreach ($element->spec->requires as $alternatives) {
-                if (!self::anySatisfied($elements, $alternatives, $element->spec->ai)) {
-                    $names = [];
-                    foreach ($alternatives as $group) {
-                        $names[] = '(' . \implode(')+(', $group) . ')';
-                    }
-
-                    throw self::fail(\sprintf('Element string AI (%s) requires %s.', $element->spec->ai, \implode(' or ', $names)));
-                }
-            }
-        }
-    }
-
-    /**
-     * @param non-empty-list<AiElement> $elements
+     * @param array<non-empty-string, AiSpec> $present keyed `ai<AI>`
      * @param non-empty-list<non-empty-list<non-empty-string>> $alternatives
      */
-    private static function anySatisfied(array $elements, array $alternatives, string $self): bool
+    private static function anySatisfied(array $present, array $alternatives, string $self): bool
     {
         foreach ($alternatives as $group) {
             $satisfied = true;
             foreach ($group as $pattern) {
-                $satisfied = $satisfied && self::find($elements, $pattern, $self) !== null;
+                $satisfied = $satisfied && self::find($present, $pattern, $self) !== null;
             }
 
             if ($satisfied) {
@@ -341,19 +372,39 @@ final class ElementStringSyntax
 
     /**
      * The first AI other than `$self` that matches `$pattern` (`n` = any digit, same length), as the Syntax Engine's
-     * `existsInAIdata` does: an AI never matches itself.
+     * `existsInAIdata` does: an AI never matches itself. A pattern expands to at most 100 AIs, each looked up in
+     * `$present`, so the cost does not grow with the number of AIs.
      *
-     * @param non-empty-list<AiElement> $elements
+     * @param array<non-empty-string, AiSpec> $present keyed `ai<AI>`
      */
-    private static function find(array $elements, string $pattern, string $self): ?string
+    private static function find(array $present, string $pattern, string $self): ?string
     {
-        $regex = '/^' . \str_replace('n', '\d', $pattern) . '$/';
-        foreach ($elements as $element) {
-            if ($element->spec->ai !== $self && \preg_match($regex, $element->spec->ai) === 1) {
-                return $element->spec->ai;
+        foreach (self::expand($pattern) as $ai) {
+            if ($ai !== $self && isset($present['ai' . $ai])) {
+                return $ai;
             }
         }
 
         return null;
+    }
+
+    /**
+     * @return non-empty-list<string> `$pattern` with each `n` replaced by every digit, in ascending order
+     */
+    private static function expand(string $pattern): array
+    {
+        $wildcard = \strpos($pattern, 'n');
+        if ($wildcard === false) {
+            return [$pattern];
+        }
+
+        $ais = [];
+        foreach (\str_split(Gs1Charsets::DIGITS) as $digit) {
+            foreach (self::expand(\substr_replace($pattern, $digit, $wildcard, 1)) as $ai) {
+                $ais[] = $ai;
+            }
+        }
+
+        return $ais;
     }
 }

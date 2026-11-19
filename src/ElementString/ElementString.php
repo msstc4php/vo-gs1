@@ -17,7 +17,7 @@ use Override;
 
 /**
  * A GS1 element string: one or more AIs with their data, checked against the GS1 Barcode Syntax Dictionary (data
- * format, linters, invalid and mandatory AI pairs).
+ * format, linters, invalid AI pairs); mandatory AI pairs are reported by {@see unmetRequirements()}.
  *
  * Accepted notations: bracketed `(01)09506000134352(10)ABC`, with a literal `(` in data written `\(`; unbracketed with
  * FNC1 as GS (U+001D) or `^`, optionally after a symbology identifier (`]C1`, `]e0`, `]d2`, `]Q3`, `]J1`) or one
@@ -30,15 +30,12 @@ use Override;
  */
 final class ElementString extends AbstractStringValueObject
 {
-    /** @var non-empty-list<AiElement> */
-    private array $elements;
-
     /**
      * The data of the first occurrence of `$ai`, unescaped.
      */
     public function get(string $ai): ?string
     {
-        foreach ($this->elements as $element) {
+        foreach ($this->elements() as $element) {
             if ($element->spec->ai === $ai) {
                 return $element->value;
             }
@@ -57,8 +54,8 @@ final class ElementString extends AbstractStringValueObject
      */
     public function ais(): array
     {
-        $ais = [$this->elements[0]->spec->ai];
-        foreach ($this->elements as $element) {
+        $ais = [$this->elements()[0]->spec->ai];
+        foreach ($this->elements() as $element) {
             if (!\in_array($element->spec->ai, $ais, true)) {
                 $ais[] = $element->spec->ai;
             }
@@ -125,6 +122,18 @@ final class ElementString extends AbstractStringValueObject
     }
 
     /**
+     * The dictionary's mandatory AI pairs (`req`) this string does not satisfy. They are not refused: GS1 evaluates
+     * them "over the combined data received from all GS1 carriers marking a physical item", so one barcode of a label
+     * may lack a partner that another barcode carries.
+     *
+     * @return list<UnmetRequirement> empty when every `req` is met
+     */
+    public function unmetRequirements(): array
+    {
+        return ElementStringSyntax::unmetRequirements($this->elements());
+    }
+
+    /**
      * The unbracketed data a barcode carries: GS (U+001D) after each AI that is not of predefined length, except the
      * last; no symbology identifier and no leading FNC1.
      *
@@ -132,15 +141,24 @@ final class ElementString extends AbstractStringValueObject
      */
     public function toBarcodeData(): string
     {
-        return ElementStringSyntax::barcodeData($this->elements);
+        return ElementStringSyntax::barcodeData($this->elements());
     }
 
     #[Override]
     protected function parse(string $value): string
     {
-        $this->elements = ElementStringSyntax::parse($value);
+        return ElementStringSyntax::bracketedForm(ElementStringSyntax::parse($value));
+    }
 
-        return ElementStringSyntax::bracketedForm($this->elements);
+    /**
+     * Read again from the canonical value: the parent's final constructor leaves no place to initialise a readonly
+     * property, and a mutable cache would make the object mutable.
+     *
+     * @return non-empty-list<AiElement>
+     */
+    private function elements(): array
+    {
+        return ElementStringSyntax::parse($this->value);
     }
 
     private function date(string $ai, ?DateTimeImmutable $today): ?DateTimeImmutable
@@ -151,6 +169,6 @@ final class ElementString extends AbstractStringValueObject
         }
 
         return Gs1Dates::toDate($value, $today ?? new DateTimeImmutable('now', new DateTimeZone('UTC')))
-            ?? throw new InvalidElementStringException(\sprintf('AI (%s) is not a calendar date in the century chosen for the given day.', $ai));
+            ?? throw new InvalidElementStringException(\sprintf('Element string AI (%s) is not a calendar date in the century chosen for the given day.', $ai));
     }
 }

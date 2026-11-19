@@ -13,4 +13,5 @@
 - GS1 identification keys `Gtin`, `Gln`, `Sscc`, `Grai`, `Giai`, `Gsrn`, `Gdti`, `Gcn`, `Ginc`, `Gsin`, `Cpid`, `Gmn`,
   and `Gs1Prefix`, `GtinFormat`, `IdentificationKey`.
 - `ElementString\ElementString` (GS1 element strings: bracketed, unbracketed and scanner notations, linters, `req`/`ex`
-  association rules, GS1 date century window) and the immutable `ElementString\ElementStringBuilder`.
+  association rules, GS1 date century window) and the immutable `ElementString\ElementStringBuilder`; unmet
+  mandatory AI pairs are reported by `unmetRequirements()` (`ElementString\UnmetRequirement`), not refused.

@@ -161,4 +161,35 @@ final class AiTableTest extends TestCase
             self::assertSame($ai, AiTable::matchPrefix($ai . '123456')?->ai);
         }
     }
+
+    /**
+     * Splitting unbracketed data and placing GS in toBarcodeData() both rely on this: an AI needs FNC1 exactly when
+     * the vendored dictionary does not flag it `*` (pre-defined length).
+     */
+    public function testFnc1RequirementIsTheInverseOfThePredefinedLengthFlag(): void
+    {
+        $lines = \file(__DIR__ . '/../../../resources/gs1-syntax-dictionary.txt', \FILE_IGNORE_NEW_LINES);
+        self::assertIsArray($lines);
+        $checked = 0;
+        foreach ($lines as $line) {
+            if ($line === '' || $line[0] === '#') {
+                continue;
+            }
+
+            $tokens = \preg_split('/\s+/', $line);
+            self::assertIsArray($tokens);
+            $range = \explode('-', $tokens[0] ?? '');
+            $flags = isset($tokens[1]) && \preg_match('/^[A-Z\[]/', $tokens[1]) !== 1 ? $tokens[1] : '';
+            $width = \strlen($range[0]);
+            for ($ai = (int) $range[0]; $ai <= (int) ($range[1] ?? $range[0]); $ai++) {
+                $code = \str_pad((string) $ai, $width, '0', \STR_PAD_LEFT);
+                $spec = AiTable::spec($code);
+                self::assertNotNull($spec, $code);
+                self::assertSame(!\str_contains($flags, '*'), $spec->requiresFnc1, $code);
+                $checked++;
+            }
+        }
+
+        self::assertSame(\count(AiTable::ais()), $checked);
+    }
 }

@@ -7,6 +7,7 @@ namespace MSSTC4PHP\ValueObject\Gs1\Tests\Unit\ElementString;
 use DateTimeImmutable;
 use DateTimeZone;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
+use MSSTC4PHP\ValueObject\Gs1\ElementString\UnmetRequirement;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiComponent;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiElement;
@@ -26,6 +27,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ElementString::class)]
+#[CoversClass(UnmetRequirement::class)]
 #[CoversClass(ElementStringSyntax::class)]
 #[CoversClass(AiElement::class)]
 #[CoversClass(Gs1Dates::class)]
@@ -141,9 +143,10 @@ final class ElementStringTest extends TestCase
 
     public function testDefaultTodayIsTheCurrentUtcYear(): void
     {
-        $element = ElementString::from('(01)09506000134352(17)271231');
+        $nextYear = (int) \gmdate('Y') + 1;
+        $element = ElementString::from(\sprintf('(01)09506000134352(17)%02d1231', $nextYear % 100));
 
-        self::assertSame('2027-12-31', $element->expiryDate()?->format('Y-m-d'));
+        self::assertSame($nextYear . '-12-31', $element->expiryDate()?->format('Y-m-d'));
     }
 
     public function testTodayInAnotherZoneIsReadInUtc(): void
@@ -210,7 +213,7 @@ final class ElementStringTest extends TestCase
         $element = ElementString::from('(01)09506000134352(17)000229');
 
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('AI (17) is not a calendar date in the century chosen for the given day.');
+        $this->expectExceptionMessage('Element string AI (17) is not a calendar date in the century chosen for the given day.');
         $element->expiryDate(new DateTimeImmutable('2060-01-01', new DateTimeZone('UTC')));
     }
 
@@ -233,6 +236,8 @@ final class ElementStringTest extends TestCase
         yield 'GMN' => ['(8013)1987654Ad4X4bL5ttr2310c2K'];
         yield 'production time with optional minutes' => ['(01)09506000134352(8008)25010112'];
         yield 'production time with minutes and seconds' => ['(01)09506000134352(8008)250101123059'];
+        yield '29 February 2000 does not depend on the clock' => ['(01)09506000134352(17)000229'];
+        yield 'batch without its GTIN: req is reported, not refused' => ['(10)ABC'];
         yield 'digital signature base64url with padding' => ['(00)095212340005678903(8030)AbC-_9=='];
     }
 
@@ -240,6 +245,33 @@ final class ElementStringTest extends TestCase
     public function testAccepted(string $input): void
     {
         self::assertSame($input, (string) ElementString::from($input));
+    }
+
+    public function testUnmetRequirementsAreReportedNotRefused(): void
+    {
+        self::assertSame([], ElementString::from('(01)09506000134352(10)ABC(17)261231')->unmetRequirements());
+
+        $batch = ElementString::from('(10)ABC')->unmetRequirements();
+        self::assertCount(1, $batch);
+        self::assertSame('10', $batch[0]->ai);
+        self::assertSame([['01'], ['02'], ['03'], ['8006'], ['8026']], $batch[0]->alternatives);
+        self::assertSame('(01) or (02) or (03) or (8006) or (8026)', $batch[0]->describe());
+
+        $signature = ElementString::from('(01)09506000134352(8030)AbC')->unmetRequirements();
+        self::assertCount(1, $signature);
+        self::assertSame('(00) or (01)+(21) or (253) or (255) or (8003) or (8004) or (8006)+(21) or (8010)+(8011) or (8017) or (8018)', $signature[0]->describe());
+        self::assertSame([], ElementString::from('(01)09506000134352(21)S(8030)AbC')->unmetRequirements());
+
+        // AI (37) has two req attributes: (00) is met, (02) or (8026) is not.
+        $count = ElementString::from('(00)095212340005678903(37)12')->unmetRequirements();
+        self::assertCount(1, $count);
+        self::assertSame('37', $count[0]->ai);
+        self::assertSame('(02) or (8026)', $count[0]->describe());
+
+        // Patterns: (3932) needs one of (30), (31nn), (32nn), (35nn), (36nn); a repeated AI is reported once.
+        self::assertSame([], ElementString::from('(01)09506000134352(3102)000100(3932)643100')->unmetRequirements());
+        self::assertCount(1, ElementString::from('(3932)643100(3932)643100')->unmetRequirements());
+        self::assertSame('3932', ElementString::from('(01)09506000134352(3932)643100')->unmetRequirements()[0]->ai);
     }
 
     public function testRepeatedAiIsListedOnce(): void
@@ -280,9 +312,6 @@ final class ElementStringTest extends TestCase
         yield 'base64url three padding characters' => ['(00)095212340005678903(8030)A===', 'Element string AI (8030) data contains a character outside its GS1 character set.'];
         yield 'excluded pair 01 and 02' => ['(01)09506000134352(02)04006381333931', 'Element string AI (02) must not appear with AI (01).'];
         yield 'excluded pair by pattern' => ['(01)09506000134352(3100)000100(3101)000100', 'Element string AI (3100) must not appear with AI (3101).'];
-        yield 'missing req partner' => ['(10)ABC', 'Element string AI (10) requires (01) or (02) or (03) or (8006) or (8026).'];
-        yield 'missing req group' => ['(01)09506000134352(8030)AbC', 'Element string AI (8030) requires (00) or (01)+(21) or (253) or (255) or (8003) or (8004) or (8006)+(21) or (8010)+(8011) or (8017) or (8018).'];
-        yield 'second req attribute of 37' => ['(00)095212340005678903(37)12', 'Element string AI (37) requires (02) or (8026).'];
         yield 'repeated AI with another value' => ['(01)09506000134352(10)A(10)B', 'Element string repeats AI (10) with a different value.'];
     }
 
@@ -319,6 +348,43 @@ final class ElementStringTest extends TestCase
         $this->expectException(InvalidElementStringException::class);
         $this->expectExceptionMessage('Element string AI (422) data must have 3 characters, got 5.');
         ElementString::from('010950600013435242264310');
+    }
+
+    public function testDataLongerThanTheLargestGs1SymbolIsRefused(): void
+    {
+        // 2400 x "90X" with a GS after each but the last is 9599 characters, over the 7089 of the largest GS1 QR Code.
+        $this->expectException(InvalidElementStringException::class);
+        $this->expectExceptionMessage('Element string data must have at most 7089 characters, got 9599.');
+        ElementString::from(\str_repeat('(90)X', 2400));
+    }
+
+    public function testOverlongInputIsRefusedBeforeParsing(): void
+    {
+        $this->expectException(InvalidElementStringException::class);
+        $this->expectExceptionMessage('Element string must have at most 14178 characters, got 14179.');
+        ElementString::from(\str_repeat('9', 14179));
+    }
+
+    public function testSizeBoundsAreInclusive(): void
+    {
+        // 16 + 131 x ("91" + 51 characters) + 130 GS = 7089 characters of data.
+        $element = ElementString::from('(01)09506000134352' . \str_repeat('(91)' . \str_repeat('A', 51), 131));
+        self::assertSame(7089, \strlen($element->toBarcodeData()));
+
+        try {
+            ElementString::from(\str_repeat('9', 14178));
+            self::fail('Expected an exception.');
+        } catch (InvalidElementStringException $exception) {
+            self::assertStringNotContainsString('14178', $exception->getMessage());
+        }
+    }
+
+    public function testManyRepeatedAisAreCheckedOnce(): void
+    {
+        $element = ElementString::from('(01)09506000134352' . \str_repeat('(91)A(3102)000100', 400));
+
+        self::assertSame(['01', '91', '3102'], $element->ais());
+        self::assertSame([], $element->unmetRequirements());
     }
 
     public function testMessagesNeverContainTheInput(): void

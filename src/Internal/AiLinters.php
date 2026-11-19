@@ -137,11 +137,19 @@ final class AiLinters
         return \strlen($data) >= self::GCP_MIN_LENGTH && \strspn($data, Gs1Charsets::DIGITS, 0, self::GCP_MIN_LENGTH) === self::GCP_MIN_LENGTH;
     }
 
+    /**
+     * Month and day only: the century is a reading of the date, not part of its validity, so a leap year is any `YY`
+     * divisible by four (`00` included) and the result never depends on the clock.
+     */
     private static function yymmdd(string $data, bool $dayZero): bool
     {
-        $yyyymmdd = Gs1Dates::expand($data, (int) \gmdate('Y'));
+        if (\strlen($data) !== 6 || !self::digits($data)) {
+            return false;
+        }
 
-        return $yyyymmdd !== null && Gs1Dates::isDate($yyyymmdd, $dayZero);
+        $year = (int) \substr($data, 0, 2) % 4 === 0 ? 2000 : 2001;
+
+        return Gs1Dates::isDate(\sprintf('%04d', $year) . \substr($data, 2), $dayZero);
     }
 
     private static function iso3166(string $data): bool
@@ -216,7 +224,7 @@ final class AiLinters
     {
         $offset = 0;
         while (($position = \strpos($data, '%', $offset)) !== false) {
-            if (!\ctype_xdigit(\substr($data, $position + 1, 2)) || \strlen($data) - $position < 3) {
+            if (\strlen($data) - $position < 3 || !\ctype_xdigit(\substr($data, $position + 1, 2))) {
                 return false;
             }
 

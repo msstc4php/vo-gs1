@@ -23,15 +23,19 @@
 
 ## Element strings (Task 5)
 
-- The `yymmd0`/`yymmdd` linters choose the century from the **current** UTC year at parse time (as `lint_yymmd0.c`
-  does), so the validity of `YY = 00`, 29 February flips once the window moves 2000 → 2100 (from 2050). The accessors
-  take `$today` instead and throw `InvalidElementStringException` when that century has no such day.
+- Parse-time date validity is clock-free (controller ruling, fix round 1): `yymmd0`/`yymmdd` check MM/DD with
+  `YY % 4 === 0` as leap (so `000229` always parses), unlike `lint_yymmd0.c`, which uses `CURRENT_YEAR`. The century
+  is applied only in `Gs1Dates::toDate()`; the accessors throw when the chosen century lacks the day (2100-02-29).
 - `ElementStringBuilder::with()` refuses a backslash at once: `X\` followed by the next `(` would otherwise be read as
   an escaped `(` and merge two AIs into one valid serial.
 - Lost GS separators are only detectable when the swallowed data breaks the AI's length or charset: `10ABC21XYZ`
   (separator lost) is a valid batch `ABC21XYZ`. That is the GS1 engine's behaviour too; never split at max length.
-- `req` is checked per string, but GS1 says pairings are evaluated over all carriers of an item: one barcode of a
-  multi-barcode label (or the 2D part of a composite) can be refused; callers must concatenate reads first.
+- `req` is **not** refused (controller ruling, fix round 1): GS1 evaluates pairings over all carriers of an item, so
+  `(10)ABC` parses and `unmetRequirements()` reports it. `ex` stays refused.
+- Association checks run over distinct AIs and look patterns up by expansion (`35nn` → 100 keys), so repeats cannot
+  make them quadratic; input is capped at 14178 characters before parsing and data at 7089 (GS1 QR Code capacity).
+- `ElementString` keeps no parsed state: the parent's final constructor allows no readonly initialisation, so accessors
+  re-parse the canonical value (bounded by the size cap).
 - `iso4217`: vo-base `CurrencyCode` lacks the ISO non-currency codes 955-965, 994, 999 that GS1's linter accepts; they
   are listed in `AiLinters::ISO_4217_NON_CURRENCY`. vo-base also accepts withdrawn codes the linter refuses (lenient).
 - GS1 Syntax Engine clone used for quotes: `main` at `58c1dc8` (its newest tags are 2023); cite the commit.

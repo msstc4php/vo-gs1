@@ -110,6 +110,9 @@ final class AiLintersTest extends TestCase
         yield 'yymmd0 Apr 31' => ['yymmd0', '250431', false];
         yield 'yymmd0 Apr 30' => ['yymmd0', '250430', true];
         yield 'yymmd0 Jan 32' => ['yymmd0', '250132', false];
+        yield 'yymmd0 Feb 29 of YY 00' => ['yymmd0', '000229', true];
+        yield 'yymmd0 Feb 29 of YY 01' => ['yymmd0', '010229', false];
+        yield 'yymmdd Feb 29 of YY 96' => ['yymmdd', '960229', true];
         yield 'yymmd0 short' => ['yymmd0', '25013', false];
         yield 'yymmd0 non-digit' => ['yymmd0', '2501A1', false];
         yield 'yymmdd day zero' => ['yymmdd', '250200', false];
@@ -205,6 +208,8 @@ final class AiLintersTest extends TestCase
         yield 'pcenc plain' => ['pcenc', 'AB', true];
         yield 'pcenc truncated' => ['pcenc', 'A%2', false];
         yield 'pcenc not hex' => ['pcenc', 'A%2G', false];
+        yield 'pcenc percent at the end' => ['pcenc', 'AB%', false];
+        yield 'pcenc two encodings' => ['pcenc', '%41%42', true];
         yield 'gcppos1 ok' => ['gcppos1', '0952', true];
         yield 'gcppos1 letter' => ['gcppos1', '095X1', false];
         yield 'gcppos1 short' => ['gcppos1', '095', false];

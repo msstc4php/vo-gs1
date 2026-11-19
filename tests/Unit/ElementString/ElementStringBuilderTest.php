@@ -6,6 +6,7 @@ namespace MSSTC4PHP\ValueObject\Gs1\Tests\Unit\ElementString;
 
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementStringBuilder;
+use MSSTC4PHP\ValueObject\Gs1\ElementString\UnmetRequirement;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiComponent;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiElement;
@@ -21,6 +22,7 @@ use PHPUnit\Framework\TestCase;
 
 #[CoversClass(ElementStringBuilder::class)]
 #[UsesClass(ElementString::class)]
+#[UsesClass(UnmetRequirement::class)]
 #[UsesClass(ElementStringSyntax::class)]
 #[UsesClass(AiElement::class)]
 #[UsesClass(Gs1Dates::class)]
@@ -67,12 +69,20 @@ final class ElementStringBuilderTest extends TestCase
         new ElementStringBuilder()->with('01)0950600013435(10', 'X');
     }
 
+    public function testMissingReqPartnerStillBuilds(): void
+    {
+        $element = new ElementStringBuilder()->with('10', 'ABC')->build();
+
+        self::assertSame('(10)ABC', (string) $element);
+        self::assertSame('10', $element->unmetRequirements()[0]->ai);
+    }
+
     public function testValuesAreValidatedOnBuild(): void
     {
-        $builder = new ElementStringBuilder()->with('10', 'ABC');
+        $builder = new ElementStringBuilder()->with('01', '09506000134352')->with('10', 'A#B');
 
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string AI (10) requires (01) or (02) or (03) or (8006) or (8026).');
+        $this->expectExceptionMessage('Element string AI (10) data contains a character outside its GS1 character set.');
         $builder->build();
     }
 
