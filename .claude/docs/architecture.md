@@ -20,7 +20,7 @@ core.
 | `Internal\AiElement` | One AI + unescaped data |
 | `DigitalLink\DigitalLink` | String VO, value = URI as given; `equals()` overridden (data identity, see known-issues); `toElementString()`, `primaryKey()`, `toCanonical()`, `url()`, `fromElementString($es, $domain)` |
 | `Internal\DigitalLinkSyntax` | Parse (engine's backward scan for the primary key, `dlpkey` ordered subsets, query rules), `render()`, `arrange()` (ES → path/query), `keyFor()` (AI → key class) |
-| `Internal\DigitalLinkParts` | Readonly: lower-case scheme/authority, stem path, path elements, attributes, raw extensions, fragment |
+| `Internal\DigitalLinkParts` | Readonly: lower-case scheme and host (userinfo as given), stem path, path elements, attributes, raw extensions, fragment |
 | `Epc\EpcScheme`, `Epc\EpcTagEncoding` | Backed enums of the 20 pure identity schemes and 22 tag encodings; `hasElementString()`, `filterBits()`, `isPartitioned()` |
 | `Epc\EpcPureIdentityUri`, `Epc\EpcTagUri` | String VOs, value = URI with upper-case escape hex; tag parse re-validates the embedded pure URI |
 | `Internal\EpcSyntax` | Per-scheme grammar (one regex each), CP 6..12, ES mapping both ways, tag parse, control fields, field limits per encoding |

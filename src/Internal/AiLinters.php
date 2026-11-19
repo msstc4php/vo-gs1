@@ -78,7 +78,8 @@ final class AiLinters
             'iso5218' => \in_array($data, ['0', '1', '2', '9'], true),
             'zero' => $data !== '' && \strspn($data, '0') === \strlen($data),
             'nonzero' => self::digits($data) && \strspn($data, '0') !== \strlen($data),
-            'nozeroprefix' => self::digits($data) && !\str_starts_with($data, '0'),
+            // GenSpecs 3.9.11 allows the single digit "0", which lint_nozeroprefix.c refuses.
+            'nozeroprefix' => self::digits($data) && ($data === '0' || !\str_starts_with($data, '0')),
             'yesno' => $data === '0' || $data === '1',
             'winding' => \in_array($data, ['0', '1', '9'], true),
             'pieceoftotal' => self::pieceOfTotal($data),

@@ -163,6 +163,8 @@ final class AiLintersTest extends TestCase
         yield 'nonzero not' => ['nonzero', '0000', false];
         yield 'nozeroprefix' => ['nozeroprefix', '10', true];
         yield 'nozeroprefix not' => ['nozeroprefix', '01', false];
+        yield 'nozeroprefix single zero (GenSpecs 3.9.11)' => ['nozeroprefix', '0', true];
+        yield 'nozeroprefix 00' => ['nozeroprefix', '00', false];
         yield 'yesno 1' => ['yesno', '1', true];
         yield 'yesno 0' => ['yesno', '0', true];
         yield 'yesno 2' => ['yesno', '2', false];

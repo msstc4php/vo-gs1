@@ -303,7 +303,7 @@ pass and the AI is checked for format only. `AiLintersTest` fails when the dicti
 | `iso5218` | enforced | ""0" (not known), "1" (male), "2" (female) or "9" (not applicable)" |
 | `zero` | enforced | "ensures that the given data has a zero value" |
 | `nonzero` | enforced | "ensures that the given data has a non-zero value" |
-| `nozeroprefix` | enforced | "ensures that the given data does not start with a zero" |
+| `nozeroprefix` | enforced | "ensures that the given data does not start with a zero", except the single digit `0`: GenSpecs 26.0 section 3.9.11 (AI 8011, its only user) "The C/P serial number SHALL NOT begin with a "0" digit, unless the entire serial number consists of the single digit "0"." GenSpecs is normative; `lint_nozeroprefix.c` refuses `0` (its test vector `UNIT_TEST_FAIL(…, "0", …)`) |
 | `yesno` | enforced | "either "0" (no) or "1" (yes)" |
 | `winding` | enforced | ""0" (face out), "1" (face in) or "9" (undefined)" |
 | `pieceoftotal` | enforced | "a concatenation of non-zero piece number follow by an equal-width, non-zero total number of pieces" (piece not above total) |
@@ -350,9 +350,18 @@ all-digit last segment does not count, because the standard warns that RE2 also 
 > legacy expressions of GS1 Digital Link URIs. Legacy expressions of GS1 Digital Link URIs include GTIN values with
 > fewer than 14 digits and the deprecated convenience alphas.
 
-A zero-suppressed GTIN (8, 12, 13 digits) in AI (01) is accepted and padded to 14 digits in the element string, as the
-engine's `permitZeroSuppressedGTINinDLuris` does (old links stay readable). Convenience alphas ("removed completely as
-of version 1.3.0") are refused: the engine disables them by default, and the AI table has no alpha names.
+Both legacy expressions are accepted (controller ruling: still in circulation), the value stays as given:
+
+- A zero-suppressed GTIN (8, 12 or 13 digits) is padded to 14 digits in the element string for the AIs whose value is
+  a GTIN: (01) GTIN, (02) CONTENT, (03) MTO GTIN (`N14,csum,gcppos2`, titled GTIN in the dictionary). The engine's
+  `permitZeroSuppressedGTINinDLuris` pads (01) only. Not padded: (8006) ITIP and (8026) ITIP CONTENT, whose value is
+  a GTIN followed by piece and total (`itip-value = 14DIGIT 2DIGIT 2DIGIT`), not a "GTIN value" in the sense of 4.1.
+- Convenience alphas in the path map to their AIs by the engine's `alpha_ai_map` (`src/c-lib/dl.c`, commit `58c1dc8`):
+  `cpid` 8010, `cpsn` 8011, `cpv` 22, `gcn` 255, `gdti` 253, `giai` 8004, `ginc` 401, `gln` 414, `glnx` 254, `gmn`
+  8013, `grai` 8003, `gsin` 402, `gsrn` 8018, `gsrnp` 8017, `gtin` 01, `itip` 8006, `lot` 10, `party` 417, `refno`
+  8020, `ser` 21, `srin` 8019, `sscc` 00. As in the engine, the query takes numeric AI keys only (an alpha key there
+  is an extension parameter). Section 4.1: "Convenience alphas were marked as deprecated in version 1.2 of the
+  standard and have been removed completely as of version 1.3.0." 
 
 **Path.** Section 4.3 lists the primary keys, 4.4 the key qualifiers, 4.9 their order:
 
@@ -390,18 +399,24 @@ in the engine). Section 4.10.1:
 > Any key=value pairs used for extension data SHALL NOT use all-numeric keys to avoid conflict with existing and
 > future keys used for GS1 Application Identifiers
 
-so an all-numeric key that is no AI is refused; every other parameter is an extension and is kept as given. The
-delimiters are `queryStringDelim = "&" / ";"` (section 4.11). A repeated AI is refused, as the engine does
-(`DUPLICATE_AI`); section 3 says only that "no key=value pair should be repeated with the same primary identification
-key".
+so an all-numeric key that is no AI is refused, with or without `=`; every other parameter is an extension and is
+kept as given (compared raw: `x=%41` and `x=A` differ). The delimiters are `queryStringDelim = "&" / ";"` (section
+4.11). Section 3:
+
+> It should be noted that no key=value pair should be repeated with the same primary identification key in the URI
+> query string. If a primary identification key is repeated, the last defined value for that primary identification
+> key takes precedence over any previously defined value.
+
+So a repeated data attribute is valid and its last value counts (controller ruling; the engine refuses it as
+`DUPLICATE_AI`). A query AI that repeats a path AI is refused: the path and the query would give one AI two values.
 
 **Canonical URI.** Section 4.12: "the scheme SHALL be HTTPS; the domain name SHALL be id.gs1.org; … GTIN-8, GTIN-12
 and GTIN-13 SHALL remain padded to 14 digits; the URI query string (if present) SHALL NOT contain any other key=value
 pairs except for keys that are GS1 Application Identifiers; key=value pairs, if present, should be sorted in lexical,
 not numeric, order of the key" and "A canonical GS1 Digital Link URI SHALL NOT include a trailing slash."
 `toCanonical()` builds it. The standard defines no normal form for other URIs; section 5.7 calls URIs whose attributes
-differ only in order "equivalent", which is what `equals()` compares (with scheme and authority case-insensitive, RFC
-3986 section 6.2.2.1).
+differ only in order "equivalent", which is what `equals()` compares (scheme and host case-insensitive, RFC 3986
+section 6.2.2.1; userinfo, path and non-GS1 parameters as given).
 
 **Examples.** Section 5 (5.1-5.11) gives the test values, URI and element string both ways. Section 5.5 lists the
 element string as `(01)…(17)180426(10)ABC1(21)12345`; `toElementString()` keeps path then query order, so it gives

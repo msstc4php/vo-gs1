@@ -119,25 +119,29 @@ DigitalLink::fromElementString(ElementString::from('(01)09520123456788(17)201225
 - **Path:** the primary key is the last `/AI/value` pair whose AI is a primary key; anything before it is the
   domain's own path. Key qualifiers must follow the dictionary's order (`/01/…/22/…/10/…/21/…`), a trailing slash is
   tolerated. Values are percent-decoded; in the query `+` is a space.
-- **Query:** all-numeric keys are AIs and must be GS1 Digital Link data attributes (an AI that fits the path is
-  refused there, an all-numeric key that is no AI is refused, an AI may appear once); `&` and `;` separate parameters.
-  Every other parameter (`linkType`, `context`, your own) is kept as given, in order, and does not enter the element
-  string.
+- **Query:** all-numeric keys are AIs and must be GS1 Digital Link data attributes. Refused: an AI that fits the
+  path, an all-numeric key that is no AI, an AI without `=value`, an AI that is already in the path. A repeated data
+  attribute is allowed and its last value counts, as section 3 says. `&` and `;` separate parameters. Every other
+  parameter (`linkType`, `context`, your own) is kept as given, in order, and does not enter the element string.
 - **Value and equality:** the value is the URI exactly as given; the standard defines no normal form short of the
-  canonical URI, which drops the domain and the extra parameters. `equals()` treats as one link: scheme and authority
-  in any case, the same stem path, the same path data (a zero-suppressed GTIN equals its 14-digit form, `%41` equals
-  `A`), the same data attributes in any order, the same non-GS1 parameters in the same order and the same fragment.
-  `toCanonical()` gives section 4.12's canonical URI: `https://id.gs1.org`, 14-digit GTIN, attributes in lexical
-  order of the AI, nothing else.
-- **`toElementString()`** lists the path AIs, then the query AIs in query order. `primaryKey()` returns the key class
-  of the path AI (an ITIP, AI 8006, gives its GTIN).
+  canonical URI, which drops the domain and the extra parameters. `equals()` treats as one link: scheme and host in
+  any case (userinfo case-sensitive, RFC 3986), the same stem path, the same path data (a zero-suppressed GTIN equals
+  its 14-digit form, `%41` equals `A`, `/gtin/` equals `/01/`), the same effective data attributes in any order, the
+  same non-GS1 parameters, raw and in order (`x=%41` is not `x=A`), and the same fragment. `toCanonical()` gives
+  section 4.12's canonical URI: `https://id.gs1.org`, 14-digit GTIN, attributes in lexical order of the AI, nothing
+  else.
+- **`toElementString()`** lists the path AIs, then the query AIs in query order (a repeated attribute at its last
+  place). `primaryKey()` returns the key class of the path AI (an ITIP, AI 8006, gives its GTIN).
 - **`fromElementString($elementString, $domain = 'https://id.gs1.org')`** needs a primary key AI: the first one is
-  the path key, with the longest qualifier sequence the data carries; every other AI must be a data attribute and goes
-  to the query in the order given. The domain may carry a path stem but no query or fragment.
+  the path key, with the longest qualifier sequence the data carries (on a tie, one whose leftover AIs can all be data
+  attributes); every other AI must be a data attribute and goes to the query in the order given. Every element string
+  of a link this class accepts converts back. The domain may carry a path stem but no query or fragment.
 - **Refused:** compressed links (`/ARHKVAdpQgTSoTF0`, `/eh…`, `/ex…`): URI Syntax 1.7.0 no longer defines
   compression, the legacy algorithm is "not approved for use in open supply chain standards" and its successor is a
-  separate standard; convenience alphas (`/gtin/…`, removed in 1.3.0). **Accepted** for old links: a GTIN-8, -12 or
-  -13 without its leading zeros in AI (01).
+  separate standard.
+- **Accepted for old links** (section 4.1: existing infrastructure "SHOULD continue to support legacy expressions"):
+  a GTIN-8, -12 or -13 without its leading zeros in AI (01), (02) or (03), and the deprecated convenience alphas of the
+  path (`/gtin/…/lot/…/ser/…`), read as their AIs. The value stays as given; `toCanonical()` writes the AIs.
 - At most 14178 characters (twice the element string data cap).
 
 ## EPC URIs

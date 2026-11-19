@@ -115,6 +115,7 @@ final class EpcPureIdentityUriTest extends TestCase
         yield 'GIAI (7.2.3)' => ['urn:epc:id:giai:952656789012.345678901234567890', '(8004)952656789012345678901234567890'];
         yield 'serial with a dot and a colon' => ['urn:epc:id:sgtin:9521141.012345.a.b:c', '(01)09521141123454(21)a.b:c'];
         yield 'CPI' => ['urn:epc:id:cpi:9521141.123ABC.123456789', '(8010)9521141123ABC(8011)123456789'];
+        yield 'CPI serial 0 (GenSpecs 3.9.11)' => ['urn:epc:id:cpi:9521141.123ABC.0', '(8010)9521141123ABC(8011)0'];
         yield 'CPI with #' => ['urn:epc:id:cpi:9521141.A%23-.1', '(8010)9521141A#-(8011)1'];
         yield 'ADI without part number' => ['urn:epc:id:adi:2S194..12345678901', null];
         yield 'ADI non-serialised part' => ['urn:epc:id:adi:2S194.A-B%2FC.%2312', null];

@@ -193,15 +193,26 @@ final class EpcSyntax
             return [$encoding, null, $match[3]];
         }
 
+        $body = $match[3];
+        // A body that is already a whole EPC of the scheme means the filter was left out.
+        $reject = static fn (string $message): InvalidEpcUriException => self::fail(self::isBody($encoding->scheme(), $body) ? 'EPC Tag URI has no filter value.' : $message);
+        if (\preg_match('/\A([0-9]+)\.(.*)\z/', $body, $filter) !== 1) {
+            throw $reject('EPC Tag URI must have a filter value before the EPC.');
+        }
+
+        if ($filter[1] !== '0' && \str_starts_with($filter[1], '0')) {
+            throw $reject('EPC Tag URI filter value must be a number without leading zeros.');
+        }
+
         // TDS defines no width for the USDOD-96 filter; 18 digits keep it an int.
-        if (\preg_match('/\A(0|[1-9][0-9]{0,17})\.(.*)\z/', $match[3], $filter) !== 1) {
-            throw self::fail('EPC Tag URI must have a filter value before the EPC.');
+        if (\strlen($filter[1]) > 18) {
+            throw $reject('EPC Tag URI filter value must have at most 18 digits.');
         }
 
         $value = (int) $filter[1];
         $bits = $encoding->filterBits();
         if ($bits !== null && $value >= 1 << $bits) {
-            throw self::fail(\sprintf('EPC Tag URI filter value must be below %d.', 1 << $bits));
+            throw $reject(\sprintf('EPC Tag URI filter value must be below %d.', 1 << $bits));
         }
 
         return [$encoding, $value, $filter[2]];
@@ -258,6 +269,17 @@ final class EpcSyntax
             EpcScheme::Bic => ['([A-HJ-NP-Z]{3}[JUZ][0-9]{7})', null],
             EpcScheme::Imovn => ['([0-9]{7})', null],
         };
+    }
+
+    private static function isBody(EpcScheme $scheme, string $body): bool
+    {
+        try {
+            self::components($scheme, $body);
+
+            return true;
+        } catch (InvalidEpcUriException) {
+            return false;
+        }
     }
 
     private static function grammarFailure(): InvalidEpcUriException

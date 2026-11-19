@@ -49,22 +49,30 @@
 - URI Syntax 1.7.0 has no compression; RE2 also matches plain-number segments, so "is compressed" is only the message
   for a no-key path whose last segment has a letter, `_` or `-` (or starts `eh`/`ex`).
 - The parser follows GS1's engine `dl.c` where the standard is silent: backward scan for the last primary-key pair,
-  unknown AI in the scan stops it (`/01/X/foo/bar` has no key), `/414/…/01/…` makes `/414/…` the stem, a repeated AI
-  is refused although section 3 only says "should not … be repeated", a query AI that would fit the path is refused.
+  unknown AI in the scan stops it (`/01/X/foo/bar` has no key), `/414/…/01/…` makes `/414/…` the stem, a query AI that would fit the path is refused.
+- Controller rulings (fix round 1), where they depart from the engine: a repeated query attribute is valid, last value
+  wins (section 3; engine: `DUPLICATE_AI`); a query AI repeating a path AI stays refused; convenience alphas in the
+  path are accepted via the engine's `alpha_ai_map` (engine default: off); short GTINs are padded for (01), (02), (03),
+  not for (8006)/(8026) (GTIN + piece/total); a bare numeric query key (`?17`) is refused.
   `+` is a space only in the query (`/10/A+B` is `A+B`).
-- Zero-suppressed GTIN is padded only for AI (01), not for (02) or other 14-digit AIs (engine behaviour).
 - AiTable `spec('10')`-style lookups are fine, but `array_keys()` of an AI-keyed array turns `'10'` into int `10`;
   `array_intersect()` compares string forms, so `arrange()` still works.
-- `equals()` of Digital Link compares scheme+authority lower-cased (userinfo included, a simplification), stem path,
-  decoded path data, attributes sorted by AI, raw extensions in order, fragment (`#` vs none differ).
+- `equals()` of Digital Link compares scheme and host lower-cased (userinfo case-sensitive, RFC 3986; the host is
+  what follows the last `@` of the authority), stem path as given, decoded path data (`/gtin/` = `/01/`), effective
+  attributes sorted by AI, fragment (`#` vs none differ). Extension parameters are compared raw (`?x=%41` ≠ `?x=A`):
+  a deliberate "kept as given" choice, their meaning is not GS1's.
+- `arrange()` (element string → link) ranks qualifier sequences by length, then by whether every leftover AI is a
+  data attribute: `(01)(10)(235)` gives `/01/…/235/…?10=…`, so every link the class accepts converts back.
 - TDS 12.4 grammar omits `GSRNPTagURIBody` (only `GSRNPEncName`); `gsrnp-96` is accepted per Table 12-2.
 - TDS 7.1 ("CompanyPrefix … SHALL include the 4- or 5-digit GCP and the following 2 or 1 digits") makes 6..12 digits
   the pure-URI rule, so the tag partition check never sees another length; `partition()` = 12 − L.
 - CPI-96 reference: within 3+P digits the value is always below 2^(11..31) bits, so only the digit limit is checked;
   GIAI-96 needs both (2^42 < 10^13).
 - SGLN extension `0` means "no extension": `(254)0` → EPC `…0` → element string without (254) (asymmetric, by TDS).
-- CPI serial is a TDS NumericComponent (`0` allowed) but AI (8011) is `nozeroprefix`: `urn:epc:id:cpi:….0` is refused through
-  the element string check.
+- AI (8011) `nozeroprefix` accepts the single digit `0` (GenSpecs 26.0, 3.9.11), unlike `lint_nozeroprefix.c`, whose
+  test vector refuses `"0"`; so `urn:epc:id:cpi:….0` and a cpi-96 tag with serial 0 are valid.
+- `EpcTagUri` filter messages: when the body without a filter is already a whole EPC of the scheme, the message is
+  "has no filter value"; otherwise leading zero / more than 18 digits / above the field width.
 - EPC parse validates GS1 schemes by building the element string, so GenSpecs limits (serial ≤ 20, piece ≤ total,
   CSET 82) apply to EPC URIs too.
 - Infection: ~11 escaped mutants in Task 6 code are equivalent (regex capture positions of unused components,

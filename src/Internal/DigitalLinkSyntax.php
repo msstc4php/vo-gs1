@@ -41,6 +41,20 @@ final class DigitalLinkSyntax
     // Twice the element string data cap: the URI carries the data percent-encoded and its own stem.
     public const int MAX_LENGTH = 14178;
 
+    /**
+     * The deprecated convenience alphas of the path and their AIs, as the GS1 Barcode Syntax Engine maps them
+     * (`alpha_ai_map` in `src/c-lib/dl.c`).
+     */
+    private const array CONVENIENCE_ALPHAS = [
+        'cpid' => '8010', 'cpsn' => '8011', 'cpv' => '22', 'gcn' => '255', 'gdti' => '253', 'giai' => '8004',
+        'ginc' => '401', 'gln' => '414', 'glnx' => '254', 'gmn' => '8013', 'grai' => '8003', 'gsin' => '402',
+        'gsrn' => '8018', 'gsrnp' => '8017', 'gtin' => '01', 'itip' => '8006', 'lot' => '10', 'party' => '417',
+        'refno' => '8020', 'ser' => '21', 'srin' => '8019', 'sscc' => '00',
+    ];
+
+    /** AIs whose value is a GTIN: a legacy link may give it with 8, 12 or 13 digits. */
+    private const array GTIN_AIS = ['01', '02', '03'];
+
     // RFC 3986 section 2: unreserved, reserved and "%".
     private const string URI_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&\'()*+,;=%';
 
@@ -75,7 +89,10 @@ final class DigitalLinkSyntax
         [$stemPath, $elements] = self::path($path);
         [$attributes, $extensions] = $query === false ? [[], []] : self::query(\substr($query, 1), $elements);
 
-        return new DigitalLinkParts(\strtolower($url->scheme()), \strtolower($authority), $stemPath, $elements, $attributes, $extensions, $fragment === false ? null : $fragment);
+        $hostStart = (int) \strrpos('@' . $authority, '@');
+        $authority = \substr($authority, 0, $hostStart) . \strtolower(\substr($authority, $hostStart));
+
+        return new DigitalLinkParts(\strtolower($url->scheme()), $authority, $stemPath, $elements, $attributes, $extensions, $fragment === false ? null : $fragment);
     }
 
     public static function elementString(DigitalLinkParts $parts): ElementString
@@ -137,23 +154,19 @@ final class DigitalLinkSyntax
             $byAi[$element->spec->ai] = $element;
         }
 
-        $qualifiers = [];
-        foreach ($primary->spec->digitalLinkPrimaryKey ?? [] as $sequence) {
+        $candidates = [];
+        foreach ([[], ...$primary->spec->digitalLinkPrimaryKey ?? []] as $sequence) {
             $present = \array_values(\array_intersect($sequence, \array_keys($byAi)));
-            if (\count($present) > \count($qualifiers)) {
-                $qualifiers = $present;
-            }
+            $path = [$primary, ...\array_map(static fn (string $ai): AiElement => $byAi[$ai], $present)];
+            $attributes = \array_values(\array_filter($elements, static fn (AiElement $element): bool => !\in_array($element, $path, true)));
+            $fits = \array_all($attributes, static fn (AiElement $element): bool => $element->spec->digitalLinkAttribute);
+            $candidates[] = [\count($path), $fits, $path, $attributes];
         }
 
-        $path = [$primary, ...\array_map(static fn (string $ai): AiElement => $byAi[$ai], $qualifiers)];
-        $attributes = [];
-        foreach ($elements as $element) {
-            if (!\in_array($element, $path, true)) {
-                $attributes[] = $element;
-            }
-        }
+        // Longest first; on a tie, a sequence whose leftover AIs can all go to the query; then the dictionary's order.
+        \usort($candidates, static fn (array $a, array $b): int => [$b[0], $b[1]] <=> [$a[0], $a[1]]);
 
-        return [$path, $attributes];
+        return [$candidates[0][2], $candidates[0][3]];
     }
 
     public static function keyFor(AiElement $element): IdentificationKey
@@ -206,7 +219,7 @@ final class DigitalLinkSyntax
         $specs = [];
         $key = null;
         for ($i = \count($segments) - 2; $i >= 1; $i -= 2) {
-            $spec = AiTable::spec($segments[$i]);
+            $spec = AiTable::spec(self::CONVENIENCE_ALPHAS[$segments[$i]] ?? $segments[$i]);
             if (!$spec instanceof AiSpec) {
                 break;
             }
@@ -243,18 +256,14 @@ final class DigitalLinkSyntax
      */
     private static function query(string $query, array $path): array
     {
-        $seen = [];
-        foreach ($path as $element) {
-            self::once($seen, $element->spec->ai);
-        }
-
-        $primary = $path[0]->spec;
-        $qualifiers = \array_map(static fn (AiElement $element): string => $element->spec->ai, \array_slice($path, 1));
+        $pathAis = \array_map(static fn (AiElement $element): string => $element->spec->ai, $path);
+        $qualifiers = \array_slice($pathAis, 1);
         $attributes = [];
         $extensions = [];
         foreach (\explode('&', \str_replace(';', '&', $query)) as $parameter) {
-            $name = \strstr($parameter, '=', true);
-            if ($name === false || $name === '' || \strspn($name, Gs1Charsets::DIGITS) !== \strlen($name)) {
+            $equals = \strpos($parameter, '=');
+            $name = $equals === false ? $parameter : \substr($parameter, 0, $equals);
+            if ($name === '' || \strspn($name, Gs1Charsets::DIGITS) !== \strlen($name)) {
                 if ($parameter !== '') {
                     $extensions[] = $parameter;
                 }
@@ -267,15 +276,20 @@ final class DigitalLinkSyntax
                 throw self::fail(\sprintf('query has AI (%s), which is not a GS1 Digital Link data attribute', $spec->ai));
             }
 
-            self::once($seen, $spec->ai);
-            if (self::belongsInPath($primary, $qualifiers, $spec->ai)) {
+            if (\in_array($spec->ai, $pathAis, true)) {
+                throw self::fail(\sprintf('has AI (%s) in the path and in the query', $spec->ai));
+            }
+
+            if (self::belongsInPath($path[0]->spec, $qualifiers, $spec->ai)) {
                 throw self::fail(\sprintf('query has AI (%s), which belongs in the path', $spec->ai));
             }
 
-            $attributes[] = self::element($spec, \substr($parameter, \strlen($name) + 1), true);
+            // A repeated attribute "should not" appear; if it does, "the last defined value … takes precedence".
+            unset($attributes['ai' . $spec->ai]);
+            $attributes['ai' . $spec->ai] = self::element($spec, $equals === false ? '' : \substr($parameter, $equals + 1), true);
         }
 
-        return [$attributes, $extensions];
+        return [\array_values($attributes), $extensions];
     }
 
     private static function element(AiSpec $spec, string $raw, bool $inQuery): AiElement
@@ -290,23 +304,11 @@ final class DigitalLinkSyntax
         }
 
         // Before 1.4.0 a GTIN-8, -12 or -13 could appear without its leading zeros (URI Syntax 1.7.0, 4.1).
-        if ($spec->ai === '01' && \in_array(\strlen($value), [8, 12, 13], true)) {
+        if (\in_array($spec->ai, self::GTIN_AIS, true) && \in_array(\strlen($value), [8, 12, 13], true)) {
             $value = \str_pad($value, 14, '0', STR_PAD_LEFT);
         }
 
         return new AiElement($spec, $value);
-    }
-
-    /**
-     * @param array<string, string> $seen
-     */
-    private static function once(array &$seen, string $ai): void
-    {
-        if (isset($seen['ai' . $ai])) {
-            throw self::fail(\sprintf('has AI (%s) more than once', $ai));
-        }
-
-        $seen['ai' . $ai] = $ai;
     }
 
     /**

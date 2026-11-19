@@ -117,6 +117,7 @@ final class EpcTagUriTest extends TestCase
         self::assertSame(7, EpcTagUri::from('urn:epc:tag:sgtin-96:7.9521141.012345.4711')->filter());
         self::assertSame(63, EpcTagUri::from('urn:epc:tag:adi-var:63.35962.PQ7VZ4.M37GXB92')->filter());
         self::assertSame(15, EpcTagUri::from('urn:epc:tag:usdod-96:15.CAGEY.5678')->filter());
+        self::assertSame(123456789012345678, EpcTagUri::from('urn:epc:tag:usdod-96:123456789012345678.CAGEY.5678')->filter());
     }
 
     public function testNumericLimitsAtTheirEdges(): void
@@ -126,6 +127,7 @@ final class EpcTagUriTest extends TestCase
         self::assertSame(6, EpcTagUri::from('urn:epc:tag:giai-96:0.952114.4611686018427387903')->partition());
         self::assertSame(6, EpcTagUri::from('urn:epc:tag:cpi-96:0.952114.999999999.2147483647')->partition());
         self::assertSame(0, EpcTagUri::from('urn:epc:tag:cpi-96:0.952114123456.999.1')->partition());
+        self::assertSame('urn:epc:id:cpi:9521141.98765.0', (string) EpcTagUri::from('urn:epc:tag:cpi-96:3.9521141.98765.0')->toPureIdentityUri());
         self::assertNull(EpcTagUri::from('urn:epc:tag:gid-96:268435455.16777215.68719476735')->filter());
         $adi = 'urn:epc:tag:adi-var:0.35962.' . \str_repeat('A', 32) . '.' . \str_repeat('%2F', 30);
         self::assertSame($adi, (string) EpcTagUri::from($adi));
@@ -145,10 +147,14 @@ final class EpcTagUriTest extends TestCase
         yield 'company prefix of 13' => ['urn:epc:tag:giai-202:3.9521141123456.1', 'EPC pure identity URI company prefix must have 6 to 12 digits, got 13.'];
         yield 'filter of 8' => ['urn:epc:tag:sgtin-96:8.9521141.012345.4711', 'EPC Tag URI filter value must be below 8.'];
         yield 'filter of 64' => ['urn:epc:tag:adi-var:64.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI filter value must be below 64.'];
-        yield 'filter with leading zero' => ['urn:epc:tag:sgtin-96:03.9521141.012345.4711', 'EPC Tag URI must have a filter value before the EPC.'];
-        yield 'filter missing' => ['urn:epc:tag:sgtin-96:9521141.012345.4711', 'EPC Tag URI filter value must be below 8.'];
+        yield 'filter with leading zero' => ['urn:epc:tag:sgtin-96:03.9521141.012345.4711', 'EPC Tag URI filter value must be a number without leading zeros.'];
+        yield 'filter missing' => ['urn:epc:tag:sgtin-96:9521141.012345.4711', 'EPC Tag URI has no filter value.'];
+        yield 'usdod filter missing' => ['urn:epc:tag:usdod-96:CAGEY.5678', 'EPC Tag URI has no filter value.'];
+        yield 'giai filter missing' => ['urn:epc:tag:giai-96:952114.5678', 'EPC Tag URI has no filter value.'];
+        yield 'sgcn filter missing with digits' => ['urn:epc:tag:sgcn-96:952114123456..1', 'EPC Tag URI has no filter value.'];
+        yield 'filter not a number' => ['urn:epc:tag:adi-var:A.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI must have a filter value before the EPC.'];
         yield 'filter on gid' => ['urn:epc:tag:gid-96:3.952056.2718.1414', 'EPC pure identity URI does not match the grammar of its scheme.'];
-        yield 'usdod filter too long' => ['urn:epc:tag:usdod-96:1234567890123456789.CAGEY.5678', 'EPC Tag URI must have a filter value before the EPC.'];
+        yield 'usdod filter too long' => ['urn:epc:tag:usdod-96:1234567890123456789.CAGEY.5678', 'EPC Tag URI filter value must have at most 18 digits.'];
         yield 'controls out of order' => ['urn:epc:tag:[xpc=x0004][att=x01]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'control repeated' => ['urn:epc:tag:[att=x01][att=x01]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'control unknown' => ['urn:epc:tag:[foo=1]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];

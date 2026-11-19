@@ -83,6 +83,15 @@ final class ElementStringTest extends TestCase
         self::assertSame("010950600013435210ABC123\x1D11250504", $element->toBarcodeData());
     }
 
+    public function testCpidSerialMayBeTheSingleDigitZero(): void
+    {
+        // GenSpecs 26.0, 3.9.11: no leading "0" "unless the entire serial number consists of the single digit "0"".
+        self::assertSame('0', ElementString::from('(8010)9521141ABC(8011)0')->get('8011'));
+
+        $this->expectException(InvalidElementStringException::class);
+        ElementString::from('(8010)9521141ABC(8011)01');
+    }
+
     public function testParenthesisInsideSerialSurvivesTheRoundTrip(): void
     {
         $element = ElementString::from('(01)09506000134352(21)AB\(C(10)X');
