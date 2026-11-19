@@ -72,10 +72,13 @@ International Centre; `981 – 983` and `99` issue coupon identification. Two ro
 | 20 – 29 | Used to issue Restricted Circulation Numbers within a geographic region (MO defined) |
 | 978 – 979 | Allocated to International ISBN Agency for books, a portion of 979 sub-allocated to International ISMN Agency for music |
 
-The remaining ranges issue GS1 Company Prefixes, except `0000000` (RCN within a company), `0000001 – 0000099`
-(unused), `951` (discontinued GID numbers), `980` (refund receipts) and `984 – 989` (reserved). Table 1-5
-(GS1-8 Prefixes, for GTIN-8) gives `000 – 099` and `200 – 299` to Restricted Circulation Numbers and `952` to
-demonstrations. The allocation of a prefix to a given Member Organisation is not in the General Specifications; it is GS1's published prefix list
+The remaining ranges issue GS1 Company Prefixes, except `0000000` (RCN within a
+company), `0000001 – 0000099` ("Unused to avoid collision with GTIN-8", Table
+1-4, section 1.2.3.1), `951` (discontinued GID numbers), `980` (refund receipts)
+and `984 – 989` (reserved). Table 1-5 (GS1-8 Prefixes, for GTIN-8) gives
+`000 – 099` and `200 – 299` to Restricted Circulation Numbers and `952` to
+demonstrations. The allocation of a prefix to a given Member Organisation is not
+in the General Specifications; it is GS1's published prefix list
 (<https://www.gs1.org/standards/id-keys/company-prefix>), to be pinned in Task 4.
 
 > Note: Once a GS1 Prefix is issued, no other GS1 Prefix that begins with the same digits SHALL be issued

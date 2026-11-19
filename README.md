@@ -31,7 +31,8 @@ The AI table (data formats, FNC1 rule, linters, mandatory and invalid AI pairs) 
 [GS1 Barcode Syntax Dictionary](https://github.com/gs1/gs1-syntax-dictionary), release 2026-01-27, which is vendored
 unmodified under `resources/` (Apache License 2.0, see [`NOTICE`](NOTICE)). A new dictionary release is picked up
 with `php tools/generate-ai-table.php` and ships as a minor release. Regenerating needs a development checkout with
-the dev dependencies installed: the generator lives in `tests/Support/`, which the Composer package does not ship.
+the dev dependencies installed: the generator lives in `tests/Support/` and the script in `tools/`, both
+export-ignored (`.gitattributes`), so the Composer package ships neither.
 
 ## License
 
