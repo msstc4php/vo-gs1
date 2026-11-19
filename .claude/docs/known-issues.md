@@ -114,10 +114,11 @@
 - Fix round 1 rulings: intact-GS codes outside the published structures are `GenericGs1` (AI table only; needs
   (01), (21) first and (92) or (93)). Published lengths serve the pack and lost-GS detection only.
 - Lost GS: `ElementStringSyntax` never splits, so (21) swallows the rest up to the next GS. `RuMarkingSyntax::
-  PUBLISHED_NEXT` refuses a group that holds, at a published length, the AI a published structure puts next (e.g.
-  tobacco group `21` + 7 + `8005…` GS `93…` → serial runs into 8005 at 7). Side effect: a genuine serial containing
-  `93`/`91`/`8005` at offset 6, 7, 13 is refused (never mis-split). Identifiers apply the same rule, so canonical
-  round trips stay consistent.
+  PUBLISHED_NEXT` refuses a group of an **unpublished** length that holds, at a published length, the AI a published
+  structure puts next (e.g. tobacco group `21` + 7 + `8005…` GS `93…` → a 17-character serial runs into 8005 at 7).
+  Fix round 2 ruling: groups of a published length are never checked (20-char random serials contain `93` etc. a few
+  percent of the time). Remaining cost: a would-be `GenericGs1` code with such a sequence at such an offset is
+  refused. Identifiers apply the same rule, so canonical round trips stay consistent.
 - 29 GS-free characters `01` + GTIN + `21` + 5 + `93` + 4 are pack-shaped: ambiguous if the first 14 digits are also a
   valid GTIN, else refused as lost GS. GTIN `04600439931256` happens to give a valid `01046004399312`; tests use
   `04606203086627` for the non-ambiguous case.

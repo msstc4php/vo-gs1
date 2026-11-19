@@ -951,11 +951,13 @@ gives 24 characters for the 6-character serial (dairy) and 25 for МОТП/АТ�
 ### Lost GS separators (Review Focus 4)
 
 No operator page documents a recovery rule (splitting by fixed lengths); the footwear page says only that the trailing
-GS "может не присутствовать в конце буквенно-цифровой последовательности КМ". So nothing is recovered. Rule (fix round 1): a group that holds, at
-one of its published lengths, the AI a published structure puts next is refused as a lost separator — (21) at 6, 7, 13
-or 20 followed by `91`, `93` or `8005`; (91) at 4 by `92`; (92) at 44 or 88 by `3103`; (93) at 4 by `3103` or `335y`.
-The same rule applies to identifiers. A serial that really contains such a sequence at such an offset is refused too
-(never mis-split). A GS-less code with no tail is refused for lacking (92)/(93).
+GS "может не присутствовать в конце буквенно-цифровой последовательности КМ". So nothing is recovered. Rule (fix rounds 1-2): a group whose length
+is **not** one of its published lengths, and that holds, at one of those lengths, the AI a published structure puts
+next, is refused as a lost separator — (21) at 6, 7, 13 or 20 followed by `91`, `93` or `8005`; (91) at 4 by `92`; (92)
+at 44 or 88 by `3103`; (93) at 4 by `3103` or `335y`. A group of a published length is unambiguous with intact GS
+separators, whatever it contains (a 20-character serial with `93` at offset 13 is a serial). The same rule applies to
+identifiers. Cost: a code that would otherwise be `GenericGs1` (unpublished length) is refused when such a sequence
+sits at such an offset. A GS-less code with no tail is refused for lacking (92)/(93).
 
 ## Unreachable or deferred
 

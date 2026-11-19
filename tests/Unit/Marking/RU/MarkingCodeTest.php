@@ -87,6 +87,11 @@ final class MarkingCodeTest extends TestCase
         // Decree No. 841 of 31.05.2021, p. 45 (water): (21) 13.
         yield 'shortened, serial 13 (841, p. 45)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '93Ab1+', MarkingCodeStructure::Shortened, '5Ab+cDe-fGh.J', null, 'Ab1+', '(01)' . self::GTIN . '(21)5Ab+cDe-fGh.J'];
         // Decree No. 1954 of 28.11.2025, pp. 46-47 (radio-electronics): (21) 20 in the shortened structure.
+        // Published lengths with intact GS: AIs that happen to occur inside the serial are data, not a lost separator.
+        yield 'shortened, serial 20 with "93" at 13' => ['01' . self::GTIN . '21512345678901293ABCDE' . self::GS . '93Ab1+', MarkingCodeStructure::Shortened, '512345678901293ABCDE', null, 'Ab1+', '(01)' . self::GTIN . '(21)512345678901293ABCDE'];
+        yield 'shortened, serial 13 with "8005" at 7' => ['01' . self::GTIN . '215abcdef8005xy' . self::GS . '93Ab1+', MarkingCodeStructure::Shortened, '5abcdef8005xy', null, 'Ab1+', '(01)' . self::GTIN . '(21)5abcdef8005xy'];
+        yield 'standard, serial 6 with "91"' => ['01' . self::GTIN . '21591ab_' . self::GS . '91EE10' . self::GS . '92' . self::CODE_44, MarkingCodeStructure::Standard, '591ab_', 'EE10', self::CODE_44, '(01)' . self::GTIN . '(21)591ab_'];
+        yield 'standard, (91) and (93) inside a 44-character (92)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '92' . \substr(self::CODE_44, 0, 40) . '3103', MarkingCodeStructure::Standard, '5Ab+cDe-fGh.J', 'EE10', \substr(self::CODE_44, 0, 40) . '3103', '(01)' . self::GTIN . '(21)5Ab+cDe-fGh.J'];
         yield 'shortened, serial 20 (1954, p. 46)' => ['01' . self::GTIN . '2151234567890ABCDEFGHI' . self::GS . '93Ab1+', MarkingCodeStructure::Shortened, '51234567890ABCDEFGHI', null, 'Ab1+', '(01)' . self::GTIN . '(21)51234567890ABCDEFGHI'];
     }
 

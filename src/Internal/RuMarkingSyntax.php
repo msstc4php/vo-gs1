@@ -17,7 +17,8 @@ use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingIdentifier;
  *
  * Russian marking codes and identifiers. GS1-structured codes are read with {@see ElementStringSyntax}, which never
  * splits data whose GS separators were lost: a variable-length group then swallows the next one. Such data is refused
- * when a group holds, at one of its published lengths, the AI a published structure puts next (see
+ * when a group of an unpublished length holds, at one of its published lengths, the AI a published structure puts
+ * next (see
  * {@see PUBLISHED_NEXT}); otherwise a code that fits no published structure is accepted as
  * {@see MarkingCodeStructure::GenericGs1} on the AI table's checks alone.
  *
@@ -304,6 +305,10 @@ final class RuMarkingSyntax
     {
         foreach ($elements as $element) {
             [$lengths, $next] = self::PUBLISHED_NEXT['ai' . $element->spec->ai] ?? [[], []];
+            if (\in_array(\strlen($element->value), $lengths, true)) {
+                continue;
+            }
+
             foreach ($lengths as $length) {
                 foreach ($next as $ai) {
                     if (\str_starts_with(\substr($element->value, $length), $ai)) {
