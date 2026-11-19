@@ -77,15 +77,18 @@ final class RuMarkingSyntax
     /** Data Matrix ECC 200 without FNC1 in first position: never a GS1 element string (GenSpecs Table 5-2 has `]d2`). */
     private const string NON_GS1_DATA_MATRIX = ']d1';
 
+    /** GS1 DataMatrix (GenSpecs Table 5-2): never the tobacco pack, which Decree No. 224 encodes without FNC1. */
+    private const string GS1_DATA_MATRIX = ']d2';
+
     /** @var non-empty-list<non-empty-string> prefixes a scanner may put before the pack code */
-    private const array PACK_PREFIXES = [self::NON_GS1_DATA_MATRIX, ']d2', ElementStringSyntax::GS];
+    private const array PACK_PREFIXES = [self::NON_GS1_DATA_MATRIX, self::GS1_DATA_MATRIX, ElementStringSyntax::GS];
 
     public static function code(string $input): RuMarkingParts
     {
         self::checkLength($input, self::CODE);
         $pack = self::stripPackPrefix($input);
         if (self::isPackLike($pack)) {
-            return self::pack($pack, \str_starts_with($input, self::NON_GS1_DATA_MATRIX));
+            return self::pack($pack, \str_starts_with($input, self::NON_GS1_DATA_MATRIX), \str_starts_with($input, self::GS1_DATA_MATRIX));
         }
 
         return self::gs1Code(self::elements($input, self::CODE), self::isBracketed($input));
@@ -201,10 +204,11 @@ final class RuMarkingSyntax
 
     /**
      * @param bool $nonGs1 the input came as `]d1` data, or through {@see tobaccoConsumerPack()}: no GS1 reading
+     * @param bool $gs1 the input came as `]d2` data: no pack reading where a GS1 one competes
      *
      * @throws AmbiguousValueException when the 29 characters are also `01` + GTIN + `21` + 5 + `93` + 4 without GS
      */
-    private static function pack(string $input, bool $nonGs1): RuMarkingParts
+    private static function pack(string $input, bool $nonGs1, bool $gs1 = false): RuMarkingParts
     {
         if (!self::isPackShaped($input, self::PACK_LENGTH)) {
             throw new InvalidMarkingCodeException(self::CODE . ' (tobacco consumer pack) must have characters of GS1 character set 82 after the GTIN.');
@@ -215,6 +219,10 @@ final class RuMarkingSyntax
             && \substr($input, 16, 2) === '21'
             && \substr($input, 23, 2) === '93';
         if ($lostSeparators && !$nonGs1) {
+            if ($gs1) {
+                throw new InvalidMarkingCodeException(self::CODE . ' is GS1 DataMatrix data (]d2), so not a tobacco consumer pack, and reads as AI (01), (21) and (93) whose GS separator was lost.');
+            }
+
             if (Gs1CheckDigit::isValid(\substr($input, 0, 14))) {
                 throw new AmbiguousValueException(self::CODE . ' (both a tobacco consumer pack and AI (01), (21), (93) with lost GS separators; build the pack with MarkingCode::fromTobaccoConsumerPack())', [MarkingCode::class]);
             }

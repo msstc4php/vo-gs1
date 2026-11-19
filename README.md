@@ -359,7 +359,8 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   `92…`, …); a code left without (92)/(93) is refused too. Brackets and GS separators prove their boundaries, so
   data before them is never read as a lost separator. 29 GS-free characters that read both as a pack and as such a
   code throw `AmbiguousValueException`; `MarkingCode::fromTobaccoConsumerPack()` (or `]d1` input, which no GS1 code
-  carries) reads the pack, and its value keeps the `]d1` prefix so it reads back unambiguously. **Residual:** a
+  carries) reads the pack, and its value keeps the `]d1` prefix so it reads back unambiguously; `]d2` input of such
+  characters is GS1 data and is refused as a lost separator. **Residual:** a
   `GenericGs1` code (unpublished serial length) whose GS after (21) was lost can have its next AIs swallowed into the
   serial and is then accepted as a different code; without the separators this cannot be detected. The operator
   publishes no recovery rule. Canonical form: the pack as is (`]d1` + pack in the ambiguous case), a GS1 code as

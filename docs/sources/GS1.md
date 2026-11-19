@@ -985,7 +985,8 @@ a 5-character serial whose separator was lost): when the pack reading (GTIN chec
 `MarkingCode` throws `AmbiguousValueException`, otherwise it refuses the lost separator. `MarkingCode::
 fromTobaccoConsumerPack()` picks the pack reading explicitly, and so does `]d1` input: Decree No. 224 uses FNC1 for
 the AI format "except for Section I products", and GenSpecs Table 5-2 gives GS1 DataMatrix the identifier `]d2`, so
-`]d1` data (Data Matrix without FNC1 in first position) is never a GS1 element string. Such a pack keeps `]d1` in its
+`]d1` data (Data Matrix without FNC1 in first position) is never a GS1 element string. Conversely `]d2` data is GS1
+DataMatrix, never the pack: such 29 characters are refused as a GS1 code with a lost separator, not ambiguous. Such a pack keeps `]d1` in its
 canonical value, so it reads back unambiguously (from storage too); every other pack keeps its 29 characters.
 `MarkingIdentifier::
 fromDocumentForm()` throws it for 25 characters that read both as a pack КИ (14 + 7 + 4) and as `01` + GTIN + `21` +

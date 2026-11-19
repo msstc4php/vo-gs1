@@ -237,6 +237,8 @@ final class DigitalLinkTest extends TestCase
         self::assertTrue($link->equals(DigitalLink::from('https://example.com/01/09520123456788/10/A/21/S?17=250101')));
         self::assertSame('https://id.gs1.org/01/09520123456788/10/A/21/S?17=250101', (string) $link->toCanonical());
         self::assertSame('(01)09520123456788(10)ABC', (string) DigitalLink::from('https://example.com/01/09520123456788?10=ABC')->toElementString());
+        self::assertTrue(DigitalLink::from('https://example.com/01/09520123456788/10/L')->equals(DigitalLink::from('https://example.com/01/09520123456788?10=L')));
+        self::assertTrue(DigitalLink::from('https://example.com/01/09520123456788?10=L')->equals(DigitalLink::from('https://example.com/01/09520123456788/10/L')));
         self::assertSame('https://id.gs1.org/01/09520123456788/22/V/10/A/21/S', (string) DigitalLink::from('https://example.com/01/09520123456788?21=S&10=A&22=V')->toCanonical());
     }
 

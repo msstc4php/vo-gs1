@@ -283,6 +283,14 @@ final class MarkingCodeTest extends TestCase
         self::assertTrue($pack->equals(MarkingCode::from(']d101046004399312562112345939999')));
     }
 
+    public function testGs1DataMatrixDataOfAnAmbiguousPackIsRefused(): void
+    {
+        $this->expectException(InvalidMarkingCodeException::class);
+        $this->expectExceptionMessage('Russian marking code is GS1 DataMatrix data (]d2), so not a tobacco consumer pack, and reads as AI (01), (21) and (93) whose GS separator was lost.');
+
+        MarkingCode::from(']d201046004399312562112345939999');
+    }
+
     public function testFromTobaccoConsumerPackKeepsAnUnambiguousPackAsIs(): void
     {
         $value = self::GTIN . "5U!Mq'XAbC1Ab1+";
