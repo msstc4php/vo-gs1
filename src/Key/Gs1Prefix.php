@@ -30,7 +30,8 @@ enum Gs1Prefix
 
     /**
      * Decodes the leading digits of a number in the 13-digit key space (GTIN-13 and the keys that start with a GS1
-     * Company Prefix): at least three digits, seven to tell `0000000` and `0000001`-`0000099` apart.
+     * Company Prefix): at least three digits. A run of fewer than seven zeros completes to either `0000000`
+     * (restricted) or `0000001`-`0000099` (unused), so it decodes as `Unknown`.
      */
     public static function fromDigits(string $digits): self
     {
@@ -43,7 +44,8 @@ enum Gs1Prefix
 
         return match (true) {
             \str_starts_with($digits, '0000000') => self::RestrictedCirculation,
-            \strlen($digits) >= 7 && \str_starts_with($digits, '00000') => self::Unused,
+            \strspn($digits, '0') === \strlen($digits) => self::Unknown,
+            \strlen($digits) >= 6 && \str_starts_with($digits, '00000') => self::Unused,
             $two === '02', $two === '04', $two >= '20' && $two <= '29' => self::RestrictedCirculation,
             $three === '952' => self::Demonstration,
             $three === '977' => self::Issn,

@@ -26,15 +26,13 @@ final class ElementStringSyntax
     public const string GS = "\x1D";
 
     /**
-     * Section 5.7.4.1: the largest GS1 QR Code "can encode up to 7089 digits", the largest capacity the General
-     * Specifications state for any GS1 data carrier; no element string is longer.
+     * A package bound against oversized input and for storage, not a GS1 rule: twice the largest GS1 QR Code
+     * capacity (section 5.7.4.1, "up to 7089 digits"), so data spread over several carriers fits. It bounds both the
+     * input and the canonical bracketed form.
      */
-    public const int MAX_DATA_LENGTH = 7089;
+    public const int MAX_LENGTH = 14178;
 
     private const string CARET = '^';
-
-    /** No notation more than doubles the data: an escaped `(` is two characters, `(NN)` adds two to an AI. */
-    private const int MAX_INPUT_LENGTH = 2 * self::MAX_DATA_LENGTH;
 
     /** @var non-empty-list<non-empty-string> Table 5-2: "Standard AI element strings" */
     private const array SYMBOLOGY_IDENTIFIERS = [']C1', ']e0', ']d2', ']Q3', ']J1'];
@@ -44,8 +42,8 @@ final class ElementStringSyntax
      */
     public static function parse(string $input): array
     {
-        if (\strlen($input) > self::MAX_INPUT_LENGTH) {
-            throw self::fail(\sprintf('Element string must have at most %d characters, got %d.', self::MAX_INPUT_LENGTH, \strlen($input)));
+        if (\strlen($input) > self::MAX_LENGTH) {
+            throw self::fail(\sprintf('Element string must have at most %d characters, got %d.', self::MAX_LENGTH, \strlen($input)));
         }
 
         $elements = \str_starts_with($input, '(') ? self::bracketed($input) : self::unbracketed($input);
@@ -53,9 +51,9 @@ final class ElementStringSyntax
             throw self::fail('Element string is empty.');
         }
 
-        $length = \strlen(self::barcodeData($elements));
-        if ($length > self::MAX_DATA_LENGTH) {
-            throw self::fail(\sprintf('Element string data must have at most %d characters, got %d.', self::MAX_DATA_LENGTH, $length));
+        $length = \strlen(self::bracketedForm($elements));
+        if ($length > self::MAX_LENGTH) {
+            throw self::fail(\sprintf('Element string must have at most %d characters in its bracketed form, got %d.', self::MAX_LENGTH, $length));
         }
 
         $specs = self::checkRepeats($elements);

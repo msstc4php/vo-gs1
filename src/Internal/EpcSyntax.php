@@ -29,6 +29,7 @@ final class EpcSyntax
 
     private const string NUMERIC = '(?:0|[1-9][0-9]*)';
 
+    // TDS 6.3.17: CAGECodeOrDODAACChar = Digit / %x41-48 / %x4A-4E / %x50-5A ; 0-9 A-H J-N P-Z
     private const string CAGE_OR_DODAAC = '[0-9A-HJ-NP-Z]{5,6}';
 
     private const string ADI_CHAR = '(?:[0-9A-Z\-]|%2F)';
@@ -204,16 +205,13 @@ final class EpcSyntax
             throw $reject('EPC Tag URI filter value must be a number without leading zeros.');
         }
 
-        // TDS defines no width for the USDOD-96 filter; 18 digits keep it an int.
-        if (\strlen($filter[1]) > 18) {
-            throw $reject('EPC Tag URI filter value must have at most 18 digits.');
+        $limit = 1 << (int) $encoding->filterBits();
+        // Every filter field is at most 6 bits wide, so two digits; a longer run must not reach the int cast.
+        if (\strlen($filter[1]) > 2 || (int) $filter[1] >= $limit) {
+            throw $reject(\sprintf('EPC Tag URI filter value must be below %d.', $limit));
         }
 
         $value = (int) $filter[1];
-        $bits = $encoding->filterBits();
-        if ($bits !== null && $value >= 1 << $bits) {
-            throw $reject(\sprintf('EPC Tag URI filter value must be below %d.', 1 << $bits));
-        }
 
         return [$encoding, $value, $filter[2]];
     }
@@ -235,6 +233,7 @@ final class EpcSyntax
             // Within 3 + P digits the reference is always below its 11 to 31 bits.
             EpcTagEncoding::Cpi96 => [self::maxDigits($c[1], 3 + $partition, $encoding), self::below($c[2], 31, $encoding)],
             EpcTagEncoding::Gid96 => [self::below($c[0], 28, $encoding), self::below($c[1], 24, $encoding), self::below($c[2], 36, $encoding)],
+            EpcTagEncoding::Usdod96 => self::below($c[1], 36, $encoding),
             EpcTagEncoding::AdiVar => [self::maxCharacters($c[1], 32, $encoding), self::maxCharacters($c[2], 30, $encoding)],
             default => null,
         };
@@ -266,7 +265,9 @@ final class EpcSyntax
             EpcScheme::Gid => ['(' . self::NUMERIC . ')\.(' . self::NUMERIC . ')\.(' . self::NUMERIC . ')', null],
             EpcScheme::Usdod => ['(' . self::CAGE_OR_DODAAC . ')\.(' . self::NUMERIC . ')', null],
             EpcScheme::Adi => ['(' . self::CAGE_OR_DODAAC . ')\.(' . self::ADI_CHAR . '*)\.((?:%23)?' . self::ADI_CHAR . '+)', null],
-            EpcScheme::Bic => ['([A-HJ-NP-Z]{3}[JUZ][0-9]{7})', null],
+            // TDS 6.3.19's grammar leaves I and O out of OwnerCodeChar, its prose says "three capital letters" and
+            // registered owner codes use both (OOLU), so the prose wins: never refuse a valid container code.
+            EpcScheme::Bic => ['([A-Z]{3}[JUZ][0-9]{7})', null],
             EpcScheme::Imovn => ['([0-9]{7})', null],
         };
     }

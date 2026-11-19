@@ -359,12 +359,23 @@ final class ElementStringTest extends TestCase
         ElementString::from('010950600013435242264310');
     }
 
-    public function testDataLongerThanTheLargestGs1SymbolIsRefused(): void
+    public function testDataOfSeveralCarriersBeyondOneQrCodeIsAccepted(): void
     {
-        // 2400 x "90X" with a GS after each but the last is 9599 characters, over the 7089 of the largest GS1 QR Code.
+        // 2400 x "90X" with a GS after each but the last is 9599 characters, over one GS1 QR Code but not a GS1 rule.
+        $element = ElementString::from(\str_repeat('(90)X', 2400));
+
+        self::assertSame(9599, \strlen($element->toBarcodeData()));
+    }
+
+    public function testTheBracketedFormIsBoundedAfterParsing(): void
+    {
+        // 12768 input characters; each "90ABCDEF" + GS gains one character in brackets: 18 + 1417 x 10 = 14188.
+        $input = '0109506000134352' . \implode(ElementStringSyntax::GS, \array_fill(0, 1417, '90ABCDEF'));
+        self::assertSame(12768, \strlen($input));
+
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string data must have at most 7089 characters, got 9599.');
-        ElementString::from(\str_repeat('(90)X', 2400));
+        $this->expectExceptionMessage('Element string must have at most 14178 characters in its bracketed form, got 14188.');
+        ElementString::from($input);
     }
 
     public function testOverlongInputIsRefusedBeforeParsing(): void
@@ -376,16 +387,16 @@ final class ElementStringTest extends TestCase
 
     public function testSizeBoundsAreInclusive(): void
     {
-        // 16 + 131 x ("91" + 51 characters) + 130 GS = 7089 characters of data.
-        $element = ElementString::from('(01)09506000134352' . \str_repeat('(91)' . \str_repeat('A', 51), 131));
-        self::assertSame(7089, \strlen($element->toBarcodeData()));
+        // 18 + 1414 x ("(90)" + 6 characters) = 14158; + "(91)" + 16 characters = 14178.
+        $bracketed = '(01)09506000134352' . \str_repeat('(90)ABCDEF', 1414) . '(91)' . \str_repeat('A', 16);
+        self::assertSame(14178, \strlen($bracketed));
+        self::assertSame(14178, \strlen(ElementString::from($bracketed)->value));
 
         try {
-            // 16 + 283 x ("91" + 22 characters) + 282 GS = 7090 characters of data.
-            ElementString::from('(01)09506000134352' . \str_repeat('(91)' . \str_repeat('A', 22), 283));
+            ElementString::from($bracketed . 'A');
             self::fail('Expected an exception.');
         } catch (InvalidElementStringException $exception) {
-            self::assertSame('Element string data must have at most 7089 characters, got 7090.', $exception->getMessage());
+            self::assertSame('Element string must have at most 14178 characters, got 14179.', $exception->getMessage());
         }
 
         try {

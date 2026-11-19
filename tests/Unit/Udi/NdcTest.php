@@ -99,9 +99,9 @@ final class NdcTest extends TestCase
     public static function badNdcs(): iterable
     {
         yield 'too long' => ['12345-1234-123', 'NDC must have at most 13 characters, got 14.'];
-        yield '4-3-2' => ['1234-123-12', 'NDC segment lengths 4-3-2 are not a configuration of 21 CFR 207.33(b)(2).'];
-        yield '4-4-1' => ['1234-1234-1', 'NDC segment lengths 4-4-1 are not a configuration of 21 CFR 207.33(b)(2).'];
-        yield '5-4-2 billing form' => ['12345-1234-12', 'NDC segment lengths 5-4-2 are not a configuration of 21 CFR 207.33(b)(2).'];
+        yield '4-3-2' => ['1234-123-12', 'NDC segment lengths 4-3-2 are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
+        yield '4-4-1' => ['1234-1234-1', 'NDC segment lengths 4-4-1 are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
+        yield '5-4-2 billing form' => ['12345-1234-12', 'NDC segment lengths 5-4-2 are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
         yield 'letters' => ['1234A-123-12', 'NDC must be three hyphenated digit segments.'];
         yield 'nine digits' => ['123456789', 'NDC must be three hyphenated digit segments.'];
         yield 'two segments' => ['12345-12345', 'NDC must be three hyphenated digit segments.'];

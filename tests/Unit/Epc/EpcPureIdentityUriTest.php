@@ -120,6 +120,10 @@ final class EpcPureIdentityUriTest extends TestCase
         yield 'ADI without part number' => ['urn:epc:id:adi:2S194..12345678901', null];
         yield 'ADI non-serialised part' => ['urn:epc:id:adi:2S194.A-B%2FC.%2312', null];
         yield 'DODAAC' => ['urn:epc:id:usdod:W81X9C.0', null];
+        yield 'BIC owner code with O (OOCL)' => ['urn:epc:id:bic:OOLU1234567', null];
+        yield 'BIC owner code with O (ONE)' => ['urn:epc:id:bic:ONEU1234567', null];
+        yield 'BIC owner code with I' => ['urn:epc:id:bic:IEAU1234567', null];
+        yield 'pure identity USDOD serial is not bounded by the 96-bit tag' => ['urn:epc:id:usdod:2S194.68719476736', null];
     }
 
     #[DataProvider('moreExamples')]
@@ -179,7 +183,8 @@ final class EpcPureIdentityUriTest extends TestCase
         yield 'ADI empty serial' => ['urn:epc:id:adi:2S194..', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'ADI lower case' => ['urn:epc:id:adi:2S194.a.1', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'BIC category' => ['urn:epc:id:bic:CSQA3054383', 'EPC pure identity URI does not match the grammar of its scheme.'];
-        yield 'BIC letter O' => ['urn:epc:id:bic:CSOU3054383', 'EPC pure identity URI does not match the grammar of its scheme.'];
+        yield 'BIC lower-case owner code' => ['urn:epc:id:bic:csqU3054383', 'EPC pure identity URI does not match the grammar of its scheme.'];
+        yield 'DODAAC letter O (TDS 6.3.17 grammar)' => ['urn:epc:id:usdod:2S1O4.1', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'IMOVN 6 digits' => ['urn:epc:id:imovn:917618', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'line break' => ["urn:epc:id:imovn:9176187\n", 'EPC pure identity URI must start with urn:epc:id: and name a known scheme.'];
     }

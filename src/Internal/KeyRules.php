@@ -26,6 +26,9 @@ final class KeyRules
         return new InvalidIdentificationKeyException(\sprintf('%s %s.', $subject, $reason));
     }
 
+    /**
+     * @param positive-int $length
+     */
     public static function digits(string $value, string $subject, int $length): void
     {
         if (\strlen($value) !== $length) {
@@ -39,6 +42,8 @@ final class KeyRules
 
     /**
      * Fixed-length numeric key whose last digit is the GS1 check digit.
+     *
+     * @param positive-int $length
      */
     public static function checkedDigits(string $value, string $subject, int $length): void
     {
@@ -51,6 +56,8 @@ final class KeyRules
 
     /**
      * Variable-length text of `$charset`, 1 to `$max` characters, or the optional serial part of a key.
+     *
+     * @param positive-int $max
      */
     public static function text(string $value, string $subject, string $charset, int $max): void
     {
@@ -85,8 +92,8 @@ final class KeyRules
     /**
      * Company prefix followed by the reference: the body of a key, without check digit.
      *
-     * @param int|list<int> $bodyLengths allowed digit counts of the body
-     * @param int $minPrefix shortest prefix: 4 (GS1 Company Prefix), 3 for the GS1-8 Prefix of a GTIN-8
+     * @param positive-int|non-empty-list<positive-int> $bodyLengths allowed digit counts of the body
+     * @param positive-int $minPrefix shortest prefix: 4 (GS1 Company Prefix), 2 for the GS1-8 Prefix of a GTIN-8
      */
     public static function body(string $subject, string $companyPrefix, string $reference, int|array $bodyLengths, int $minPrefix = self::COMPANY_PREFIX_MIN): string
     {

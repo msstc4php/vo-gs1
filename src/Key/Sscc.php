@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MSSTC4PHP\ValueObject\Gs1\Key;
 
+use LogicException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1CheckDigit;
 use MSSTC4PHP\ValueObject\Gs1\Internal\KeyRules;
 use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
@@ -32,9 +33,14 @@ final class Sscc extends AbstractStringValueObject implements IdentificationKey
         return new self($body . Gs1CheckDigit::compute($body));
     }
 
+    /**
+     * @return numeric-string
+     */
     public function extensionDigit(): string
     {
-        return $this->value[0];
+        $digit = $this->value[0];
+
+        return \is_numeric($digit) ? $digit : throw new LogicException('SSCC lost its extension digit.');
     }
 
     #[Override]

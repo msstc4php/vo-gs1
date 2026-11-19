@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MSSTC4PHP\ValueObject\Gs1\Marking\RU;
 
 use LogicException;
+use MSSTC4PHP\ValueObject\Exception\AmbiguousValueException;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\Internal\RuMarkingParts;
 use MSSTC4PHP\ValueObject\Gs1\Internal\RuMarkingSyntax;
@@ -19,14 +20,19 @@ use Override;
  *
  * Input: the tobacco consumer-pack code (29 characters, optionally after `]d1`, `]d2` or a leading GS), or a
  * GS1-structured code in any notation {@see ElementString} accepts. Data is never split at a guessed position. A
- * code whose GS separators were lost (copied from a web form) is refused when a group of an unpublished length holds,
- * at one of its published lengths, the AI a published structure puts next, or when no (92)/(93) is left. With intact
- * separators, a code that fits no published structure is {@see MarkingCodeStructure::GenericGs1}.
+ * code whose GS separators were lost (copied from a web form) is refused when its last group has an unpublished length
+ * and the rest after a published length parses as the AI a published structure puts next, or when no (92)/(93) is
+ * left; brackets and GS separators prove their boundaries. With intact separators, a code that fits no published
+ * structure is {@see MarkingCodeStructure::GenericGs1}.
+ *
+ * 29 GS-free characters that are both a pack code and `01` + GTIN + `21` + 5 + `93` + 4 throw
+ * {@see AmbiguousValueException}; {@see fromTobaccoConsumerPack()} (or `]d1` input, which no GS1 code has) reads the
+ * pack, whose canonical value then keeps the `]d1` prefix so that it reads back unambiguously.
  *
  * Residual, undetectable without the separators: a GenericGs1 code (unpublished serial length) whose GS after (21)
  * was lost can have its next AIs swallowed into the serial and be accepted as a different code.
  *
- * Canonical form: the pack code as is; a GS1-structured code as barcode data, AIs in the order given, GS (U+001D)
+ * Canonical form: the pack code as is (with `]d1` in the case above); a GS1-structured code as barcode data, AIs in the order given, GS (U+001D)
  * after each group that is not of predefined length except the last, as the operator issues it.
  *
  * @see https://markirovka.ru/knowledge/tovarnye-gruppy/ «Честный знак», «Состав кода маркировки» per product group
@@ -34,6 +40,14 @@ use Override;
  */
 final class MarkingCode extends AbstractStringValueObject
 {
+    /**
+     * The tobacco consumer-pack reading of 29 characters (optionally after `]d1`, `]d2` or a GS), never the GS1 one.
+     */
+    public static function fromTobaccoConsumerPack(string $value): self
+    {
+        return new self(RuMarkingSyntax::tobaccoConsumerPack($value)->value);
+    }
+
     public function structure(): MarkingCodeStructure
     {
         return $this->parts()->structure ?? throw new LogicException('Russian marking code lost its structure.');

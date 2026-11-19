@@ -36,11 +36,13 @@
 - `req` is **not** refused (owner ruling): GS1 evaluates pairings over all carriers of an item, so
   `(10)ABC` parses and `unmetRequirements()` reports it. `ex` stays refused.
 - Association checks run over distinct AIs and look patterns up by expansion (`35nn` → 100 keys), so repeats cannot
-  make them quadratic; input is capped at 14178 characters before parsing and data at 7089 (GS1 QR Code capacity).
-- `ElementString` keeps no parsed state: the parent's final constructor allows no readonly initialisation, so accessors
-  re-parse the canonical value (bounded by the size cap). Consequence: a value stored under an older dictionary can
-  throw `InvalidElementStringException` from accessors after a dictionary release (a minor release) removes or
-  tightens one of its AIs. Stated in the README.
+  make them quadratic; input is capped at 14178 characters before parsing and the canonical bracketed form at 14178
+  after (package bound, ruling CR-017; the former 7089 single-QR-Code data cap refused multi-carrier data and is gone).
+- `ElementString` caches its parsed elements in a private nullable property set by `parse()` (S-6; PHPStan refuses a
+  readonly property assigned outside the constructor, and the parent's constructor is final). Values are still
+  parsed against the installed table when constructed, so a value stored under an older dictionary can throw
+  `InvalidElementStringException` on load after a dictionary release (a minor release) removes or tightens one of its
+  AIs. Stated in the README. Other composite VOs (DigitalLink, HibcUdi, MarkingCode, …) still re-parse per accessor.
 - `iso4217`: vo-base `CurrencyCode` lacks the ISO non-currency codes 955-965, 994, 999 that GS1's linter accepts; they
   are listed in `AiLinters::ISO_4217_NON_CURRENCY`. vo-base also accepts withdrawn codes the linter refuses (lenient).
 - GS1 Syntax Engine clone used for quotes: `main` at `58c1dc8` (its newest tags are 2023); cite the commit.
@@ -61,10 +63,13 @@
   `+` is a space only in the query (`/10/A+B` is `A+B`).
 - AiTable `spec('10')`-style lookups are fine, but `array_keys()` of an AI-keyed array turns `'10'` into int `10`;
   `array_intersect()` compares string forms, so `arrange()` still works.
-- `equals()` of Digital Link compares scheme and host lower-cased (userinfo case-sensitive, RFC 3986; the host is
-  what follows the last `@` of the authority), stem path as given, decoded path data (`/gtin/` = `/01/`), effective
-  attributes sorted by AI, fragment (`#` vs none differ). Extension parameters are compared raw (`?x=%41` ≠ `?x=A`):
-  a deliberate "kept as given" choice, their meaning is not GS1's.
+- `equals()` of Digital Link compares scheme and host lower-cased (userinfo case-sensitive, RFC 3986; an authority
+  with two `@` is refused), decoded path data (`/gtin/` = `/01/`), effective attributes sorted by AI, fragment (`#` vs
+  none differ). Userinfo, stem path, extension parameters and fragment compare after RFC 3986 6.2.2 escape
+  normalisation (`%2f` = `%2F`, `%41` = `A`); port as written, extension order significant (CR-015).
+- DL AI lookup decodes escaped unreserved characters first (`?%31%37=` is AI 17, `/%30%31/` is `/01/`); a broken `%`
+  is refused. A query AI that fits the path's qualifier sequence moves into the path (ruling CR-014, no SHALL in DL
+  1.7.0 against it); the engine's `AI_SHOULD_BE_IN_PATH_INFO` refusal is not followed.
 - `arrange()` (element string → link) ranks qualifier sequences by length, then by whether every leftover AI is a
   data attribute: `(01)(10)(235)` gives `/01/…/235/…?10=…`, so every link the class accepts converts back.
 - TDS 12.4 grammar omits `GSRNPTagURIBody` (only `GSRNPEncName`); `gsrnp-96` is accepted per Table 12-2.
@@ -76,7 +81,10 @@
 - AI (8011) `nozeroprefix` accepts the single digit `0` (GenSpecs 26.0, 3.9.11), unlike `lint_nozeroprefix.c`, whose
   test vector refuses `"0"`; so `urn:epc:id:cpi:….0` and a cpi-96 tag with serial 0 are valid.
 - `EpcTagUri` filter messages: when the body without a filter is already a whole EPC of the scheme, the message is
-  "has no filter value"; otherwise leading zero / more than 18 digits / above the field width.
+  "has no filter value"; otherwise leading zero / above the field width (a filter of more than two digits is refused
+  before the int cast). `usdod-96` widths (filter 4, serial 36 bits) come from the US DoD guide v15, which TDS defers to.
+- EPC BIC owner code is `[A-Z]{3}`: TDS 6.3.19's grammar excludes I/O but its prose and real owner codes (OOLU) do not.
+  CAGE/DoDAAC keeps the grammar's I/O exclusion (no contradicting prose).
 - EPC parse validates GS1 schemes by building the element string, so GenSpecs limits (serial ≤ 20, piece ≤ total,
   CSET 82) apply to EPC URIs too.
 - Infection: ~11 escaped mutants in Digital Link/EPC code are equivalent (regex capture positions of unused components,
@@ -111,6 +119,9 @@
   2.3-2009 via an Internet Archive copy (quantity-only `+$$848GQ` has no date flag); `/S` beside a serial secondary
   accepted (only a heading, no prohibition), exposed as `supplementalSerial()`; HIBC cap 113 (serial form with `$$+9`
   quantity + all supplementals); `Gs1Udi::gtin()` guard is a `LogicException`.
+- HIBC `/` is a Mod 43 check character: with primary check `/` the separate secondary's link `/` is the first `/` and
+  the supplemental `/` follows it (`LOT//S123`). `/14D` and `/Q` beside secondary date/quantity are both exposed
+  (`supplementalExpiryDate()`, `supplementalQuantity()`), like `/S`.
 
 ## Marking codes
 
@@ -147,3 +158,8 @@
 - Infection: escaped mutants in the marking code are equivalent or unreachable (negative string offset × 0 in the PZN
   loop, `(int)` casts, `substr` length overshoot in the IFA day, unreachable `LogicException`s, the unused
   `identifier` field of a parsed identifier).
+- RU lost-GS check (ruling CR-007): only the last group of unbracketed input, and only when the rest after a
+  published length parses as the expected next AI with valid data (`startsWithValidAi()`); bracketed input skips it.
+  `MarkingIdentifier` (01)(21)(8005) takes any serial length (CR-008).
+- RU pack that also reads as `01`+GTIN+`21`+5+`93`+4: `MarkingCode::fromTobaccoConsumerPack()` or `]d1` input picks
+  the pack; canonical value is then `]d1` + 29 characters (persisted that way), every other pack stays 29 characters.

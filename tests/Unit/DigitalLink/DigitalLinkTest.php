@@ -210,11 +210,54 @@ final class DigitalLinkTest extends TestCase
         self::assertFalse($link->equals(DigitalLink::from('https://user@example.com/01/09520123456788#a')));
         self::assertFalse($link->equals(DigitalLink::from('https://User@fxample.com/01/09520123456788#a')));
         self::assertFalse(DigitalLink::from('https://a.example.com/01/09520123456788')->equals(DigitalLink::from('https://b.example.com/01/09520123456788')));
-        self::assertTrue(DigitalLink::from('https://u@ser@Example.com:8443/01/09520123456788')->equals(DigitalLink::from('https://u@ser@example.com:8443/01/09520123456788')));
-        self::assertFalse(DigitalLink::from('https://U@ser@example.com/01/09520123456788')->equals(DigitalLink::from('https://u@ser@example.com/01/09520123456788')));
+        self::assertTrue(DigitalLink::from('https://u%40ser@Example.com:8443/01/09520123456788')->equals(DigitalLink::from('https://u%40ser@example.com:8443/01/09520123456788')));
+        self::assertFalse(DigitalLink::from('https://U%40ser@example.com/01/09520123456788')->equals(DigitalLink::from('https://u%40ser@example.com/01/09520123456788')));
         self::assertFalse($link->equals(DigitalLink::from('https://User@example.com/01/09520123456788#b')));
         self::assertFalse($link->equals(DigitalLink::from('https://User@example.com/01/09520123456788#')));
         self::assertFalse(DigitalLink::from('https://example.com/01/09520123456788#')->equals(DigitalLink::from('https://example.com/01/09520123456788')));
+    }
+
+    public function testPercentEncodedAiKeysAreDecodedBeforeTheLookup(): void
+    {
+        $query = DigitalLink::from('https://example.com/01/09520123456788?%31%37=250101');
+        self::assertSame('(01)09520123456788(17)250101', (string) $query->toElementString());
+        self::assertTrue($query->equals(DigitalLink::from('https://example.com/01/09520123456788?17=250101')));
+
+        $path = DigitalLink::from('https://example.com/%30%31/09520123456788/%31%30/ABC');
+        self::assertSame('(01)09520123456788(10)ABC', (string) $path->toElementString());
+        self::assertTrue($path->equals(DigitalLink::from('https://example.com/01/09520123456788/10/ABC')));
+        self::assertSame('(01)09520123456788', (string) DigitalLink::from('https://example.com/gt%69n/09520123456788')->toElementString());
+    }
+
+    public function testAKeyQualifierInTheQueryIsReadAsTheQualifier(): void
+    {
+        $link = DigitalLink::from('https://example.com/01/09520123456788/21/S?10=A&17=250101');
+
+        self::assertSame('(01)09520123456788(10)A(21)S(17)250101', (string) $link->toElementString());
+        self::assertTrue($link->equals(DigitalLink::from('https://example.com/01/09520123456788/10/A/21/S?17=250101')));
+        self::assertSame('https://id.gs1.org/01/09520123456788/10/A/21/S?17=250101', (string) $link->toCanonical());
+        self::assertSame('(01)09520123456788(10)ABC', (string) DigitalLink::from('https://example.com/01/09520123456788?10=ABC')->toElementString());
+        self::assertSame('https://id.gs1.org/01/09520123456788/22/V/10/A/21/S', (string) DigitalLink::from('https://example.com/01/09520123456788?21=S&10=A&22=V')->toCanonical());
+    }
+
+    public function testEqualityNormalisesPercentEscapesButKeepsPortAndParameterOrder(): void
+    {
+        $link = DigitalLink::from('https://example.com/a%2fb/01/09520123456788?x=%2f&y=1#f%2f');
+
+        self::assertTrue($link->equals(DigitalLink::from('https://example.com/a%2Fb/01/09520123456788?x=%2F&y=1#f%2F')));
+        self::assertTrue(DigitalLink::from('https://example.com/%7Estem/01/09520123456788')->equals(DigitalLink::from('https://example.com/~stem/01/09520123456788')));
+        self::assertFalse($link->equals(DigitalLink::from('https://example.com/a%2Fb/01/09520123456788?y=1&x=%2F#f%2F')));
+        self::assertFalse(DigitalLink::from('https://example.com:443/01/09520123456788')->equals(DigitalLink::from('https://example.com/01/09520123456788')));
+        self::assertFalse(DigitalLink::from('https://example.com/01/09520123456788?x=%2F')->equals(DigitalLink::from('https://example.com/01/09520123456788?x=%3A')));
+        self::assertFalse(DigitalLink::from('https://example.com/01/09520123456788?x=%2F')->equals(DigitalLink::from('https://example.com/01/09520123456788?x=%252F')));
+    }
+
+    public function testAcceptsAnIpv6Host(): void
+    {
+        $link = DigitalLink::from('https://[2001:DB8::1]:8443/01/09520123456788');
+
+        self::assertSame('(01)09520123456788', (string) $link->toElementString());
+        self::assertTrue($link->equals(DigitalLink::from('https://[2001:db8::1]:8443/01/09520123456788')));
     }
 
     public function testAStemPathThatLooksLikeGs1DataStaysTheStem(): void
@@ -337,8 +380,10 @@ final class DigitalLinkTest extends TestCase
         yield 'qualifier order' => ['https://example.com/01/09520123456788/21/12345XYZ/10/ABC123', 'GS1 Digital Link path has key qualifiers that AI (01) does not take in this order.'];
         yield 'foreign qualifier' => ['https://example.com/00/195201234567891232/10/ABC', 'GS1 Digital Link path has key qualifiers that AI (00) does not take in this order.'];
         yield 'repeated qualifier' => ['https://example.com/01/09520123456788/10/A/10/A', 'GS1 Digital Link path has key qualifiers that AI (01) does not take in this order.'];
-        yield 'qualifier in query' => ['https://example.com/01/09520123456788?10=ABC', 'GS1 Digital Link query has AI (10), which belongs in the path.'];
-        yield 'qualifier before a later one in the path' => ['https://example.com/01/09520123456788/21/S?10=A', 'GS1 Digital Link query has AI (10), which belongs in the path.'];
+        yield 'two "@" in the authority' => ['https://u@ser@example.com/01/09520123456788', 'GS1 Digital Link authority has more than one "@".'];
+        yield 'broken escape in a value' => ['https://example.com/01/09520123456788/10/ABC%2', 'GS1 Digital Link contains a "%" that is not followed by two hex digits.'];
+        yield 'escape with a non-hex digit' => ['https://example.com/01/09520123456788?x=%G1', 'GS1 Digital Link contains a "%" that is not followed by two hex digits.'];
+        yield 'escaped numeric key that is no AI' => ['https://example.com/01/09520123456788?%39%39%39%39=1', 'GS1 Digital Link query has an all-numeric key that is no AI.'];
         yield 'not an attribute' => ['https://example.com/00/195201234567891232?21=1', 'GS1 Digital Link query has AI (21), which is not a GS1 Digital Link data attribute.'];
         yield 'unknown numeric key' => ['https://example.com/01/09520123456788?236=12098', 'GS1 Digital Link query has an all-numeric key that is no AI.'];
         yield 'key repeated in query' => ['https://example.com/01/09520123456788?01=09520123456788', 'GS1 Digital Link has AI (01) in the path and in the query.'];
@@ -378,7 +423,8 @@ final class DigitalLinkTest extends TestCase
     public static function unconvertibleElementStrings(): iterable
     {
         yield 'no primary key' => ['(10)ABC', 'https://id.gs1.org', 'GS1 Digital Link needs a primary key AI in the element string.'];
-        yield 'not an attribute' => ['(414)9520123456788(7040)1A2B(91)X(8019)1', 'https://id.gs1.org', 'GS1 Digital Link query has AI (8019), which is not a GS1 Digital Link data attribute.'];
+        yield 'not an attribute' => ['(414)9520123456788(7040)1A2B(91)X(8019)1', 'https://id.gs1.org', 'GS1 Digital Link cannot carry AI (8019) of the element string: it is neither a key qualifier of AI (414) nor a data attribute.'];
+        yield 'qualifier of another key' => ['(01)09520123456788(7040)1A2B', 'https://id.gs1.org', 'GS1 Digital Link cannot carry AI (7040) of the element string: it is neither a key qualifier of AI (01) nor a data attribute.'];
         yield 'domain with query' => ['(01)09520123456788', 'https://example.com/?a=1', 'GS1 Digital Link domain must be an http or https URL without query or fragment.'];
         yield 'domain with fragment' => ['(01)09520123456788', 'https://example.com#a', 'GS1 Digital Link domain must be an http or https URL without query or fragment.'];
         yield 'domain not a URL' => ['(01)09520123456788', 'example.com', 'GS1 Digital Link domain must be an http or https URL without query or fragment.'];

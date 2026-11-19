@@ -26,10 +26,14 @@ final class IsbtSyntax
     /** Data Structure 034: FIN(P) {A-N, P-Z, 0-9}, FPC and PDC {A-Z, 0-9}. */
     public const string PPIC = '([A-NP-Z0-9]{5})([A-Z0-9]{6})([A-Z0-9]{5})';
 
+    /**
+     * GS1 General Specifications 26.0, section 5.6.2: the largest Data Matrix holds "Numeric data: 3116 digits", the
+     * most characters any carrier of an ISBT 128 compound message holds.
+     */
+    public const int MAX_LENGTH = 3116;
+
     /** "aa shall specify the number of ISBT 128 data structures that follow": two digits. */
     private const int MAX_STRUCTURES = 99;
-
-    private const int MAX_LENGTH = 2048;
 
     /** Data Structure 001: "=" followed by the first FIN character {A-N, P-Z, 1-9}. */
     private const string DIN_FIRST = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';

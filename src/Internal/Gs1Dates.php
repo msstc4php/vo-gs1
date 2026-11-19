@@ -20,6 +20,8 @@ final class Gs1Dates
     /**
      * Figure 7-17: YY minus the current year's last two digits is 51 to 99 → previous century, -50 to -99 → next
      * century, otherwise the current century.
+     *
+     * @param int<0, 99> $yy
      */
     public static function year(int $yy, int $currentYear): int
     {
@@ -65,7 +67,7 @@ final class Gs1Dates
             return null;
         }
 
-        return \sprintf('%04d', self::year((int) \substr($yymmdd, 0, 2), $currentYear)) . \substr($yymmdd, 2);
+        return \sprintf('%04d', self::year(\max(0, \min(99, (int) \substr($yymmdd, 0, 2))), $currentYear)) . \substr($yymmdd, 2);
     }
 
     /**

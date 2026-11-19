@@ -20,6 +20,9 @@ use UnexpectedValueException;
  *     5: list<non-empty-string>,
  *     6: list<non-empty-list<non-empty-string>>|null,
  * }
+ * A value written into the generated PHP source: a scalar or lists of them, at most three levels deep.
+ * @phpstan-type ExportScalar string|int|bool|null
+ * @phpstan-type ExportValue ExportScalar|list<ExportScalar|list<ExportScalar|list<ExportScalar>>>
  */
 final class AiTableGenerator
 {
@@ -168,8 +171,13 @@ final class AiTableGenerator
             throw new UnexpectedValueException('Only the last component may vary, and optional ones come last.');
         }
 
-        /** @var 'N'|'X'|'Y'|'Z' $charset */
-        $charset = $match[2] ?? '';
+        $charset = match ($match[2] ?? '') {
+            'N' => 'N',
+            'X' => 'X',
+            'Y' => 'Y',
+            'Z' => 'Z',
+            default => throw new UnexpectedValueException('Unknown character set in "' . $token . '".'),
+        };
         $fixed = (int) ($match[3] ?? 0);
         $max = $fixed > 0 ? $fixed : (int) ($match[4] ?? 0);
         $linters = \array_values(\array_filter(\explode(',', $match[6] ?? ''), static fn (string $l): bool => $l !== ''));
@@ -372,15 +380,17 @@ final class AiTableGenerator
         return \sprintf($template, self::RELEASE, self::COMMIT, $list, $arms);
     }
 
-    private function export(mixed $value): string
+    /**
+     * @param ExportValue $value
+     */
+    private function export(array|string|int|bool|null $value): string
     {
         return match (true) {
             \is_array($value) => '[' . \implode(', ', \array_map($this->export(...), $value)) . ']',
             \is_string($value) => "'" . \addcslashes($value, "'\\") . "'",
             \is_int($value) => (string) $value,
             \is_bool($value) => $value ? 'true' : 'false',
-            $value === null => 'null',
-            default => throw new UnexpectedValueException('Cannot export a value of type ' . \get_debug_type($value) . '.'),
+            default => 'null',
         };
     }
 }

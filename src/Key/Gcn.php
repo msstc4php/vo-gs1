@@ -29,9 +29,14 @@ final class Gcn extends AbstractStringValueObject implements IdentificationKey
         return new self($body . Gs1CheckDigit::compute($body) . $serial);
     }
 
+    /**
+     * @return non-empty-string|null
+     */
     public function serial(): ?string
     {
-        return \strlen($this->value) > 13 ? \substr($this->value, 13) : null;
+        $serial = \substr($this->value, 13);
+
+        return $serial === '' ? null : $serial;
     }
 
     #[Override]
@@ -44,8 +49,8 @@ final class Gcn extends AbstractStringValueObject implements IdentificationKey
     protected function parse(string $value): string
     {
         KeyRules::checkedDigits(\substr($value, 0, 13), self::TYPE, 13);
-        if (\strlen($value) > 13) {
-            $serial = \substr($value, 13);
+        $serial = \substr($value, 13);
+        if ($serial !== '') {
             if (\strlen($serial) > self::SERIAL_MAX) {
                 throw KeyRules::fail('GCN serial', \sprintf('must have 1 to %d digits, got %d', self::SERIAL_MAX, \strlen($serial)));
             }

@@ -105,9 +105,11 @@ final class HibcSyntax
             $readings[] = \substr($data, 0, -1);
         }
 
+        // "/" is a Mod 43 value (40), so a "/" link character is itself the first "/" and a supplemental "/" follows it.
         $slash = \strpos($data, '/');
-        if ($slash !== false && $data[$slash - 1] === $primary[-1]) {
-            $readings[] = \substr($data, 0, $slash - 1) . \substr($data, $slash);
+        $link = $slash === false ? -1 : ($primary[-1] === '/' ? $slash : $slash - 1);
+        if ($link > 0 && $data[$link] === $primary[-1] && ($primary[-1] !== '/' || ($data[$link + 1] ?? '') === '/')) {
+            $readings[] = \substr($data, 0, $link) . \substr($data, $link + 1);
         }
 
         if ($readings === []) {
@@ -179,7 +181,7 @@ final class HibcSyntax
             return self::with($primary, $match[2], null, HibcDateFormat::Yyjjj, $match[1]);
         }
 
-        if (\preg_match('/^\$(\+?)([A-Z0-9]' . $field . '{0,17})$/D', $data, $match) === 1) {
+        if (\preg_match('/^\$(\+?)(' . $field . '{1,18})$/D', $data, $match) === 1) {
             return $match[1] === ''
                 ? self::with($primary, $match[2], null, null, '')
                 : self::with($primary, null, $match[2], null, '');
@@ -283,6 +285,7 @@ final class HibcSyntax
         }
 
         $expiry = isset($values['14D']) ? self::date(HibcDateFormat::Yyyymmdd, $values['14D']) : null;
+        $quantity = isset($values['Q']) ? \max(0, \min(99999, (int) $values['Q'])) : null;
 
         return new HibcData(
             $data->primary,
@@ -294,8 +297,10 @@ final class HibcSyntax
             $data->expiryDate ?? $expiry,
             $data->expiryDateFormat ?? ($expiry instanceof DateTimeImmutable ? HibcDateFormat::Yyyymmdd : null),
             isset($values['16D']) ? self::date(HibcDateFormat::Yyyymmdd, $values['16D']) : null,
-            $data->quantity ?? (isset($values['Q']) ? \max(0, \min(99999, (int) $values['Q'])) : null),
+            $data->quantity ?? $quantity,
             self::nonEmpty($values['S'] ?? ''),
+            $expiry,
+            $quantity,
         );
     }
 

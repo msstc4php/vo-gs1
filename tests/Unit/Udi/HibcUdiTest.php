@@ -212,7 +212,6 @@ final class HibcUdiTest extends TestCase
         yield 'legacy lot of 14' => [self::concatenated('05271' . \str_repeat('L', 14)), $secondary];
         yield 'lot of 19' => [self::concatenated('$$7' . \str_repeat('L', 19)), $secondary];
         yield 'lot only flag without lot' => [self::concatenated('$'), $secondary];
-        yield 'lot starting with a dot' => [self::concatenated('$.AB'), $secondary];
         yield 'serial flag without serial' => [self::concatenated('$+'), $secondary];
         yield 'lot with a space' => [self::concatenated('$$7A B'), $secondary];
         yield 'unknown supplemental' => [self::concatenated('$$7A/X1'), $supplemental];
@@ -389,6 +388,64 @@ final class HibcUdiTest extends TestCase
         self::assertNull($five->expiryDate());
 
         self::assertSame(9, HibcUdi::from(self::concatenated('$$73C001/Q9'))->quantity());
+    }
+
+    public function testASlashLinkCharacterBeforeSupplementalData(): void
+    {
+        $primary = '+A123P01/';
+        $data = '+$$3251231LOT//S123';
+        $udi = HibcUdi::fromSymbols($primary, $data . Mod43::compute($data));
+
+        self::assertSame('LOT', $udi->lot());
+        self::assertSame('123', $udi->serial());
+        self::assertSame('2025-12-31', $udi->expiryDate()?->format('Y-m-d'));
+
+        $atEnd = '+$$3251231LOT/S123/';
+        self::assertSame('123', HibcUdi::fromSymbols($primary, $atEnd . Mod43::compute($atEnd))->serial());
+    }
+
+    public function testASlashPrimaryWithoutSupplementalDataTakesOnlyTheTrailingLink(): void
+    {
+        $primary = '+A123P01/';
+        $data = '+$$3251231LOT/';
+
+        self::assertSame('LOT', HibcUdi::fromSymbols($primary, $data . Mod43::compute($data))->lot());
+    }
+
+    public function testALotOrSerialMayStartWithADotOrAHyphen(): void
+    {
+        self::assertSame('.LOT', HibcUdi::from(self::concatenated('$.LOT'))->lot());
+        self::assertSame('-SER', HibcUdi::from(self::concatenated('$+-SER'))->serial());
+        self::assertSame(\str_repeat('.', 18), HibcUdi::from(self::concatenated('$' . \str_repeat('.', 18)))->lot());
+    }
+
+    public function testConflictingSupplementalExpiryAndQuantityAreBothKept(): void
+    {
+        $expiry = HibcUdi::from(self::concatenated('$$3200115AB/14D20991231'));
+        self::assertSame('2020-01-15', $expiry->expiryDate()?->format('Y-m-d'));
+        self::assertSame('2099-12-31', $expiry->supplementalExpiryDate()?->format('Y-m-d'));
+        self::assertNull(HibcUdi::from(self::concatenated('$$3200115AB'))->supplementalExpiryDate());
+
+        $quantity = HibcUdi::from(self::concatenated('$$80230512313C001/Q9'));
+        self::assertSame(2, $quantity->quantity());
+        self::assertSame(9, $quantity->supplementalQuantity());
+        self::assertNull(HibcUdi::from(self::concatenated('$$80230512313C001'))->supplementalQuantity());
+
+        $onlySupplemental = HibcUdi::from(self::concatenated('$$7A/14D20271123/Q12'));
+        self::assertSame('2027-11-23', $onlySupplemental->expiryDate()?->format('Y-m-d'));
+        self::assertSame('2027-11-23', $onlySupplemental->supplementalExpiryDate()?->format('Y-m-d'));
+        self::assertSame(12, $onlySupplemental->quantity());
+        self::assertSame(12, $onlySupplemental->supplementalQuantity());
+    }
+
+    public function testLegacyJulianSecondaryWithALot(): void
+    {
+        $udi = HibcUdi::from(self::concatenated('05271LOT1'));
+
+        self::assertSame('2005-09-28', $udi->expiryDate()?->format('Y-m-d'));
+        self::assertSame(HibcDateFormat::Yyjjj, $udi->expiryDateFormat());
+        self::assertSame('LOT1', $udi->lot());
+        self::assertNull($udi->serial());
     }
 
     public function testInvalidSecondaryContentFromSymbolsIsRefused(): void

@@ -31,7 +31,16 @@ use Override;
 final class ElementString extends AbstractStringValueObject
 {
     /**
+     * A cache of what `$value` parses to, so accessors do not parse again; never observable from outside.
+     *
+     * @var non-empty-list<AiElement>|null
+     */
+    private ?array $elements = null;
+
+    /**
      * The data of the first occurrence of `$ai`, unescaped.
+     *
+     * @return non-empty-string|null
      */
     public function get(string $ai): ?string
     {
@@ -148,18 +157,18 @@ final class ElementString extends AbstractStringValueObject
     #[Override]
     protected function parse(string $value): string
     {
-        return ElementStringSyntax::bracketedForm(ElementStringSyntax::parse($value));
+        $elements = ElementStringSyntax::parse($value);
+        $this->elements = $elements;
+
+        return ElementStringSyntax::bracketedForm($elements);
     }
 
     /**
-     * Read again from the canonical value: the parent's final constructor leaves no place to initialise a readonly
-     * property, and a mutable cache would make the object mutable.
-     *
      * @return non-empty-list<AiElement>
      */
     private function elements(): array
     {
-        return ElementStringSyntax::parse($this->value);
+        return $this->elements ??= ElementStringSyntax::parse($this->value);
     }
 
     private function date(string $ai, ?DateTimeImmutable $today): ?DateTimeImmutable

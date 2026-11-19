@@ -38,7 +38,7 @@ final class DigitalLinkSyntax
 {
     public const string CANONICAL_STEM = 'https://id.gs1.org';
 
-    // Twice the element string data cap: the URI carries the data percent-encoded and its own stem.
+    // A package bound against oversized input, not a GS1 rule: twice the largest GS1 QR Code capacity (7089).
     public const int MAX_LENGTH = 14178;
 
     /**
@@ -55,6 +55,9 @@ final class DigitalLinkSyntax
     /** AIs whose value is a GTIN: a legacy link may give it with 8, 12 or 13 digits. */
     private const array GTIN_AIS = ['01', '02', '03'];
 
+    // RFC 3986 section 2.3.
+    private const string UNRESERVED = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+
     // RFC 3986 section 2: unreserved, reserved and "%".
     private const string URI_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&\'()*+,;=%';
 
@@ -68,6 +71,11 @@ final class DigitalLinkSyntax
             throw self::fail('contains a character that a URI does not allow');
         }
 
+        // RFC 3986 section 2.1: pct-encoded = "%" HEXDIG HEXDIG.
+        if (\preg_match('/%(?![0-9A-Fa-f]{2})/', $uri) === 1) {
+            throw self::fail('contains a "%" that is not followed by two hex digits');
+        }
+
         $url = Url::tryFrom($uri);
         $schemeEnd = \strpos($uri, '://');
         if (!$url instanceof Url || $schemeEnd === false) {
@@ -77,6 +85,10 @@ final class DigitalLinkSyntax
         $rest = \substr($uri, $schemeEnd + 3);
         $authority = \substr($rest, 0, \strcspn($rest, '/?#'));
         $rest = \substr($rest, \strlen($authority));
+        // RFC 3986 section 3.2.1: userinfo cannot hold an unescaped "@".
+        if (\substr_count($authority, '@') > 1) {
+            throw self::fail('authority has more than one "@"');
+        }
 
         $fragment = \strstr($rest, '#');
         if ($fragment !== false) {
@@ -87,9 +99,10 @@ final class DigitalLinkSyntax
         $path = $query === false ? $rest : \substr($rest, 0, -\strlen($query));
 
         [$stemPath, $elements] = self::path($path);
-        [$attributes, $extensions] = $query === false ? [[], []] : self::query(\substr($query, 1), $elements);
+        [$attributes, $extensions, $elements] = $query === false ? [[], [], $elements] : self::query(\substr($query, 1), $elements);
 
-        $hostStart = (int) \strrpos('@' . $authority, '@');
+        // Lower-casing from the "@" on leaves the "@" itself as it is.
+        $hostStart = (int) \strpos($authority, '@');
         $authority = \substr($authority, 0, $hostStart) . \strtolower(\substr($authority, $hostStart));
 
         return new DigitalLinkParts(\strtolower($url->scheme()), $authority, $stemPath, $elements, $attributes, $extensions, $fragment === false ? null : $fragment);
@@ -192,6 +205,19 @@ final class DigitalLinkSyntax
     }
 
     /**
+     * RFC 3986 section 6.2.2: upper-case hex digits in escapes and decode the escapes of unreserved characters, so
+     * equivalent spellings compare equal.
+     */
+    public static function normalisedEscapes(string $value): string
+    {
+        return (string) \preg_replace_callback('/%([0-9A-Fa-f]{2})/', static function (array $match): string {
+            $character = \chr((int) \hexdec($match[1]));
+
+            return \strspn($character, self::UNRESERVED) === 1 ? $character : '%' . \strtoupper($match[1]);
+        }, $value);
+    }
+
+    /**
      * Percent-encodes every character but the RFC 3986 unreserved ones, as the GS1 Barcode Syntax Engine's
      * `URIescape()` does.
      */
@@ -219,7 +245,8 @@ final class DigitalLinkSyntax
         $specs = [];
         $key = null;
         for ($i = \count($segments) - 2; $i >= 1; $i -= 2) {
-            $spec = AiTable::spec(self::CONVENIENCE_ALPHAS[$segments[$i]] ?? $segments[$i]);
+            $name = self::normalisedEscapes($segments[$i]);
+            $spec = AiTable::spec(self::CONVENIENCE_ALPHAS[$name] ?? $name);
             if (!$spec instanceof AiSpec) {
                 break;
             }
@@ -252,7 +279,8 @@ final class DigitalLinkSyntax
     /**
      * @param non-empty-list<AiElement> $path
      *
-     * @return array{list<AiElement>, list<string>}
+     * @return array{list<AiElement>, list<string>, non-empty-list<AiElement>} attributes, extensions and the path with
+     *                                                                         the qualifiers read from the query
      */
     private static function query(string $query, array $path): array
     {
@@ -262,7 +290,7 @@ final class DigitalLinkSyntax
         $extensions = [];
         foreach (\explode('&', \str_replace(';', '&', $query)) as $parameter) {
             $equals = \strpos($parameter, '=');
-            $name = $equals === false ? $parameter : \substr($parameter, 0, $equals);
+            $name = self::normalisedEscapes($equals === false ? $parameter : \substr($parameter, 0, $equals));
             if ($name === '' || \strspn($name, Gs1Charsets::DIGITS) !== \strlen($name)) {
                 if ($parameter !== '') {
                     $extensions[] = $parameter;
@@ -272,16 +300,8 @@ final class DigitalLinkSyntax
             }
 
             $spec = AiTable::spec($name) ?? throw self::fail('query has an all-numeric key that is no AI');
-            if (!$spec->digitalLinkAttribute) {
-                throw self::fail(\sprintf('query has AI (%s), which is not a GS1 Digital Link data attribute', $spec->ai));
-            }
-
             if (\in_array($spec->ai, $pathAis, true)) {
                 throw self::fail(\sprintf('has AI (%s) in the path and in the query', $spec->ai));
-            }
-
-            if (self::belongsInPath($path[0]->spec, $qualifiers, $spec->ai)) {
-                throw self::fail(\sprintf('query has AI (%s), which belongs in the path', $spec->ai));
             }
 
             // A repeated attribute "should not" appear; if it does, "the last defined value … takes precedence".
@@ -289,7 +309,24 @@ final class DigitalLinkSyntax
             $attributes['ai' . $spec->ai] = self::element($spec, $equals === false ? '' : \substr($parameter, $equals + 1), true);
         }
 
-        return [\array_values($attributes), $extensions];
+        // URI Syntax 1.7.0 has no SHALL that keeps a key qualifier out of the query, so one that fits the path's
+        // qualifier sequence is read as the qualifier it is.
+        $byAi = [];
+        foreach ([...$path, ...$attributes] as $element) {
+            $byAi[$element->spec->ai] = $element;
+        }
+
+        foreach ($attributes as $name => $attribute) {
+            $order = self::sequenceWith($path[0]->spec, $qualifiers, $attribute->spec->ai);
+            if ($order !== null) {
+                $qualifiers = $order;
+                unset($attributes[$name]);
+            } elseif (!$attribute->spec->digitalLinkAttribute) {
+                throw self::fail(\sprintf('query has AI (%s), which is not a GS1 Digital Link data attribute', $attribute->spec->ai));
+            }
+        }
+
+        return [\array_values($attributes), $extensions, [$path[0], ...\array_map(static fn (string $ai): AiElement => $byAi[$ai], $qualifiers)]];
     }
 
     private static function element(AiSpec $spec, string $raw, bool $inQuery): AiElement
@@ -329,13 +366,22 @@ final class DigitalLinkSyntax
     }
 
     /**
-     * An attribute that would make a valid path with the qualifiers present belongs in the path.
+     * The qualifiers with `$ai` added, in the order of the first sequence of the primary key that holds `$ai` and the
+     * present qualifiers in their order; null when no sequence does.
      *
      * @param list<string> $qualifiers
+     *
+     * @return list<string>|null
      */
-    private static function belongsInPath(AiSpec $primary, array $qualifiers, string $ai): bool
+    private static function sequenceWith(AiSpec $primary, array $qualifiers, string $ai): ?array
     {
-        return array_any($primary->digitalLinkPrimaryKey ?? [], fn (array $sequence): bool => \in_array($ai, $sequence, true) && \array_values(\array_intersect($sequence, $qualifiers)) === $qualifiers);
+        foreach ($primary->digitalLinkPrimaryKey ?? [] as $sequence) {
+            if (\in_array($ai, $sequence, true) && \array_values(\array_intersect($sequence, $qualifiers)) === $qualifiers) {
+                return \array_values(\array_intersect($sequence, [...$qualifiers, $ai]));
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -133,7 +133,7 @@ final class Ndc extends AbstractStringValueObject
 
         $lengths = \sprintf('%d-%d-%d', \strlen($match[1]), \strlen($match[2]), \strlen($match[3]));
         if (NdcConfiguration::tryFrom($lengths) === null) {
-            throw new InvalidUdiException(\sprintf('NDC segment lengths %s are not a configuration of 21 CFR 207.33(b)(2).', $lengths));
+            throw new InvalidUdiException(\sprintf('NDC segment lengths %s are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).', $lengths));
         }
 
         return $value;

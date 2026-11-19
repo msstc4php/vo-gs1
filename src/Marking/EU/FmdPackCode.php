@@ -19,8 +19,8 @@ use Override;
  * number (at most 20 characters), batch and expiry date, plus national numbers where required.
  *
  * Two formats: a GS1 element string with AI (01), (21), (10) and (17), in any notation {@see ElementString} accepts;
- * or the IFA format, an ISO/IEC 15434 format 06 message (`[)>` RS `06` GS … RS EOT, the trailer optional on input)
- * with DI 9N (PPN), S, 1T and D.
+ * or the IFA format, an ISO/IEC 15434 format 06 message (`[)>` RS `06` GS … RS EOT, the trailer optional on input,
+ * optionally after a scanner's `]d1` or `]d2`) with DI 9N (PPN), S, 1T and D.
  *
  * Canonical form: the GS1 barcode data with GS separators, or the IFA message with its trailer; data elements in the
  * order given. Both carry control characters (GS, RS, EOT) that storage must keep.
@@ -41,6 +41,9 @@ final class FmdPackCode extends AbstractStringValueObject
 
     /** @var non-empty-list<non-empty-string> */
     private const array MANDATORY_AIS = ['01', '21', '10', '17'];
+
+    /** @var non-empty-list<non-empty-string> Data Matrix symbology identifiers a scanner may put before an IFA message */
+    private const array SCANNER_PREFIXES = [']d1', ']d2'];
 
     public function isIfaFormat(): bool
     {
@@ -125,8 +128,9 @@ final class FmdPackCode extends AbstractStringValueObject
             throw new InvalidMarkingCodeException(\sprintf('%s must have at most %d characters, got %d.', self::TYPE, self::MAX_LENGTH, \strlen($value)));
         }
 
-        if (\str_starts_with($value, IfaPackData::HEADER)) {
-            return IfaPackData::parse($value)->canonical();
+        $unprefixed = \in_array(\substr($value, 0, 3), self::SCANNER_PREFIXES, true) ? \substr($value, 3) : $value;
+        if (\str_starts_with($unprefixed, IfaPackData::HEADER)) {
+            return IfaPackData::parse($unprefixed)->canonical();
         }
 
         try {

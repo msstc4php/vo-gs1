@@ -112,7 +112,9 @@ unassigned one is `Unknown`, never refused.
 `MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString` is a GS1 element string, checked against the AI table: data
 format and character set, the GS1 linters (check digits, dates, country and currency codes, …) and invalid AI pairs
 (`ex`). Mandatory AI pairs (`req`) are reported, not refused (see below). An AI may repeat only with the same data.
-The data may be at most 7089 characters, the capacity of the largest GS1 QR Code.
+Input and the canonical bracketed form may be at most 14178 characters each: a package bound against oversized input
+and for storage (twice the 7089-character capacity of the largest GS1 QR Code, so data of several carriers fits), not
+a GS1 rule.
 
 ```php
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
@@ -173,15 +175,16 @@ DigitalLink::fromElementString(ElementString::from('(01)09520123456788(17)201225
 - **Path:** the primary key is the last `/AI/value` pair whose AI is a primary key; anything before it is the
   domain's own path. Key qualifiers must follow the dictionary's order (`/01/…/22/…/10/…/21/…`), a trailing slash is
   tolerated. Values are percent-decoded; in the query `+` is a space.
-- **Query:** all-numeric keys are AIs and must be GS1 Digital Link data attributes. Refused: an AI that fits the
-  path, an all-numeric key that is no AI, an AI without `=value`, an AI that is already in the path. A repeated data
+- **Query:** all-numeric keys are AIs and must be GS1 Digital Link data attributes, except a key qualifier that fits
+  the path (even (21), which is no data attribute), which is read into the path. Refused: an all-numeric key that is
+  no AI, any other AI that is no data attribute, an AI without `=value`, an AI that is already in the path. A repeated data
   attribute is allowed and its last value counts, as section 3 says. `&` and `;` separate parameters. Every other
   parameter (`linkType`, `context`, your own) is kept as given, in order, and does not enter the element string.
 - **Value and equality:** the value is the URI exactly as given; the standard defines no normal form short of the
   canonical URI, which drops the domain and the extra parameters. `equals()` treats as one link: scheme and host in
   any case (userinfo case-sensitive, RFC 3986), the same stem path, the same path data (a zero-suppressed GTIN equals
   its 14-digit form, `%41` equals `A`, `/gtin/` equals `/01/`), the same effective data attributes in any order, the
-  same non-GS1 parameters, raw and in order (`x=%41` is not `x=A`), and the same fragment. `toCanonical()` gives
+  same non-GS1 parameters in order and the same fragment, escapes normalised (`%2f` is `%2F`, `%41` is `A`). `toCanonical()` gives
   section 4.12's canonical URI: `https://id.gs1.org`, 14-digit GTIN, attributes in lexical order of the AI, nothing
   else.
 - **`toElementString()`** lists the path AIs, then the query AIs in query order (a repeated attribute at its last
@@ -196,7 +199,13 @@ DigitalLink::fromElementString(ElementString::from('(01)09520123456788(17)201225
 - **Accepted for old links** (section 4.1: existing infrastructure "SHOULD continue to support legacy expressions"):
   a GTIN-8, -12 or -13 without its leading zeros in AI (01), (02) or (03), and the deprecated convenience alphas of the
   path (`/gtin/…/lot/…/ser/…`), read as their AIs. The value stays as given; `toCanonical()` writes the AIs.
-- At most 14178 characters (twice the element string data cap).
+- At most 14178 characters, the element string bound: a package limit against oversized input, not a GS1 rule.
+- Percent-escapes: a `%` must be followed by two hex digits; escaped unreserved characters in AI path segments and
+  query keys are decoded before the AI lookup (`/%30%31/…` is `/01/…`, `?%31%37=…` is AI (17)); the authority may
+  hold one `@`. A key qualifier given in the query (`?10=ABC` beside a GTIN path) is read as that qualifier: the
+  standard has no SHALL against it.
+- `equals()`: escapes compare after RFC 3986 6.2.2 normalisation; the port is compared as written and non-GS1
+  parameters keep their order.
 
 ## EPC URIs
 
@@ -235,7 +244,7 @@ EpcTagUri::fromPureIdentityUri($epc, EpcTagEncoding::Sgtin198, 3);
   0-7, 0-63 for adi-var, none for gid-96. The company prefix length gives the partition (`partition()`, 0-6). Each
   encoding's field limits apply (for example `sgtin-96`: a serial without leading zeros below 2^38; `giai-96`: digits
   and bits by partition).
-- **Format only:** see [Format only](#format-only) (BIC and IMO check digits, `usdod-96` filter, TDS 7.3.3/7.3.4).
+- **Format only:** see [Format only](#format-only) (BIC and IMO check digits, TDS 7.3.3/7.3.4).
 
 ## Medical devices: UDI, Basic UDI-DI, NDC
 
@@ -273,14 +282,16 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   character and stores the concatenated form, so both labels of an item give equal values. `deviceIdentifier()` is the
   primary data structure with its check character; `labelerIdentificationCode()`, `productNumber()`,
   `unitOfMeasure()`, `lot()`, `serial()` (secondary data, else `S`), `supplementalSerial()` (`S`), `expiryDate()`
-  (secondary data, else `14D`), `expiryDateFormat()` (`HibcDateFormat`), `manufactureDate()` (`16D`), `quantity()`
-  (secondary data, else `Q`). Every format of Appendix F
+  (secondary data, else `14D`), `supplementalExpiryDate()` (`14D`), `expiryDateFormat()` (`HibcDateFormat`),
+  `manufactureDate()` (`16D`), `quantity()` (secondary data, else `Q`), `supplementalQuantity()` (`Q`). Every format
+  of Appendix F
   is read, including the legacy `$`, `$+` and five-digit Julian forms, and the pre-2.6 quantity forms `$$8`/`$$9`
   (Appendix H: "Existing labels are still valid but should not be used for Unique Device Identification"; layout
   and examples from ANSI/HIBC 2.3-2009, quantity in `quantity()`). `/S` is accepted next to a serial secondary; HIBC does not
   say which serial wins, so `serial()` returns the secondary data's (else `/S`) and `supplementalSerial()` the `/S`
   one. In a separate secondary symbol with supplemental data the link character may stand
-  after the lot/serial or before the check character; two valid readings are refused as ambiguous. **Not in the standard, chosen here:** two-digit
+  after the lot/serial or before the check character (a `/` link character is followed directly by the supplemental
+  `/`); two valid readings are refused as ambiguous. A lot or serial may start with `.` or `-` (section 3.0). **Not in the standard, chosen here:** two-digit
   years are 20YY (no clock dependence), an MMYY expiry is the last day of the month, dates are UTC with the hour where
   the format has one. The check character may be a space or `/`; the value keeps it.
 - **`IsbtUdi`** (ICCBBA ST-017): the Compound Message `=+aabbb…` or the human-readable concatenation of the data
@@ -306,7 +317,8 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
 - **`Ndc12`:** the 6-4-2 format of the FDA final rule of 2026-03-05 (effective 2033-03-07), hyphenated or 12 bare
   digits (one configuration), stored hyphenated.
 - **Format only:** see [Format only](#format-only) (ISBT 128 sequences and non-UDI structures, the alternatively formatted NDC).
-- Size limits before parsing: HIBC 113 characters, ISBT 128 2048 characters and 99 data structures, NDC 13.
+- Size limits before parsing: HIBC 113 characters, ISBT 128 3116 characters (the largest Data Matrix,
+  GenSpecs 5.6.2) and 99 data structures, NDC 13.
 
 ## Marking codes: Russia («Честный знак») and the EU
 
@@ -341,16 +353,20 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   Accessors: `gtin()`, `serial()`, `verificationKey()` (91), `verificationCode()` (92, 93 or the pack's 4th group),
   `identifier()` (never throws), `elementString()` (null for the pack). `verificationCode()` is never null. Input:
   the pack code (optionally after `]d1`, `]d2` or a leading GS) or a GS1 code in any `ElementString` notation.
-  **Lost GS separators** (a code copied from a web form): data is never split at a guessed position. A group of an
-  unpublished length that holds, at one of its published lengths, the AI a published structure puts next
-  (`21` + 6 characters + `93…`, `91` + 4 + `92…`, …) is refused, and so is a code left without (92)/(93); 29 GS-free
-  characters that read both as a pack and as such a code throw `AmbiguousValueException`. **Residual:** a
+  **Lost GS separators** (a code copied from a web form): data is never split at a guessed position. The last group
+  of unbracketed data, when of an unpublished length, is refused if the rest after one of its published lengths
+  parses as the AI a published structure puts next, with valid data (`21` + 6 characters + `93` + 4, `91` + 4 +
+  `92…`, …); a code left without (92)/(93) is refused too. Brackets and GS separators prove their boundaries, so
+  data before them is never read as a lost separator. 29 GS-free characters that read both as a pack and as such a
+  code throw `AmbiguousValueException`; `MarkingCode::fromTobaccoConsumerPack()` (or `]d1` input, which no GS1 code
+  carries) reads the pack, and its value keeps the `]d1` prefix so it reads back unambiguously. **Residual:** a
   `GenericGs1` code (unpublished serial length) whose GS after (21) was lost can have its next AIs swallowed into the
   serial and is then accepted as a different code; without the separators this cannot be detected. The operator
-  publishes no recovery rule. Canonical form: the pack as is, a GS1 code as barcode data with its GS separators,
+  publishes no recovery rule. Canonical form: the pack as is (`]d1` + pack in the ambiguous case), a GS1 code as
+  barcode data with its GS separators,
   AIs in the order given (store the GS characters too).
 - **`RU\MarkingIdentifier`** (КИ, the code without the crypto tail): (01) + (21); with (8005) for the tobacco group pack
-  (Decree No. 224, p. 44: "первые 3 группы"); the first 25 characters of the pack. `from()` takes the
+  (Decree No. 224, p. 44: "первые 3 группы"; any serial length, as `GenericGs1` codes have); the first 25 characters of the pack. `from()` takes the
   canonical forms only: bracketed `(01)…(21)…` or the 25 pack characters (any 25-character string is read as a
   pack КИ by `from()`). `fromDocumentForm()` reads the operator's
   `01…21…` (which `toDocumentForm()` gives); 25 characters that read both as a pack КИ and as `01…21…` + 7 throw
@@ -364,7 +380,7 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
 - **Not covered:** see [Not covered](#not-covered); such codes parse as `GenericGs1` when their separators are intact.
 - **`EU\FmdPackCode`** (Delegated Regulation (EU) 2016/161): a GS1 element string with (01), (21), (10), (17), or the
   IFA format `[)>` RS `06` GS `9N…` GS `S…` GS `1T…` GS `D…` RS EOT (ISO/IEC 15434 format 06, ASC data identifiers;
-  the trailer is optional on input, 8P may repeat, other DIs are kept). `productCode(): Gtin|Ppn`, `serial()`,
+  the trailer is optional on input, so is a scanner's `]d1`/`]d2` before it; 8P may repeat, other DIs are kept). `productCode(): Gtin|Ppn`, `serial()`,
   `batch()`, `expiry()`, `expiryDate($today)` (IFA: 2000-2099; `DD = 00` the last day of the month), `pzn()` (from a
   PRA-11 PPN or an NTIN-DE `04150…`), `isIfaFormat()`, `elementString()`. Canonical form: the GS1 barcode data or the
   IFA message with its trailer (control characters included).
@@ -391,7 +407,7 @@ One list for the whole package: where no published source gives a rule, the clas
 | `couponcode`, `couponposoffer` | coupons are out of scope |
 | Registry half of `gcppos1`/`gcppos2` | whether a prefix is a real GS1 Company Prefix is a registry fact; decoding never refuses |
 | BIC check digit (ISO 6346) and IMO number check digit in EPC schemes `bic`, `imovn` | not in the EPC TDS; ISO 6346 and IMO checks arrive in wave 3 (`vo-identifiers`) |
-| `usdod-96` filter; TDS 7.3.3/7.3.4 (no SGTIN from RCN-8 or internal numbering) | defined by the US DoD guide / not enforced |
+| TDS 7.3.3/7.3.4 (no SGTIN from RCN-8 or internal numbering) | not enforced |
 | ISBT 128 compound sequences other than 034-037; non-UDI ISBT 128 data structures | the order is in ICCBBA's RT017, not public |
 | Alternatively formatted NDC (21 CFR 207.33(b)(4)) | no published format; not accepted |
 | Russian crypto tail (AI 91/92/93 contents) | verifying it needs the operator's keys; only its format is checked |
@@ -427,8 +443,8 @@ unmodified under `resources/` (Apache License 2.0, see [`NOTICE`](NOTICE)). Upda
 - The dictionary release is pinned (recorded in the header of `src/Internal/AiTable.php`); the generator refuses any
   other release until its constants are updated.
 - A new release is picked up with `php tools/generate-ai-table.php` and ships as a minor release.
-- Accessors re-parse stored values against the installed table, so a value stored under an older release can be
-  refused by an accessor after an update (see Element strings).
+- Stored values are parsed against the installed table (on loading, and again by the accessors of the composite
+  codes), so a value stored under an older release can be refused after an update (see Element strings).
 - Regenerating needs a development checkout with the dev dependencies installed: the generator lives in `tests/Support/` and the script in `tools/`, both
   export-ignored (`.gitattributes`), so the Composer package ships neither.
 

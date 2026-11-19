@@ -49,16 +49,25 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
         return \str_pad($this->value, 14, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * @return numeric-string|null
+     */
     public function asGtin13(): ?string
     {
         return $this->shortened(13);
     }
 
+    /**
+     * @return numeric-string|null
+     */
     public function asGtin12(): ?string
     {
         return $this->shortened(12);
     }
 
+    /**
+     * @return numeric-string|null
+     */
     public function asGtin8(): ?string
     {
         return $this->shortened(8);
@@ -69,7 +78,7 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
     {
         $gtin14 = $this->toGtin14();
 
-        return \str_starts_with($gtin14, '000000')
+        return \str_starts_with(\substr($gtin14, 1), '00000')
             ? Gs1Prefix::fromGtin8Digits(\substr($gtin14, 6))
             : Gs1Prefix::fromDigits(\substr($gtin14, 1));
     }
@@ -92,11 +101,17 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
         return $value;
     }
 
+    /**
+     * @param 8|12|13 $length
+     *
+     * @return numeric-string|null
+     */
     private function shortened(int $length): ?string
     {
         $padded = $this->toGtin14();
         $zeros = 14 - $length;
+        $short = \substr($padded, $zeros);
 
-        return \strspn($padded, '0') >= $zeros ? \substr($padded, $zeros) : null;
+        return \strspn($padded, '0') >= $zeros && \is_numeric($short) ? $short : null;
     }
 }

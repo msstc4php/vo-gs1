@@ -126,6 +126,19 @@ final class UdiFactoryTest extends TestCase
         UdiFactory::fromString(']C0A9997');
     }
 
+    public function testABracketedFormBehindASymbologyIdentifierIsRefusedByGs1(): void
+    {
+        // A scanner never transmits brackets: GS1 refuses the mix instead of another agency taking it.
+        try {
+            UdiFactory::fromString(']C1(01)09506000134352(17)201225(10)ABC');
+            self::fail('Expected InvalidUdiException.');
+        } catch (InvalidUdiException $exception) {
+            self::assertSame('GS1 UDI is not a valid element string: Element string must start with an AI.', $exception->getMessage());
+        }
+
+        self::assertSame('(01)09506000134352', (string) UdiFactory::fromString(']C10109506000134352'));
+    }
+
     public function testTheAgencyClassValidatesTheRest(): void
     {
         $this->expectException(InvalidUdiException::class);

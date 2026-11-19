@@ -99,8 +99,10 @@ Prefixes", section 1.2.3.2, "a unique string of two or more digits"), `Gs1Prefix
 `Unknown`.) The allocation of a prefix to a given Member Organisation is not in the General Specifications; it is
 GS1's published prefix list (<https://www.gs1.org/standards/id-keys/company-prefix>), not fetched, so `Gs1Prefix` does
 not name Member Organisations. `Gtin::gs1Prefix()` decodes the 14-digit form, so equal GTINs give one result: a form
-that starts with six zeros is read as a GTIN-8 (the dictionary's `gcppos1` note normalises a GS1-8 Prefix "by
-prefixing `00000`" to the 13-digit space), any other by dropping the indicator digit.
+with five zeros after the indicator digit (any indicator, so a GTIN-14 over a GTIN-8 too) is read as a GTIN-8 (the
+dictionary's `gcppos1` note normalises a GS1-8 Prefix "by prefixing `00000`" to the 13-digit space), any other by
+dropping the indicator digit. A run of fewer than seven zeros (from `leadingDigits()` of a short key) completes to
+either `0000000` or `0000001 – 0000099`, so it decodes as `Unknown`.
 
 > Note: Once a GS1 Prefix is issued, no other GS1 Prefix that begins with the same digits SHALL be issued
 
@@ -276,8 +278,10 @@ Size bound, section 5.7.4.1 (GS1 QR Code square format):
 > alphanumeric characters technically, however permissible data is specified by the application standards.
 
 That is the largest capacity the General Specifications state for a GS1 data carrier (GS1 DataMatrix: "Numeric data:
-3116 digits", section 5.6.2; GS1-128: 48), so the unbracketed data (GS separators included) is limited to 7089
-characters. Input is refused before parsing above twice that (14178): no notation more than doubles the data.
+3116 digits", section 5.6.2; GS1-128: 48). It is not a rule for an element string: data may come from several
+carriers, so the package does not refuse data above one symbol's capacity. Its only bound is a package limit against
+oversized input and for storage, not a GS1 rule: at most 14178 characters (twice 7089), both for the input (checked
+before parsing) and for the canonical bracketed form.
 
 #### Linters
 
@@ -395,14 +399,22 @@ known AIs (engine). A trailing slash is tolerated (section 4.12):
 > Data attributes and their values SHALL be expressed via the URI query string as key=value pairs.
 
 Only AIs with the dictionary flag `?` ("AI that is permitted as a GS1 Digital Link data attribute") are accepted
-there. An attribute that would form a valid path with the qualifiers present is refused ("AI_SHOULD_BE_IN_PATH_INFO"
-in the engine). Section 4.10.1:
+there. The engine refuses an attribute that would form a valid path with the qualifiers present
+(`AI_SHOULD_BE_IN_PATH_INFO`), but URI Syntax 1.7.0 has no SHALL or MUST for it: the path is "the most appropriate
+place" for key qualifiers (section 3), and the SHALLs of 4.10 cover data attributes and a second GS1 identifier only.
+So such a query AI is accepted and read as the key qualifier, placed in the path in its sequence (ruling CR-014),
+even one the dictionary does not flag as a data attribute (`?21=S` beside a GTIN path):
+`/01/…/21/S?10=A` is the link `/01/…/10/A/21/S`. Section 4.10.1:
 
 > Any key=value pairs used for extension data SHALL NOT use all-numeric keys to avoid conflict with existing and
 > future keys used for GS1 Application Identifiers
 
 so an all-numeric key that is no AI is refused, with or without `=`; every other parameter is an extension and is
-kept as given (compared raw: `x=%41` and `x=A` differ). The delimiters are `queryStringDelim = "&" / ";"` (section
+kept as given. Keys and AI path segments are read after decoding escaped unreserved characters (RFC 3986 section 2.3:
+"URIs that differ in the replacement of an unreserved character with its corresponding percent-encoded US-ASCII octet
+are equivalent"), so `?%31%37=…` is AI (17) and `/%30%31/…` is `/01/…`. A `%` not followed by two hex digits is
+refused (RFC 3986 section 2.1, `pct-encoded = "%" HEXDIG HEXDIG`), and so is an authority with more than one `@`
+(section 3.2.1: userinfo has no unescaped `@`). The delimiters are `queryStringDelim = "&" / ";"` (section
 4.11). Section 3:
 
 > It should be noted that no key=value pair should be repeated with the same primary identification key in the URI
@@ -418,7 +430,10 @@ pairs except for keys that are GS1 Application Identifiers; key=value pairs, if 
 not numeric, order of the key" and "A canonical GS1 Digital Link URI SHALL NOT include a trailing slash."
 `toCanonical()` builds it. The standard defines no normal form for other URIs; section 5.7 calls URIs whose attributes
 differ only in order "equivalent", which is what `equals()` compares (scheme and host case-insensitive, RFC 3986
-section 6.2.2.1; userinfo, path and non-GS1 parameters as given).
+section 6.2.2.1; userinfo, stem path, non-GS1 parameters and fragment compared after percent-encoding normalisation,
+6.2.2.1 hex case and 6.2.2.2 unreserved characters). Package decisions: the port is compared as written (scheme-based
+normalisation, 6.2.3, is not applied) and non-GS1 parameters keep their order (RFC 3986 gives a query no order-free
+meaning).
 
 **Examples.** Section 5 (5.1-5.11) gives the test values, URI and element string both ways. Section 5.5 lists the
 element string as `(01)…(17)180426(10)ABC1(21)12345`; `toElementString()` keeps path then query order, so it gives
@@ -492,7 +507,31 @@ preceding the remainder of the EPC"; 10.1: "Implementations of the encoding and 
 accept any value of the filter values, whether reserved or not." So any value that fits the field is accepted: 3 bits
 (0-7) in every coding table, 6 bits (0-63) for ADI-var (Table 10-11); GID-96 has none ("The GID EPC scheme does not
 provide for the use of filter values", 10.12). USDOD-96: "Filter values for US DoD EPC Tags are as specified in
-[USDOD]" — format only (a number without leading zeros, at most 18 digits so it fits an int).
+[USDOD]" (10.13), and 14.6.13 defers the whole coding to the same guide. The guide's live URL (dla.mil) refuses
+automated fetches; its version 15.0, read from the UNT web archive
+(<https://webarchive.library.unt.edu/web/20161108070804/http://www.acq.osd.mil/log/SCI/.AIT.html/DoD_Suppliers_Passive_RFID_Info_Guide_v15update.pdf>),
+section 3.6.2, Figure 1 "DoD-96 Identity Type Format":
+
+> Header 8 bits, Filter 4 bits, Government Managed Identifier 48 bits, Serial Number 36 bits
+
+> Serial Number — Uniquely identifies up to 2^36 = 68,719,476,736 tagged items, represented in binary number format.
+
+So the `usdod-96` filter is 0-15 ("all other combinations = reserved for future use" — reserved values are accepted
+by 10.1) and its serial is below 2^36. TDS's own Annex E example `urn:epc:tag:usdod-96:3.CAGEY.5678` with
+`2F320434147455900000162E` has the same layout. The pure identity `usdod` URI keeps `DoDSerialNumber =
+NumericComponent` with no bound.
+
+**USDOD and ADI codes.** Section 6.3.17:
+
+> CAGECodeOrDODAACChar = Digit / %x41-48 / %x4A-4E / %x50-5A ; 0-9 A-H J-N P-Z
+
+with `CAGECode = 5(CAGECodeOrDODAACChar)` and `DODAAC = 6(CAGECodeOrDODAACChar)`; the ADI grammar (6.3.18) reuses it.
+Enforced as written, so a DoDAAC with `I` or `O` is refused.
+
+**BIC.** Section 6.3.19 says in prose "The owner code consists of three capital letters of the Latin alphabet", but
+its grammar has `OwnerCodeChar = %x41-48 / %x4A-4E / %x50-5A ; A-H J-N P-Z`. Registered owner codes use `I` and `O`
+(OOCL's `OOLU`, ONE's `ONEU`), so the grammar line would refuse real containers; the prose wins (never refuse a valid
+value) and the owner code is `[A-Z]{3}`, followed by `CatIdChar = "J" / "U" / "Z"` and seven digits.
 
 **Partition tables** (14.6, "SGTIN Partition Table" and the tables of the other schemes): partition values 0-6 map to
 GS1 Company Prefix lengths 12-6, for example
@@ -515,6 +554,7 @@ A prefix length outside 6-12 has no partition and is refused (it is refused in t
 | `giai-96` | "GIAI-96 Partition Table": P 0-6 gives Max Digits (K) 13-19 and Bits (N) 42, 45, 48, 52, 55, 58, 62 |
 | `cpi-96` | "CPI-96 Partition Table": Maximum Digits 3-9 for P 0-6; serial "less than 2^31"; within those digits the reference is always below its 11-31 bits |
 | `gid-96` | GID-96 coding table: 28, 24 and 36 bits for manager number, object class and serial |
+| `usdod-96` | US DoD guide 3.6.2 (above): filter 4 bits, serial 36 bits |
 | `adi-var` | "The number of characters in the Part Number segment must be greater than or equal to zero and less than or equal to 32"; serial "greater than or equal to one and less than or equal to 30" |
 
 The long encodings (`sgtin-198`, `sgln-195`, `grai-170`, `giai-202`, `gdti-174`, `cpi-var`, `itip-212`) allow
@@ -570,7 +610,7 @@ Table F1:
 > numeric Julian date.
 
 ("optional variable length (0 to 13)"). Section 3.0: "The use of the special characters “.” and “-“ are permitted in
-the Lot and Serial fields". Appendix A: Julian dating is the day of the year, February 29 being 060 in a leap year.
+the Lot and Serial fields"; no position is excluded, so a `$`/`$+` lot or serial may start with either. Appendix A: Julian dating is the day of the year, February 29 being 060 in a leap year.
 Table F1's example data (lot `3C001`, serial `0001`, expiry 28 September 2005, 22:00) is the test table.
 
 **Legacy quantity (`$$8`, `$$9`).** Table 2, Note 3: "Quantity is no longer included in the Secondary Data
@@ -613,7 +653,9 @@ in the Primary Symbol (Check Character)." Examples: `+A99912345/$$52001510X33` (
 separate secondary symbol with supplemental data the standard does not place the link character: Table 2 puts `L`
 right after the lot/serial field B, and section 2.3.1 says "the check character will be inserted at the end of the
 total string". Both readings are accepted — `L` before the first `/` or `L` second to last; when both give valid data
-the symbol is refused as ambiguous rather than guessed.
+the symbol is refused as ambiguous rather than guessed. `/` is a check character too (Table B1 value 40): when the
+primary check character is `/`, the link character placed before the supplemental data is the first `/` of the
+secondary data, directly followed by the supplemental `/` (`+$$3251231LOT//S123` with primary `+A123P01/`).
 
 ### Supplemental data (section 2.3)
 
@@ -622,8 +664,11 @@ the symbol is refused as ambiguous rather than guessed.
 
 DIs: `S` serial ("an1 + an18", 2.3.2.1, headed "Serial number when Lot number is used"; the standard has no sentence
 forbidding `/S` beside a serial secondary, so it is accepted, and it does not say which serial wins when both are
-present: `serial()` returns the secondary's, `supplementalSerial()` the `/S` one), `16D` date of manufacture ("an3+n8 … (YYYYMMDD)"), `14D` expiry
-("an3+n8 … (YYYYMMDD)"), `Q` quantity ("an1+n1...n5"); "Quantity must be the last field in supplemental data". Other
+present: `serial()` returns the secondary's, `supplementalSerial()` the `/S` one), `16D` date of manufacture
+("an3+n8 … (YYYYMMDD)"), `14D` expiry ("an3+n8 … (YYYYMMDD)"), `Q` quantity ("an1+n1...n5"); "Quantity must be the
+last field in supplemental data". `14D` beside a secondary date and `Q` beside a legacy `$$8`/`$$9` quantity are
+treated like `/S`: `expiryDate()` / `quantity()` return the secondary data's, `supplementalExpiryDate()` /
+`supplementalQuantity()` the supplemental one. Other
 DIs are refused (the standard names no others). Examples: `+A99912345/$$52001510X3/16D20111212/S77DEFG457`,
 `+A99912345/$10X3/16D20111231/14D202001313`, `+A99912349/$10X3/16D20111231/14D20200131/Q500Z`.
 
@@ -673,6 +718,11 @@ are checked; other RT017 numbers are format only (RT017 is published in ICCBBA's
 data structures are kept unparsed (printable ASCII, at least three characters). The DIN "flag characters … should be
 ignored" (chapter 5) and "shall be set to 00" for medical devices (3.1): reading software ignores them, so any flag of
 the structure's character set is accepted and `donationIdentificationNumber()` returns the first 13 characters.
+
+Size bound: ST-017 sets no length for a compound message, so the bound is the largest capacity of a carrier that holds
+one, GS1 General Specifications 26.0, section 5.6.2 (GS1 DataMatrix, "Data characters per symbol (for the maximum
+symbol size)"): "Numeric data: 3116 digits." (The ruling's citation 5.7.4.1 is the QR Code section; the Data Matrix
+figure is in 5.6.2.) Input above 3116 characters is refused; the former unsourced 2048 is gone (CR-018).
 
 Dates: "These are presented in a YYYJJJ format where the first three characters form a three-digit year … Thus, 019032
 refers to 1 Feb 2019": the year is 2000 + `cyy`. Expiration: "the date at the end of which the item expires".
@@ -932,7 +982,12 @@ Merged structures (same AIs, same lengths, different groups), the published stru
 with the pack code: every GS1-structured code needs a GS (or brackets) after the variable-length (21), the pack is 29
 characters of CSET 82. The one exception is 29 GS-free characters that are also `01` + GTIN + `21` + 5 + `93` + 4 (a shortened code with
 a 5-character serial whose separator was lost): when the pack reading (GTIN check digit of the first 14) is valid too,
-`MarkingCode` throws `AmbiguousValueException`, otherwise it refuses the lost separator. `MarkingIdentifier::
+`MarkingCode` throws `AmbiguousValueException`, otherwise it refuses the lost separator. `MarkingCode::
+fromTobaccoConsumerPack()` picks the pack reading explicitly, and so does `]d1` input: Decree No. 224 uses FNC1 for
+the AI format "except for Section I products", and GenSpecs Table 5-2 gives GS1 DataMatrix the identifier `]d2`, so
+`]d1` data (Data Matrix without FNC1 in first position) is never a GS1 element string. Such a pack keeps `]d1` in its
+canonical value, so it reads back unambiguously (from storage too); every other pack keeps its 29 characters.
+`MarkingIdentifier::
 fromDocumentForm()` throws it for 25 characters that read both as a pack КИ (14 + 7 + 4) and as `01` + GTIN + `21` +
 7; the constructor takes only the unambiguous canonical forms.
 
@@ -956,7 +1011,11 @@ is **not** one of its published lengths, and that holds, at one of those lengths
 next, is refused as a lost separator — (21) at 6, 7, 13 or 20 followed by `91`, `93` or `8005`; (91) at 4 by `92`; (92)
 at 44 or 88 by `3103`; (93) at 4 by `3103` or `335y`. A group of a published length is unambiguous with intact GS
 separators, whatever it contains (a 20-character serial with `93` at offset 13 is a serial). The same rule applies to
-identifiers. Cost: a code that would otherwise be `GenericGs1` (unpublished length) is refused when such a sequence
+identifiers. Ruling CR-007 narrows it: only the last group of unbracketed data is checked (brackets and GS separators
+prove the other boundaries, so bracketed input is never checked), and only when the rest after the published length
+parses as that next AI with valid data (a serial ending in `93` with no room for (93)'s four characters, or a (92)
+ending in `3103`, is data). Ruling CR-008: a `MarkingIdentifier` (01)(21)(8005) takes any serial length, as
+`MarkingCode` does for `GenericGs1`. Cost: a code that would otherwise be `GenericGs1` (unpublished length) is refused when such a sequence
 sits at such an offset. Opposite residual (fix round 3): a `GenericGs1` code (unpublished serial length) whose GS after
 (21) was lost can have its next AIs swallowed into the serial and is accepted as a different code — undetectable
 without the separators. No "(92) without (91)" refusal is added: it would refuse possibly valid generic codes. A GS-less code with no tail is refused for lacking (92)/(93).

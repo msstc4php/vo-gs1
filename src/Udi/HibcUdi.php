@@ -109,11 +109,20 @@ final class HibcUdi extends AbstractStringValueObject implements Udi
     }
 
     /**
-     * The expiry date of the secondary data, else of the supplemental data identifier `14D`.
+     * The expiry date of the secondary data, else of the supplemental data identifier `14D`. When both are present
+     * HIBC does not say which one wins: this returns the secondary data's, {@see supplementalExpiryDate()} the other.
      */
     public function expiryDate(): ?DateTimeImmutable
     {
         return $this->data()->expiryDate;
+    }
+
+    /**
+     * The supplemental data identifier `14D`.
+     */
+    public function supplementalExpiryDate(): ?DateTimeImmutable
+    {
+        return $this->data()->supplementalExpiryDate;
     }
 
     public function expiryDateFormat(): ?HibcDateFormat
@@ -130,13 +139,25 @@ final class HibcUdi extends AbstractStringValueObject implements Udi
     }
 
     /**
-     * Supplemental data identifier `Q`.
+     * The quantity of the secondary data (`$$8`, `$$9`), else of the supplemental data identifier `Q`. When both are
+     * present HIBC does not say which one wins: this returns the secondary data's, {@see supplementalQuantity()} the
+     * other.
      *
      * @return int<0, 99999>|null
      */
     public function quantity(): ?int
     {
         return $this->data()->quantity;
+    }
+
+    /**
+     * The supplemental data identifier `Q`.
+     *
+     * @return int<0, 99999>|null
+     */
+    public function supplementalQuantity(): ?int
+    {
+        return $this->data()->supplementalQuantity;
     }
 
     #[Override]

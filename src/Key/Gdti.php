@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MSSTC4PHP\ValueObject\Gs1\Key;
 
+use LogicException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1Charsets;
 use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1CheckDigit;
 use MSSTC4PHP\ValueObject\Gs1\Internal\KeyRules;
@@ -32,14 +33,24 @@ final class Gdti extends AbstractStringValueObject implements IdentificationKey
     }
 
     /** The key without its serial: 13 digits. */
+    /**
+     * @return numeric-string
+     */
     public function documentType(): string
     {
-        return \substr($this->value, 0, 13);
+        $documentType = \substr($this->value, 0, 13);
+
+        return \is_numeric($documentType) ? $documentType : throw new LogicException('GDTI lost its document type.');
     }
 
+    /**
+     * @return non-empty-string|null
+     */
     public function serial(): ?string
     {
-        return \strlen($this->value) > 13 ? \substr($this->value, 13) : null;
+        $serial = \substr($this->value, 13);
+
+        return $serial === '' ? null : $serial;
     }
 
     #[Override]

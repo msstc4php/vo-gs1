@@ -22,6 +22,8 @@ final class EpcTagUri extends AbstractStringValueObject
 {
     /**
      * The tag URI of `$uri` in `$encoding` (TDS 12.3.2), without control fields.
+     *
+     * @param int<0, max>|null $filter
      */
     public static function fromPureIdentityUri(EpcPureIdentityUri $uri, EpcTagEncoding $encoding, ?int $filter): self
     {
@@ -32,10 +34,6 @@ final class EpcTagUri extends AbstractStringValueObject
 
         if ($encoding->hasFilter() !== ($filter !== null)) {
             throw EpcSyntax::fail(\sprintf($filter === null ? 'EPC Tag URI encoding %s needs a filter value.' : 'EPC Tag URI encoding %s has no filter value.', $encoding->value));
-        }
-
-        if ($filter < 0) {
-            throw EpcSyntax::fail('EPC Tag URI filter value must not be negative.');
         }
 
         return new self('urn:epc:tag:' . $encoding->value . ':' . ($filter === null ? '' : $filter . '.') . EpcSyntax::pure($uri->value)[1]);

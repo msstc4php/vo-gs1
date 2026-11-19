@@ -16,11 +16,11 @@ use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingIdentifier;
  * @internal
  *
  * Russian marking codes and identifiers. GS1-structured codes are read with {@see ElementStringSyntax}, which never
- * splits data whose GS separators were lost: a variable-length group then swallows the next one. Such data is refused
- * when a group of an unpublished length holds, at one of its published lengths, the AI a published structure puts
- * next (see
- * {@see PUBLISHED_NEXT}); otherwise a code that fits no published structure is accepted as
- * {@see MarkingCodeStructure::GenericGs1} on the AI table's checks alone.
+ * splits data whose GS separators were lost: a variable-length group then swallows the next one. Only the last group
+ * of an unbracketed code can have done so (brackets and GS separators prove every other boundary); it is refused when
+ * it has an unpublished length and the rest after one of its published lengths parses as the AI a published structure
+ * puts next, with valid data (see {@see PUBLISHED_NEXT}). Otherwise a code that fits no published structure is
+ * accepted as {@see MarkingCodeStructure::GenericGs1} on the AI table's checks alone.
  *
  * @see docs/sources/GS1.md "Russian marking"
  */
@@ -74,18 +74,35 @@ final class RuMarkingSyntax
         'ai93' => [[self::KEY_LENGTH], self::SHORTENED_EXTRAS],
     ];
 
+    /** Data Matrix ECC 200 without FNC1 in first position: never a GS1 element string (GenSpecs Table 5-2 has `]d2`). */
+    private const string NON_GS1_DATA_MATRIX = ']d1';
+
     /** @var non-empty-list<non-empty-string> prefixes a scanner may put before the pack code */
-    private const array PACK_PREFIXES = [']d1', ']d2', ElementStringSyntax::GS];
+    private const array PACK_PREFIXES = [self::NON_GS1_DATA_MATRIX, ']d2', ElementStringSyntax::GS];
 
     public static function code(string $input): RuMarkingParts
     {
         self::checkLength($input, self::CODE);
         $pack = self::stripPackPrefix($input);
         if (self::isPackLike($pack)) {
-            return self::pack($pack);
+            return self::pack($pack, \str_starts_with($input, self::NON_GS1_DATA_MATRIX));
         }
 
-        return self::gs1Code(self::elements($input, self::CODE));
+        return self::gs1Code(self::elements($input, self::CODE), self::isBracketed($input));
+    }
+
+    /**
+     * The tobacco consumer-pack reading only: the canonical value of a pack that also reads as a GS1 code with lost
+     * separators keeps the `]d1` symbology identifier, which rules the GS1 reading out.
+     */
+    public static function tobaccoConsumerPack(string $input): RuMarkingParts
+    {
+        $pack = self::stripPackPrefix($input);
+        if (!self::isPackLike($pack)) {
+            throw new InvalidMarkingCodeException(self::CODE . ' (tobacco consumer pack) must have 29 characters, 14 digits first, and no GS.');
+        }
+
+        return self::pack($pack, true);
     }
 
     /**
@@ -94,8 +111,8 @@ final class RuMarkingSyntax
     public static function identifier(string $input): RuMarkingParts
     {
         self::checkLength($input, self::IDENTIFIER);
-        if (\str_starts_with($input, '(')) {
-            return self::gs1Identifier(self::elements($input, self::IDENTIFIER));
+        if (self::isBracketed($input)) {
+            return self::gs1Identifier(self::elements($input, self::IDENTIFIER), true);
         }
 
         if (self::isPackShaped($input, self::PACK_IDENTIFIER_LENGTH)) {
@@ -128,7 +145,7 @@ final class RuMarkingSyntax
         }
 
         try {
-            $candidates[] = self::gs1Identifier(self::elements($input, self::IDENTIFIER));
+            $candidates[] = self::gs1Identifier(self::elements($input, self::IDENTIFIER), self::isBracketed($input));
         } catch (InvalidMarkingCodeException $exception) {
             if ($candidates === []) {
                 throw $packFailure ?? $exception;
@@ -183,9 +200,11 @@ final class RuMarkingSyntax
     }
 
     /**
+     * @param bool $nonGs1 the input came as `]d1` data, or through {@see tobaccoConsumerPack()}: no GS1 reading
+     *
      * @throws AmbiguousValueException when the 29 characters are also `01` + GTIN + `21` + 5 + `93` + 4 without GS
      */
-    private static function pack(string $input): RuMarkingParts
+    private static function pack(string $input, bool $nonGs1): RuMarkingParts
     {
         if (!self::isPackShaped($input, self::PACK_LENGTH)) {
             throw new InvalidMarkingCodeException(self::CODE . ' (tobacco consumer pack) must have characters of GS1 character set 82 after the GTIN.');
@@ -195,9 +214,9 @@ final class RuMarkingSyntax
             && Gs1CheckDigit::isValid(\substr($input, 2, 14))
             && \substr($input, 16, 2) === '21'
             && \substr($input, 23, 2) === '93';
-        if ($lostSeparators) {
+        if ($lostSeparators && !$nonGs1) {
             if (Gs1CheckDigit::isValid(\substr($input, 0, 14))) {
-                throw new AmbiguousValueException(self::CODE . ' (both a tobacco consumer pack and AI (01), (21), (93) with lost GS separators)', [MarkingCode::class]);
+                throw new AmbiguousValueException(self::CODE . ' (both a tobacco consumer pack and AI (01), (21), (93) with lost GS separators; build the pack with MarkingCode::fromTobaccoConsumerPack())', [MarkingCode::class]);
             }
 
             throw new InvalidMarkingCodeException(self::CODE . ' reads as AI (01), (21) and (93) whose GS separator was lost.');
@@ -209,8 +228,9 @@ final class RuMarkingSyntax
 
         self::checkPackGtin($match[1], self::CODE);
         $identifier = $match[1] . $match[2] . $match[3];
+        $canonical = $lostSeparators ? self::NON_GS1_DATA_MATRIX . $match[0] : $match[0];
 
-        return new RuMarkingParts(MarkingCodeStructure::TobaccoConsumerPack, $match[0], $match[1], $match[2], null, $match[4], $identifier, $identifier);
+        return new RuMarkingParts(MarkingCodeStructure::TobaccoConsumerPack, $canonical, $match[1], $match[2], null, $match[4], $identifier, $identifier);
     }
 
     private static function packIdentifier(string $input): RuMarkingParts
@@ -246,13 +266,21 @@ final class RuMarkingSyntax
         }
     }
 
+    private static function isBracketed(string $input): bool
+    {
+        return \str_starts_with($input, '(');
+    }
+
     /**
      * @param non-empty-list<AiElement> $elements
      */
-    private static function gs1Code(array $elements): RuMarkingParts
+    private static function gs1Code(array $elements, bool $bracketed): RuMarkingParts
     {
         $serial = self::serialAfterKey($elements) ?? throw new InvalidMarkingCodeException(self::CODE . ' must start with AI (01) and AI (21).');
-        self::checkLostSeparators($elements, self::CODE);
+        if (!$bracketed) {
+            self::checkLostSeparators($elements, self::CODE);
+        }
+
         [$structure, $key, $code] = self::published($elements) ?? self::generic($elements);
         $identifierElements = \array_slice($elements, 0, $structure === MarkingCodeStructure::TobaccoGroupPack ? 3 : 2);
 
@@ -271,7 +299,7 @@ final class RuMarkingSyntax
     /**
      * @param non-empty-list<AiElement> $elements
      */
-    private static function gs1Identifier(array $elements): RuMarkingParts
+    private static function gs1Identifier(array $elements, bool $bracketed): RuMarkingParts
     {
         $count = \count($elements);
         $serial = self::serialAfterKey($elements);
@@ -280,11 +308,10 @@ final class RuMarkingSyntax
             throw new InvalidMarkingCodeException(self::IDENTIFIER . ' must be AI (01) and AI (21), with AI (8005) for a tobacco group pack.');
         }
 
-        if ($tobaccoGroup && \strlen($serial->value) !== self::TOBACCO_GROUP_SERIAL) {
-            throw new InvalidMarkingCodeException(\sprintf('%s AI (21) has %d characters; the tobacco group pack structure has 7.', self::IDENTIFIER, \strlen($serial->value)));
+        if (!$bracketed) {
+            self::checkLostSeparators($elements, self::IDENTIFIER);
         }
 
-        self::checkLostSeparators($elements, self::IDENTIFIER);
         $canonical = ElementStringSyntax::bracketedForm($elements);
 
         return new RuMarkingParts(null, $canonical, $elements[0]->value, $serial->value, null, null, $canonical, ElementStringSyntax::barcodeData($elements));
@@ -303,23 +330,34 @@ final class RuMarkingSyntax
     }
 
     /**
+     * Only the last group of unbracketed data ends without a separator, so only it can have swallowed a lost one.
+     *
      * @param non-empty-list<AiElement> $elements
      */
     private static function checkLostSeparators(array $elements, string $type): void
     {
-        foreach ($elements as $element) {
-            [$lengths, $next] = self::PUBLISHED_NEXT['ai' . $element->spec->ai] ?? [[], []];
-            if (\in_array(\strlen($element->value), $lengths, true)) {
-                continue;
-            }
+        $last = $elements[\count($elements) - 1];
+        [$lengths, $next] = self::PUBLISHED_NEXT['ai' . $last->spec->ai] ?? [[], []];
+        if (\in_array(\strlen($last->value), $lengths, true)) {
+            return;
+        }
 
-            foreach ($lengths as $length) {
-                foreach ($next as $ai) {
-                    if (\str_starts_with(\substr($element->value, $length), $ai)) {
-                        throw new InvalidMarkingCodeException(\sprintf('%s AI (%s) runs into AI (%s) at a published length: a GS separator was lost.', $type, $element->spec->ai, $ai));
-                    }
+        foreach ($lengths as $length) {
+            $rest = \substr($last->value, $length);
+            foreach ($next as $ai) {
+                if (\str_starts_with($rest, $ai) && self::startsWithValidAi($rest, $ai)) {
+                    throw new InvalidMarkingCodeException(\sprintf('%s AI (%s) runs into AI (%s) at a published length: a GS separator was lost.', $type, $last->spec->ai, $ai));
                 }
             }
+        }
+    }
+
+    private static function startsWithValidAi(string $data, string $ai): bool
+    {
+        try {
+            return ElementStringSyntax::parse($data)[0]->spec->ai === $ai;
+        } catch (InvalidElementStringException) {
+            return false;
         }
     }
 

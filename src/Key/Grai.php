@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MSSTC4PHP\ValueObject\Gs1\Key;
 
+use LogicException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1Charsets;
 use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1CheckDigit;
 use MSSTC4PHP\ValueObject\Gs1\Internal\KeyRules;
@@ -32,14 +33,24 @@ final class Grai extends AbstractStringValueObject implements IdentificationKey
     }
 
     /** The key without its serial: 14 digits starting with a zero. */
+    /**
+     * @return numeric-string
+     */
     public function assetType(): string
     {
-        return \substr($this->value, 0, 14);
+        $assetType = \substr($this->value, 0, 14);
+
+        return \is_numeric($assetType) ? $assetType : throw new LogicException('GRAI lost its asset type.');
     }
 
+    /**
+     * @return non-empty-string|null
+     */
     public function serial(): ?string
     {
-        return \strlen($this->value) > 14 ? \substr($this->value, 14) : null;
+        $serial = \substr($this->value, 14);
+
+        return $serial === '' ? null : $serial;
     }
 
     #[Override]

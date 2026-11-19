@@ -113,6 +113,18 @@ final class FmdPackCodeTest extends TestCase
         self::assertTrue(FmdPackCode::from(']d2' . self::GS1)->equals(FmdPackCode::from(self::GS1)));
     }
 
+    public function testAScannedIfaMessageAfterASymbologyIdentifierIsTheIfaFormat(): void
+    {
+        foreach ([']d1', ']d2'] as $prefix) {
+            $code = FmdPackCode::from($prefix . self::IFA);
+
+            self::assertTrue($code->isIfaFormat(), $prefix);
+            self::assertSame(self::IFA, (string) $code, $prefix);
+        }
+
+        self::assertTrue(FmdPackCode::from(']d2' . self::GS1)->equals(FmdPackCode::from(self::GS1)));
+    }
+
     public function testMultiMarketPacksKeepTheirNationalNumbers(): void
     {
         // PPN-Code Specification 3.06, section 5.3.2, Example 1, and 5.3.3 (ASC format with 8P).

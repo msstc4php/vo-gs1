@@ -68,10 +68,10 @@ final class IsbtUdiTest extends TestCase
 
     public function testTheLimits(): void
     {
-        $longest = self::HRI . '=%' . \str_repeat('9', 2048 - \strlen(self::HRI) - 2);
+        $longest = self::HRI . '=%' . \str_repeat('9', 3116 - \strlen(self::HRI) - 2);
         $most = self::HRI . \str_repeat('=%1', 95);
 
-        self::assertSame(2048, \strlen((string) IsbtUdi::from($longest)));
+        self::assertSame(3116, \strlen((string) IsbtUdi::from($longest)));
         self::assertSame('=+99000' . $most, IsbtUdi::from($most)->toCompoundMessage());
     }
 
@@ -98,7 +98,7 @@ final class IsbtUdiTest extends TestCase
     {
         $hri = self::HRI;
 
-        yield 'too long' => [$hri . '=%' . \str_repeat('9', 2000), 'must have at most 2048 characters, got 2052'];
+        yield 'too long' => [$hri . '=%' . \str_repeat('9', 3068), 'must have at most 3116 characters, got 3120'];
         yield 'too many structures' => [$hri . \str_repeat('=%1', 96), 'must have at most 99 data structures'];
         yield 'no DI first' => ['=A99991712345600=/A9997XYZ100T0479=,000012', 'must begin with the Processor Product Identification Code "=/"'];
         yield 'compound without DI first' => ['=+03000=,000012=/A9997XYZ100T0479=A99991712345600', 'must begin with the Processor Product Identification Code "=/"'];

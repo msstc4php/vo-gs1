@@ -49,16 +49,17 @@ enum EpcTagEncoding: string
     }
 
     /**
-     * The width of the filter field: 6 bits for ADI-var, 3 for the others; null where TDS does not define it (GID-96
-     * has no filter, USDOD-96 defers to the US DoD guide).
+     * The width of the filter field: 6 bits for ADI-var, 4 for USDOD-96 (the US DoD guide TDS defers to), 3 for the
+     * others; null for GID-96, which has no filter.
      *
-     * @return 3|6|null
+     * @return 3|4|6|null
      */
     public function filterBits(): ?int
     {
         return match ($this) {
-            self::Gid96, self::Usdod96 => null,
+            self::Gid96 => null,
             self::AdiVar => 6,
+            self::Usdod96 => 4,
             default => 3,
         };
     }

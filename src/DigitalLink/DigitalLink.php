@@ -23,8 +23,11 @@ use Override;
  *
  * The value is the URI as given: the standard defines no normal form short of the canonical URI ({@see toCanonical()}),
  * which drops the domain and the non-GS1 parameters. {@see equals()} compares what the standard treats as the same
- * link: scheme and authority ignoring case, the same stem path, path data and non-GS1 parameters, and the same data
- * attributes in any order. Compressed links are refused: URI Syntax 1.7.0 no longer defines compression.
+ * link: scheme and host ignoring case, the same stem path, path data and non-GS1 parameters, and the same data
+ * attributes in any order; percent-escapes compare after RFC 3986 section 6.2.2 normalisation (hex case, unreserved
+ * characters). Two decisions beyond that: a port is compared as written (`:443` is not dropped), and non-GS1
+ * parameters keep their order, as RFC 3986 gives the query no order-free meaning. A key qualifier given in the query
+ * is read as the qualifier in the path. Compressed links are refused: URI Syntax 1.7.0 no longer defines compression.
  *
  * @see https://ref.gs1.org/standards/digital-link/uri-syntax/ GS1 Digital Link Standard: URI Syntax 1.7.0
  * @see docs/sources/GS1.md "GS1 Digital Link URI Syntax"
@@ -53,6 +56,11 @@ final class DigitalLink extends AbstractStringValueObject
         }
 
         [$path, $attributes] = DigitalLinkSyntax::arrange($elements);
+        foreach ($attributes as $attribute) {
+            if (!$attribute->spec->digitalLinkAttribute) {
+                throw new InvalidDigitalLinkException(\sprintf('GS1 Digital Link cannot carry AI (%s) of the element string: it is neither a key qualifier of AI (%s) nor a data attribute.', $attribute->spec->ai, $path[0]->spec->ai));
+            }
+        }
 
         return new self(DigitalLinkSyntax::render($domain, $path, $attributes));
     }
@@ -110,7 +118,17 @@ final class DigitalLink extends AbstractStringValueObject
 
     private function identity(DigitalLinkParts $parts): string
     {
-        return \serialize([$parts->scheme, $parts->authority, $parts->stemPath, $parts->path, $this->sorted($parts->attributes), $parts->extensions, $parts->fragment]);
+        $escapes = DigitalLinkSyntax::normalisedEscapes(...);
+
+        return \serialize([
+            $parts->scheme,
+            $escapes($parts->authority),
+            $escapes($parts->stemPath),
+            $parts->path,
+            $this->sorted($parts->attributes),
+            \array_map($escapes, $parts->extensions),
+            $parts->fragment === null ? null : $escapes($parts->fragment),
+        ]);
     }
 
     /**

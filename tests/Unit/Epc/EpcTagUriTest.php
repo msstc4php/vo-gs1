@@ -45,7 +45,7 @@ final class EpcTagUriTest extends TestCase
     /**
      * The EPC Tag URI examples of EPC Tag Data Standard 2.3 (Annex E) and one per encoding where it has none.
      *
-     * @return array<string, array{EpcTagEncoding, non-empty-string, int|null, int|null, non-empty-string}>
+     * @return array<string, array{EpcTagEncoding, non-empty-string, int<0, max>|null, int|null, non-empty-string}>
      */
     public static function encodingExamples(): array
     {
@@ -82,6 +82,9 @@ final class EpcTagUriTest extends TestCase
         self::assertSame(EpcTagEncoding::cases(), $covered);
     }
 
+    /**
+     * @param int<0, max>|null $filter
+     */
     #[DataProvider('encodingExamples')]
     public function testReadsTheExamples(EpcTagEncoding $encoding, string $uri, ?int $filter, ?int $partition, string $pure): void
     {
@@ -117,7 +120,6 @@ final class EpcTagUriTest extends TestCase
         self::assertSame(7, EpcTagUri::from('urn:epc:tag:sgtin-96:7.9521141.012345.4711')->filter());
         self::assertSame(63, EpcTagUri::from('urn:epc:tag:adi-var:63.35962.PQ7VZ4.M37GXB92')->filter());
         self::assertSame(15, EpcTagUri::from('urn:epc:tag:usdod-96:15.CAGEY.5678')->filter());
-        self::assertSame(123456789012345678, EpcTagUri::from('urn:epc:tag:usdod-96:123456789012345678.CAGEY.5678')->filter());
     }
 
     public function testNumericLimitsAtTheirEdges(): void
@@ -129,6 +131,7 @@ final class EpcTagUriTest extends TestCase
         self::assertSame(0, EpcTagUri::from('urn:epc:tag:cpi-96:0.952114123456.999.1')->partition());
         self::assertSame('urn:epc:id:cpi:9521141.98765.0', (string) EpcTagUri::from('urn:epc:tag:cpi-96:3.9521141.98765.0')->toPureIdentityUri());
         self::assertNull(EpcTagUri::from('urn:epc:tag:gid-96:268435455.16777215.68719476735')->filter());
+        self::assertSame('urn:epc:id:usdod:2S194.68719476735', (string) EpcTagUri::from('urn:epc:tag:usdod-96:3.2S194.68719476735')->toPureIdentityUri());
         $adi = 'urn:epc:tag:adi-var:0.35962.' . \str_repeat('A', 32) . '.' . \str_repeat('%2F', 30);
         self::assertSame($adi, (string) EpcTagUri::from($adi));
     }
@@ -154,7 +157,11 @@ final class EpcTagUriTest extends TestCase
         yield 'sgcn filter missing with digits' => ['urn:epc:tag:sgcn-96:952114123456..1', 'EPC Tag URI has no filter value.'];
         yield 'filter not a number' => ['urn:epc:tag:adi-var:A.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI must have a filter value before the EPC.'];
         yield 'filter on gid' => ['urn:epc:tag:gid-96:3.952056.2718.1414', 'EPC pure identity URI does not match the grammar of its scheme.'];
-        yield 'usdod filter too long' => ['urn:epc:tag:usdod-96:1234567890123456789.CAGEY.5678', 'EPC Tag URI filter value must have at most 18 digits.'];
+        yield 'usdod filter of 16 (4-bit field)' => ['urn:epc:tag:usdod-96:16.CAGEY.5678', 'EPC Tag URI filter value must be below 16.'];
+        yield 'usdod filter of 99' => ['urn:epc:tag:usdod-96:99.2S194.1', 'EPC Tag URI filter value must be below 16.'];
+        yield 'filter of 19 digits never reaches the int cast' => ['urn:epc:tag:usdod-96:1234567890123456789.CAGEY.5678', 'EPC Tag URI filter value must be below 16.'];
+        yield 'three-digit filter on adi-var' => ['urn:epc:tag:adi-var:100.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI filter value must be below 64.'];
+        yield 'usdod serial 2^36' => ['urn:epc:tag:usdod-96:3.2S194.68719476736', 'EPC Tag URI field must be below 2^36 for usdod-96.'];
         yield 'controls out of order' => ['urn:epc:tag:[xpc=x0004][att=x01]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'control repeated' => ['urn:epc:tag:[att=x01][att=x01]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'control unknown' => ['urn:epc:tag:[foo=1]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
@@ -199,7 +206,7 @@ final class EpcTagUriTest extends TestCase
 
         self::assertSame('urn:epc:tag:sgtin-198:0.9521141.012345.A1', (string) EpcTagUri::fromPureIdentityUri($pure, EpcTagEncoding::Sgtin198, 0));
 
-        foreach ([[EpcTagEncoding::Sscc96, 3, 'EPC Tag URI encoding sscc-96 is not one of scheme sgtin.'], [EpcTagEncoding::Sgtin198, null, 'EPC Tag URI encoding sgtin-198 needs a filter value.'], [EpcTagEncoding::Sgtin96, 3, 'EPC Tag URI field must be a number without leading zeros for sgtin-96.'], [EpcTagEncoding::Sgtin198, -1, 'EPC Tag URI filter value must not be negative.']] as [$encoding, $filter, $message]) {
+        foreach ([[EpcTagEncoding::Sscc96, 3, 'EPC Tag URI encoding sscc-96 is not one of scheme sgtin.'], [EpcTagEncoding::Sgtin198, null, 'EPC Tag URI encoding sgtin-198 needs a filter value.'], [EpcTagEncoding::Sgtin96, 3, 'EPC Tag URI field must be a number without leading zeros for sgtin-96.']] as [$encoding, $filter, $message]) {
             try {
                 EpcTagUri::fromPureIdentityUri($pure, $encoding, $filter);
                 self::fail('Expected InvalidEpcUriException.');
@@ -220,7 +227,8 @@ final class EpcTagUriTest extends TestCase
         self::assertFalse(EpcTagEncoding::Gid96->hasFilter());
         self::assertTrue(EpcTagEncoding::Usdod96->hasFilter());
         self::assertSame(6, EpcTagEncoding::AdiVar->filterBits());
-        self::assertNull(EpcTagEncoding::Usdod96->filterBits());
+        self::assertSame(4, EpcTagEncoding::Usdod96->filterBits());
+        self::assertSame(3, EpcTagEncoding::Sgtin96->filterBits());
         self::assertNull(EpcTagEncoding::Gid96->filterBits());
         self::assertTrue(EpcTagEncoding::Sgtin96->isPartitioned());
         self::assertFalse(EpcTagEncoding::AdiVar->isPartitioned());

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace MSSTC4PHP\ValueObject\Gs1\Udi;
 
 /**
- * The segment lengths (labeler-product-package) 21 CFR 207.33(b)(2) permits for a 10- or 11-digit NDC.
+ * The segment lengths (labeler-product-package) 21 CFR 207.33(b)(1)(i) and (ii) permit for a 10- or 11-digit NDC.
  *
- * @see https://www.ecfr.gov/current/title-21/chapter-I/subchapter-C/part-207/subpart-B/section-207.33 21 CFR 207.33(b)(2)
+ * @see https://www.ecfr.gov/current/title-21/chapter-I/subchapter-C/part-207/subpart-B/section-207.33 21 CFR 207.33(b)(1)(i) and (ii)
  */
 enum NdcConfiguration: string
 {

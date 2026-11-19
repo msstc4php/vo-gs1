@@ -185,6 +185,9 @@ final class GtinTest extends TestCase
         yield 'GTIN-8 03 is restricted by Table 1-5' => ['03456781', Gs1Prefix::RestrictedCirculation];
         yield 'GTIN-8 restricted' => ['02345673', Gs1Prefix::RestrictedCirculation];
         yield 'GTIN-8 member organisation' => ['96385074', Gs1Prefix::MemberOrganisation];
+        yield 'GTIN-14 indicator 1 over a GTIN-8 reads the GS1-8 Prefix' => ['10000012345677', Gs1Prefix::MemberOrganisation];
+        yield 'GTIN-14 indicator 1 over a demonstration GTIN-8' => ['10000095212347', Gs1Prefix::Demonstration];
+        yield 'GTIN-14 indicator 8 over a restricted GTIN-8' => ['80000002345679', Gs1Prefix::RestrictedCirculation];
     }
 
     #[DataProvider('prefixes')]

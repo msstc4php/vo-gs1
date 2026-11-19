@@ -89,6 +89,12 @@ final class TextKeysTest extends TestCase
         self::assertSame(Gs1Prefix::Isbn, Giai::from('9780ABC')->gs1Prefix());
     }
 
+    public function testShortZeroRunDecodesAsUnknown(): void
+    {
+        self::assertSame(Gs1Prefix::Unknown, Cpid::from('00000ABC')->gs1Prefix());
+        self::assertSame(Gs1Prefix::Unknown, Giai::from('000000X')->gs1Prefix());
+    }
+
     public function testCpidAcceptsTheWholeCset39(): void
     {
         foreach ([\substr(Gs1Charsets::CSET_39, 0, 26), \substr(Gs1Charsets::CSET_39, 13)] as $part) {

@@ -49,7 +49,11 @@ final class Gs1PrefixTest extends TestCase
         yield 'seven digits 0000001' => ['0000001', Gs1Prefix::Unused];
         yield 'seven digits 0000000' => ['0000000', Gs1Prefix::RestrictedCirculation];
         yield 'three digits only' => ['978', Gs1Prefix::Isbn];
-        yield 'six digits cannot be unused' => ['000001', Gs1Prefix::MemberOrganisation];
+        yield 'six digits 000001 complete only to unused' => ['000001', Gs1Prefix::Unused];
+        yield 'six zeros complete to restricted or unused' => ['000000', Gs1Prefix::Unknown];
+        yield 'five zeros complete to restricted or unused' => ['00000', Gs1Prefix::Unknown];
+        yield 'three zeros complete to restricted, unused or member' => ['000', Gs1Prefix::Unknown];
+        yield 'four digits 0001 is a member organisation' => ['0001', Gs1Prefix::MemberOrganisation];
     }
 
     #[DataProvider('table14')]
