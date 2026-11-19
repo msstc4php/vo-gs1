@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MSSTC4PHP\ValueObject\Gs1\Internal;
 
 use DateTimeImmutable;
+use LogicException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidUdiException;
 use MSSTC4PHP\ValueObject\Gs1\Udi\HibcDateFormat;
 
@@ -19,8 +20,11 @@ use MSSTC4PHP\ValueObject\Gs1\Udi\HibcDateFormat;
  */
 final class HibcSyntax
 {
-    /** Primary 24 + "/" + secondary 29 + supplemental /S 20, /16D 12, /14D 12, /Q 7 + check character: 106. */
-    private const int MAX_LENGTH = 106;
+    /**
+     * Primary 24 + "/" + lot secondary 35 (`$$9` + 5-digit quantity + flag 4 + 8-digit date + 18) + supplemental /S 20,
+     * /16D 12, /14D 12, /Q 7 + check character: 112. A serial secondary is 36 but excludes /S.
+     */
+    private const int MAX_LENGTH = 112;
 
     /** "+", LIC 4, product number up to 18, unit of measure, check character. */
     private const int PRIMARY_LENGTH = 25;
@@ -31,6 +35,16 @@ final class HibcSyntax
 
     /** Lot and serial fields: alphanumeric, "." and "-" permitted (section 3.0). */
     private const string FIELD = '[A-Z0-9.\-]';
+
+    /** Named groups of the `$$` / `$$+` secondary formats and the date format each carries (Appendix E1.1). */
+    private const array DATE_GROUPS = [
+        'mmyy' => HibcDateFormat::Mmyy,
+        'mmddyy' => HibcDateFormat::Mmddyy,
+        'yymmdd' => HibcDateFormat::Yymmdd,
+        'yymmddhh' => HibcDateFormat::Yymmddhh,
+        'yyjjj' => HibcDateFormat::Yyjjj,
+        'yyjjjhh' => HibcDateFormat::Yyjjjhh,
+    ];
 
     /** Section 2.3.2: S an1+an18, 16D and 14D an3+n8 (YYYYMMDD), Q an1+n1...n5. */
     private const array SUPPLEMENTAL = [
@@ -67,7 +81,9 @@ final class HibcSyntax
 
     /**
      * The concatenated form of a primary and a secondary symbol: the primary check character, the "+" of the secondary
-     * data and its link character are dropped, "/" joins them, one check character ends the string.
+     * data and its link character are dropped, "/" joins them, one check character ends the string. With supplemental
+     * data the link character may stand before the check character or after the secondary data (before the first "/");
+     * the reading that gives valid data is taken, and two valid readings are refused as ambiguous.
      *
      * @return non-empty-string
      */
@@ -82,13 +98,38 @@ final class HibcSyntax
         }
 
         self::checkCharacter($secondary);
-        if ($secondary[-2] !== $primary[-1]) {
+        $data = \substr($secondary, 1, -1);
+        $readings = [];
+        if ($data[-1] === $primary[-1]) {
+            $readings[] = \substr($data, 0, -1);
+        }
+
+        $slash = \strpos($data, '/');
+        if ($slash !== false && $data[$slash - 1] === $primary[-1]) {
+            $readings[] = \substr($data, 0, $slash - 1) . \substr($data, $slash);
+        }
+
+        if ($readings === []) {
             throw self::fail('secondary link character does not match the primary check character');
         }
 
-        $body = \substr($primary, 0, -1) . '/' . \substr($secondary, 1, -2);
+        $valid = [];
+        $failure = null;
+        foreach ($readings as $reading) {
+            $body = \substr($primary, 0, -1) . '/' . $reading;
+            try {
+                self::parse($body . Mod43::compute($body));
+                $valid[] = $body . Mod43::compute($body);
+            } catch (InvalidUdiException $exception) {
+                $failure = $exception;
+            }
+        }
 
-        return $body . Mod43::compute($body);
+        return match (\count($valid)) {
+            0 => throw $failure ?? new LogicException('No HIBC reading was tried.'),
+            1 => $valid[0],
+            default => throw self::fail('secondary link character position is ambiguous'),
+        };
     }
 
     /**
@@ -143,27 +184,39 @@ final class HibcSyntax
                 : self::with($primary, null, $match[2], null, '');
         }
 
-        $pattern = '/^\$\$(\+?)(?:([01][0-9]{3})|2([0-9]{6})|3([0-9]{6})|4([0-9]{8})|5([0-9]{5})|6([0-9]{7})|7)(' . $field . '{0,18})$/D';
+        $pattern = '/^\$\$(?<serial>\+?)(?:8(?<q2>[0-9]{2})|9(?<q5>[0-9]{5}))?'
+            . '(?:(?<mmyy>[01][0-9]{3})|2(?<mmddyy>[0-9]{6})|3(?<yymmdd>[0-9]{6})|4(?<yymmddhh>[0-9]{8})'
+            . '|5(?<yyjjj>[0-9]{5})|6(?<yyjjjhh>[0-9]{7})|7)(?<text>' . $field . '{0,18})$/D';
         if (\preg_match($pattern, $data, $match, PREG_UNMATCHED_AS_NULL) !== 1) {
             throw self::fail('secondary data must follow a format of Appendix F');
         }
 
-        $formats = [2 => HibcDateFormat::Mmyy, 3 => HibcDateFormat::Mmddyy, 4 => HibcDateFormat::Yymmdd,
-            5 => HibcDateFormat::Yymmddhh, 6 => HibcDateFormat::Yyjjj, 7 => HibcDateFormat::Yyjjjhh];
         $format = null;
         $date = '';
-        foreach ($formats as $group => $candidate) {
+        foreach (self::DATE_GROUPS as $group => $candidate) {
             if (isset($match[$group])) {
                 $format = $candidate;
                 $date = $match[$group];
             }
         }
 
-        $text = $match[8];
+        $quantity = $match['q2'] ?? $match['q5'];
+        $data = $match['serial'] === '+'
+            ? self::with($primary, null, $match['text'], $format, $date)
+            : self::with($primary, $match['text'], null, $format, $date);
 
-        return $match[1] === '+'
-            ? self::with($primary, null, $text, $format, $date)
-            : self::with($primary, $text, null, $format, $date);
+        return $quantity === null ? $data : new HibcData(
+            $data->primary,
+            $data->labelerIdentificationCode,
+            $data->productNumber,
+            $data->unitOfMeasure,
+            $data->lot,
+            $data->serial,
+            $data->expiryDate,
+            $data->expiryDateFormat,
+            null,
+            \max(0, \min(99999, (int) $quantity)),
+        );
     }
 
     private static function with(HibcData $primary, ?string $lot, ?string $serial, ?HibcDateFormat $format, string $date): HibcData
@@ -224,6 +277,10 @@ final class HibcSyntax
                 throw self::fail(\sprintf('repeats the supplemental data identifier %s', $identifier));
             }
 
+            if ($identifier === 'S' && $data->serial !== null) {
+                throw self::fail('supplemental serial number S is for a lot secondary, the secondary data carries a serial number');
+            }
+
             $values[$identifier] = $content;
         }
 
@@ -239,7 +296,7 @@ final class HibcSyntax
             $data->expiryDate ?? $expiry,
             $data->expiryDateFormat ?? ($expiry instanceof DateTimeImmutable ? HibcDateFormat::Yyyymmdd : null),
             isset($values['16D']) ? self::date(HibcDateFormat::Yyyymmdd, $values['16D']) : null,
-            isset($values['Q']) ? \max(0, \min(99999, (int) $values['Q'])) : null,
+            $data->quantity ?? (isset($values['Q']) ? \max(0, \min(99999, (int) $values['Q'])) : null),
         );
     }
 

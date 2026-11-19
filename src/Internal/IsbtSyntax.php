@@ -90,11 +90,11 @@ final class IsbtSyntax
     private static function checkHeader(int $count, string $sequence, array $kinds): void
     {
         if ($count !== \count($kinds)) {
-            throw self::fail(\sprintf('compound message announces %d data structures, got %d', $count, \count($kinds)));
+            throw self::fail(\sprintf('compound message data structure count does not match, got %d', \count($kinds)));
         }
 
         if (isset(self::SEQUENCES[$sequence]) && self::SEQUENCES[$sequence] !== $kinds) {
-            throw self::fail(\sprintf('data structures are not in the order of specified sequence %s', $sequence));
+            throw self::fail('data structures are not in the order of the specified sequence');
         }
     }
 

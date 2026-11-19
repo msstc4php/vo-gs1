@@ -86,9 +86,9 @@
   `InvalidValueObjectException`).
 - `Ndc::toBillingFormat()` is `?string` (brief said `string`): HIPAA's 5-4-2 has no conversion for 6-digit labeler
   codes (FDA: "outside the scope of FDA authority"), so it returns null for 6-3-2 / 6-4-1.
-- HIBC: the check character can be a space or `/`, so always strip the last character before splitting on `/`. The
-  secondary symbol's link character is its second-to-last character even with supplemental data (our reading of
-  Table 2 + 2.3.1). Two-digit years = 20YY, MMYY = last day of month: package decisions, not HIBCC's.
+- HIBC: the check character can be a space or `/`, so always strip the last character before splitting on `/`. With
+  supplemental data a separate secondary symbol's link character is accepted before the first `/` or second to last
+  (controller ruling, fix round 1); both valid → refused as ambiguous. Two-digit years = 20YY, MMYY = last day of month: package decisions, not HIBCC's.
 - HIBC `isSecondary()`: a digit or `$` after `+` (Table 2 Note 1); so a primary-looking LIC starting with a digit is
   reported as "secondary data only".
 - HIBC Basic UDI-DI check = `GmnCheckCharacters` over the whole string **including `++`** (HIBCC Table 1 = CSET 82,
@@ -102,3 +102,7 @@
   no-op `max/min` clamps that give PHPStan `int<0, 9>` / `int<0, 99999>`, unreachable `LogicException` guards,
   `ppic` in the required list (always first), `(int)` before string arithmetic, `calendar(…, 2)` before "last day of".
 - PhpStorm MCP inspections were not available in the Task 7 session (no `mcp__phpstorm__*` tools).
+- Fix round 1 rulings: ISBT messages no longer echo `aa`/`bbb` (input); `UdiFactory` strips `]xx` and routes `+`/`=`/`&`
+  on the rest (GS1 gets the original); legacy HIBC quantity `$$8`/`$$9` accepted (Appendix H) with a layout from
+  unreachable earlier editions (unverified); `/S` refused with a serial secondary; HIBC cap 112 (lot form with `$$9`
+  quantity + all supplementals); `Gs1Udi::gtin()` guard is a `LogicException`.

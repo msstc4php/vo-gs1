@@ -572,6 +572,17 @@ Table F1:
 the Lot and Serial fields". Appendix A: Julian dating is the day of the year, February 29 being 060 in a leap year.
 Table F1's example data (lot `3C001`, serial `0001`, expiry 28 September 2005, 22:00) is the test table.
 
+**Legacy quantity (`$$8`, `$$9`).** Table 2, Note 3: "Quantity is no longer included in the Secondary Data
+Structure as it had been in previous versions of the standard". Appendix H:
+
+> Among these is the use of quantity in the secondary data structure. […] Existing labels are still valid but should
+> not be used for Unique Device Identification (UDI).
+
+So such labels are accepted (never refuse a valid value). The earlier editions that define the layout were not
+reachable on hibcc.org (2026-11-19 UTC: SLS 2.3/2.4/2.5 URLs 404); the package reads the layout of those editions as
+remembered: `$$8` + 2-digit quantity or `$$9` + 5-digit quantity (also after `$$+`), then the 2.6 date format flag
+(`0`-`7`) and its date, then lot or serial. Treat this one layout as unverified.
+
 **Package decisions (not in the standard):** a two-digit year is 20YY (no century rule is given; a fixed rule keeps a
 stored value's meaning independent of the clock); an MMYY date is the last day of that month (as GS1's `DD = 00`);
 dates are UTC, with the hour of the HH formats ("G.M.T."), otherwise 00:00.
@@ -586,15 +597,18 @@ dates are UTC, with the hour of the HH formats ("G.M.T."), otherwise 00:00.
 Appendix E1.3: "The Link Character for the Secondary Data Structure is the last character from the Primary Data String
 in the Primary Symbol (Check Character)." Examples: `+A99912345/$$52001510X33` (2.2.1.1), secondary symbol
 `+$$52001510X3GD` of primary `+A123BJC5D6E71G` (4.3.2), concatenated `+A123BJC5D6E71/$$52001510X3C` (4.3.3). In a
-separate secondary symbol with supplemental data the link character is read as the second-to-last character (Table 2's
-`L C` at the end; section 2.3.1: "the check character will be inserted at the end of the total string").
+separate secondary symbol with supplemental data the standard does not place the link character: Table 2 puts `L`
+right after the lot/serial field B, and section 2.3.1 says "the check character will be inserted at the end of the
+total string". Both readings are accepted — `L` before the first `/` or `L` second to last; when both give valid data
+the symbol is refused as ambiguous rather than guessed.
 
 ### Supplemental data (section 2.3)
 
 > The Secondary Supplemental Data field is constructed with a “/” character followed by a Data Identifier (DI),
 > followed by data. Multiple Secondary Supplemental data fields are possible.
 
-DIs: `S` serial ("an1 + an18", 2.3.2.1), `16D` date of manufacture ("an3+n8 … (YYYYMMDD)"), `14D` expiry
+DIs: `S` serial ("an1 + an18", 2.3.2.1, headed "Serial number when Lot number is used" — so `/S` is refused when the
+secondary data already carries a serial number), `16D` date of manufacture ("an3+n8 … (YYYYMMDD)"), `14D` expiry
 ("an3+n8 … (YYYYMMDD)"), `Q` quantity ("an1+n1...n5"); "Quantity must be the last field in supplemental data". Other
 DIs are refused (the standard names no others). Examples: `+A99912345/$$52001510X3/16D20111212/S77DEFG457`,
 `+A99912345/$10X3/16D20111231/14D202001313`, `+A99912349/$10X3/16D20111231/14D20200131/Q500Z`.

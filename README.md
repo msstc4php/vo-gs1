@@ -208,8 +208,10 @@ Ndc::from('10010-001-01')->toBillingFormat();                        // "1001000
 Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 010010-0001-01
 ```
 
-- **`UdiFactory::fromString()`** picks the agency by the first character: `+` HIBC, `=` ISBT 128, `(`, `]`, a digit,
-  GS or `^` GS1. The sets do not overlap; anything else is refused, never guessed. The agency class checks the rest.
+- **`UdiFactory::fromString()`** sets aside a leading symbology identifier (`]` + two characters), then picks the
+  agency by the next character: `+` HIBC, `=` or `&` ISBT 128 (both built from the data without the identifier);
+  data behind an identifier, or starting with `(`, a digit, GS or `^`, is GS1 (passed whole, `ElementString` reads the
+  identifier). Anything else is refused, never guessed. The agency class checks the rest.
 - **`Gs1Udi`:** an `ElementString` (every notation it accepts) that must carry AI (01). `deviceIdentifier()` is the
   14-digit GTIN; `gtin()`, `lot()` (10), `serial()` (21), `expiryDate($today)` (17), `productionDate($today)` (11),
   `elementString()`.
@@ -220,7 +222,11 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   primary data structure with its check character; `labelerIdentificationCode()`, `productNumber()`,
   `unitOfMeasure()`, `lot()`, `serial()` (secondary data, else `S`), `expiryDate()` (secondary data, else `14D`),
   `expiryDateFormat()` (`HibcDateFormat`), `manufactureDate()` (`16D`), `quantity()` (`Q`). Every format of Appendix F
-  is read, including the legacy `$`, `$+` and five-digit Julian forms. **Not in the standard, chosen here:** two-digit
+  is read, including the legacy `$`, `$+` and five-digit Julian forms, and the pre-2.6 quantity forms `$$8`/`$$9`
+  (Appendix H: "Existing labels are still valid but should not be used for Unique Device Identification"; their
+  layout comes from earlier editions that were not reachable). `/S` is refused next to a serial secondary ("Serial
+  number when Lot number is used"). In a separate secondary symbol with supplemental data the link character may stand
+  after the lot/serial or before the check character; two valid readings are refused as ambiguous. **Not in the standard, chosen here:** two-digit
   years are 20YY (no clock dependence), an MMYY expiry is the last day of the month, dates are UTC with the hour where
   the format has one. The check character may be a space or `/`; the value keeps it.
 - **`IsbtUdi`** (ICCBBA ST-017): the Compound Message `=+aabbb…` or the human-readable concatenation of the data
@@ -248,7 +254,7 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
 - **Format only:** ISBT 128 specified compound sequences other than 034-037 (their order is in ICCBBA's RT017, not
   public); non-UDI ISBT 128 data structures; the alternatively formatted NDC of 207.33(b)(4) is not accepted (no
   published format).
-- Size limits before parsing: HIBC 106 characters, ISBT 128 2048 characters and 99 data structures, NDC 13.
+- Size limits before parsing: HIBC 112 characters, ISBT 128 2048 characters and 99 data structures, NDC 13.
 
 ## GS1 Application Identifier table
 

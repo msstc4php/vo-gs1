@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MSSTC4PHP\ValueObject\Gs1\Udi;
 
 use DateTimeImmutable;
+use LogicException;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidUdiException;
@@ -39,7 +40,7 @@ final class Gs1Udi extends AbstractStringValueObject implements Udi
 
     public function gtin(): Gtin
     {
-        return $this->elementString()->gtin() ?? throw new InvalidUdiException('GS1 UDI lost its AI (01).');
+        return $this->elementString()->gtin() ?? throw new LogicException('GS1 UDI lost its AI (01).');
     }
 
     public function elementString(): ElementString

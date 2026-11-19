@@ -71,6 +71,9 @@ final class UdiFactoryTest extends TestCase
         yield 'GS' => ["\x1D0109506000134352", Gs1Udi::class, '09506000134352'];
         yield '^' => ['^0109506000134352', Gs1Udi::class, '09506000134352'];
         yield '+' => ['+A123BJC5D6E71G', HibcUdi::class, '+A123BJC5D6E71G'];
+        yield ']C0+' => [']C0+A123BJC5D6E71G', HibcUdi::class, '+A123BJC5D6E71G'];
+        yield ']C0=/' => [']C0=/A9997XYZ100T0479=A99991712345600=,000012', IsbtUdi::class, 'A9997XYZ100T0479'];
+        yield ']d1=+' => [']d1=+03000=/A9997XYZ100T0479=A99991712345600=,000012', IsbtUdi::class, 'A9997XYZ100T0479'];
         yield '=+' => ['=+04000=/A9997XYZ100T0479=A99991712345600=,000012=>019031', IsbtUdi::class, 'A9997XYZ100T0479'];
         yield '=/' => ['=/A9997XYZ100T0479=A99991712345600=,000012', IsbtUdi::class, 'A9997XYZ100T0479'];
     }
@@ -105,6 +108,22 @@ final class UdiFactoryTest extends TestCase
         $this->expectExceptionMessage('UDI does not start like a GS1, HIBC or ISBT 128 UDI.');
 
         UdiFactory::fromString($value);
+    }
+
+    public function testAnAmpersandIsIsbt128(): void
+    {
+        $this->expectException(InvalidUdiException::class);
+        $this->expectExceptionMessage('ISBT 128 UDI must begin with the Processor Product Identification Code "=/".');
+
+        UdiFactory::fromString('&,1LOT');
+    }
+
+    public function testDataBehindASymbologyIdentifierIsGs1OtherwiseAndValidatedThere(): void
+    {
+        $this->expectException(InvalidUdiException::class);
+        $this->expectExceptionMessage('GS1 UDI is not a valid element string');
+
+        UdiFactory::fromString(']C0A9997');
     }
 
     public function testTheAgencyClassValidatesTheRest(): void

@@ -104,10 +104,10 @@ final class IsbtUdiTest extends TestCase
         yield 'compound without DI first' => ['=+03000=,000012=/A9997XYZ100T0479=A99991712345600', 'must begin with the Processor Product Identification Code "=/"'];
         yield 'empty' => ['', 'must begin with the Processor Product Identification Code "=/"'];
         yield 'header only' => ['=+00000', 'must begin with the Processor Product Identification Code "=/"'];
-        yield 'count too high' => ['=+05000' . $hri, 'compound message announces 5 data structures, got 4'];
-        yield 'count too low' => ['=+03000' . $hri, 'compound message announces 3 data structures, got 4'];
-        yield 'specified sequence out of order' => ['=+04035' . $hri, 'data structures are not in the order of specified sequence 035'];
-        yield 'specified sequence 034 with an extra' => ['=+04034=/A9997XYZ100T0479=,000012=A99991712345600=>019031', 'data structures are not in the order of specified sequence 034'];
+        yield 'count too high' => ['=+05000' . $hri, 'compound message data structure count does not match, got 4'];
+        yield 'count too low' => ['=+03000' . $hri, 'compound message data structure count does not match, got 4'];
+        yield 'specified sequence out of order' => ['=+04035' . $hri, 'data structures are not in the order of the specified sequence'];
+        yield 'specified sequence 034 with an extra' => ['=+04034=/A9997XYZ100T0479=,000012=A99991712345600=>019031', 'data structures are not in the order of the specified sequence'];
         yield 'header inside' => [$hri . '=+01000', 'has a compound message header after its start'];
         yield 'no DIN' => ['=/A9997XYZ100T0479=,000012=>019031', 'must carry the Donation Identification Number'];
         yield 'no divisions' => ['=/A9997XYZ100T0479=A99991712345600', 'must carry the Product Divisions'];

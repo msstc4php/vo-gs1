@@ -93,11 +93,13 @@ final class HibcUdiTest extends TestCase
 
     public function testSecondaryDateWinsOverSupplementalExpiryAndSerialOverS(): void
     {
-        $udi = HibcUdi::from(self::concatenated('$$+3200115AB/14D20991231/SXY'));
+        $udi = HibcUdi::from(self::concatenated('$$3200115AB/14D20991231/SXY'));
 
         self::assertSame('2020-01-15', $udi->expiryDate()?->format('Y-m-d'));
         self::assertSame(HibcDateFormat::Yymmdd, $udi->expiryDateFormat());
-        self::assertSame('AB', $udi->serial());
+        self::assertSame('AB', $udi->lot());
+        self::assertSame('XY', $udi->serial());
+        self::assertSame('CD', HibcUdi::from(self::concatenated('$$+3200115CD/14D20991231'))->serial());
     }
 
     /**
@@ -176,8 +178,8 @@ final class HibcUdiTest extends TestCase
         $secondary = 'secondary data must follow a format of Appendix F';
         $supplemental = 'supplemental data must be S, 16D, 14D or Q with its data';
 
-        yield 'too long' => [\str_repeat('A', 107), 'must have at most 106 characters, got 107'];
-        yield 'longest' => ['+' . \str_repeat('A', 105), 'has a wrong Mod 43 check character'];
+        yield 'too long' => [\str_repeat('A', 113), 'must have at most 112 characters, got 113'];
+        yield 'longest' => ['+' . \str_repeat('A', 111), 'has a wrong Mod 43 check character'];
         yield 'flag and check character only' => ['++', $primary];
         yield 'no flag' => ['A123BJC5D6E71G', 'must start with the flag character "+"'];
         yield 'empty' => ['', 'must start with the flag character "+"'];
@@ -192,7 +194,9 @@ final class HibcUdiTest extends TestCase
         yield 'product number of 19' => [self::withCheck('+A123' . \str_repeat('P', 19) . '1'), $primary];
         yield 'product number with a space' => [self::withCheck('+A123BJ C1'), $primary];
         yield 'empty secondary' => [self::concatenated(''), $secondary];
-        yield 'flag 8' => [self::concatenated('$$8051231'), $secondary];
+        yield 'quantity flag 9 without a date flag' => [self::concatenated('$$912347'), $secondary];
+        yield 'quantity flag 8 with one digit' => [self::concatenated('$$8'), $secondary];
+        yield 'S with a serial secondary' => [self::concatenated('$$+7AB/SXY'), 'supplemental serial number S is for a lot secondary, the secondary data carries a serial number'];
         yield 'flag letter' => [self::concatenated('$$A'), $secondary];
         yield 'MMYY of 3 digits' => [self::concatenated('$$095'), $secondary];
         yield 'month 13' => [self::concatenated('$$3051301'), 'date in the YYMMDD format does not exist'];
@@ -240,8 +244,10 @@ final class HibcUdiTest extends TestCase
         yield 'primary instead of secondary' => [self::PRIMARY, self::PRIMARY, 'secondary symbol must start with "+" and a digit or "$"'];
         yield 'secondary without data' => [self::PRIMARY, '+$', 'has a wrong Mod 43 check character'];
         yield 'secondary of 3' => [self::PRIMARY, '+$G', 'has a wrong Mod 43 check character'];
-        yield 'secondary of 106' => [self::PRIMARY, '+$' . \str_repeat('A', 104), 'has a wrong Mod 43 check character'];
-        yield 'secondary of 107' => [self::PRIMARY, '+$' . \str_repeat('A', 105), 'secondary symbol must start with "+" and a digit or "$"'];
+        yield 'secondary of 112' => [self::PRIMARY, '+$' . \str_repeat('A', 110), 'has a wrong Mod 43 check character'];
+        yield 'secondary of 113' => [self::PRIMARY, '+$' . \str_repeat('A', 111), 'secondary symbol must start with "+" and a digit or "$"'];
+        yield 'no link character before the slash or at the end' => [self::PRIMARY, '+$$7AB/16D20111212' . Mod43::compute('+$$7AB/16D20111212'), 'secondary link character does not match the primary check character'];
+        yield 'both link positions valid' => [self::PRIMARY, '+$$7ABG/SXG' . Mod43::compute('+$$7ABG/SXG'), 'secondary link character position is ambiguous'];
         yield 'secondary in lower case' => [self::PRIMARY, '+$abGx', 'must be characters of HIBCC Table B1 ending with a check character'];
         yield 'concatenated primary' => ['+A1231/$$7AL', '+$$7ALX', 'primary symbol carries secondary data'];
         yield 'primary data ending with a slash' => ['+A1231/' . Mod43::compute('+A1231/'), '+$$7ALX', 'primary symbol carries secondary data'];
@@ -305,6 +311,39 @@ final class HibcUdiTest extends TestCase
         $this->expectExceptionMessage('HIBC UDI date in the YYJJJ format does not exist.');
 
         HibcUdi::from(self::concatenated('$$524367'));
+    }
+
+    public function testTheLinkCharacterOfASecondarySymbolWithSupplementalData(): void
+    {
+        $concatenated = HibcUdi::from(self::concatenated('$$7AB/16D20111212'));
+        $afterLot = HibcUdi::fromSymbols(self::PRIMARY, '+$$7ABG/16D20111212' . Mod43::compute('+$$7ABG/16D20111212'));
+        $beforeCheck = HibcUdi::fromSymbols(self::PRIMARY, '+$$7AB/16D20111212G' . Mod43::compute('+$$7AB/16D20111212G'));
+
+        self::assertTrue($afterLot->equals($concatenated));
+        self::assertTrue($beforeCheck->equals($concatenated));
+        self::assertSame('2011-12-12', $afterLot->manufactureDate()?->format('Y-m-d'));
+
+        // Both positions hold the link character, but only the reading "before the check character" is valid data.
+        $oneValid = HibcUdi::fromSymbols(self::PRIMARY, '+$$7ABG/16D20111212G' . Mod43::compute('+$$7ABG/16D20111212G'));
+        self::assertSame('ABG', $oneValid->lot());
+    }
+
+    /**
+     * Quantity in the secondary data, dropped in 2.6 but "Existing labels are still valid" (Appendix H).
+     */
+    public function testLegacyQuantityFormats(): void
+    {
+        $two = HibcUdi::from(self::concatenated('$$80230512313C001'));
+        self::assertSame(2, $two->quantity());
+        self::assertSame('2005-12-31', $two->expiryDate()?->format('Y-m-d'));
+        self::assertSame('3C001', $two->lot());
+
+        $five = HibcUdi::from(self::concatenated('$$+91234570001/Q9'));
+        self::assertSame(12345, $five->quantity());
+        self::assertSame('0001', $five->serial());
+        self::assertNull($five->expiryDate());
+
+        self::assertSame(9, HibcUdi::from(self::concatenated('$$73C001/Q9'))->quantity());
     }
 
     public function testInvalidSecondaryContentFromSymbolsIsRefused(): void
