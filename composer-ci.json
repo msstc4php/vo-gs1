@@ -1,0 +1,82 @@
+{
+    "name": "msstc4php/vo-gs1",
+    "description": "Value objects for GS1 identification keys, element strings, Digital Link and EPC URIs, medical-device UDI and NDC, and Russian and EU marking codes. (CI profile: CI-only tools)",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "value-object",
+        "gs1",
+        "gtin",
+        "ean",
+        "upc",
+        "sscc",
+        "gln",
+        "application-identifier",
+        "gs1-128",
+        "gs1-datamatrix",
+        "digital-link",
+        "epc",
+        "udi",
+        "hibc",
+        "isbt-128",
+        "ndc",
+        "marking",
+        "chestny-znak",
+        "fmd",
+        "ddd"
+    ],
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/msstc4php/vo-base"
+        }
+    ],
+    "require": {
+        "msstc4php/vo-base": "^1.2",
+        "php": ">=8.4"
+    },
+    "require-dev": {
+        "deptrac/deptrac": "^4.6",
+        "friendsofphp/php-cs-fixer": "^3.76",
+        "infection/infection": "^0.32",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": ">=11.0",
+        "rector/rector": "^2.1",
+        "roave/backward-compatibility-check": "^8.20",
+        "roave/security-advisories": "dev-latest"
+    },
+    "autoload": {
+        "psr-4": {
+            "MSSTC4PHP\\ValueObject\\Gs1\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MSSTC4PHP\\ValueObject\\Gs1\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "phpstan/extension-installer": true,
+            "infection/extension-installer": true
+        },
+        "sort-packages": true
+    },
+    "authors": [
+        {
+            "name": "Maxim Shamaev",
+            "email": "maxim.shamaev@gmail.com"
+        }
+    ],
+    "extra": {
+        "bundle-standard": {
+            "kind": "library",
+            "runtime": "php84"
+        }
+    }
+}

@@ -1,0 +1,12 @@
+msstc4php/vo-gs1
+Copyright (c) 2026 Maxim Shamaev (MIT License, see LICENSE)
+
+This product includes the GS1 Barcode Syntax Dictionary, release 2026-01-27
+(https://github.com/gs1/gs1-syntax-dictionary, commit 8ad003f83a4ba6c2179ce15d578fae27d6580909), unmodified, as
+resources/gs1-syntax-dictionary.txt, and a table generated from it, src/Internal/AiTable.php.
+
+  Copyright (c) 2020-2021 BWIPP project. https://bwipp.terryburton.co.uk/
+  Copyright (c) 2020-2021 Zint Project. https://zint.org.uk/
+  Copyright (c) 2021-2025 GS1 AISBL
+
+Licensed under the Apache License, Version 2.0; a copy is in resources/gs1-syntax-dictionary.LICENSE.
