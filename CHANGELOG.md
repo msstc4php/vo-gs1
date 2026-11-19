@@ -26,7 +26,7 @@
   `toBillingFormat()`, `toNdc12()`), `NdcConfiguration` and `Ndc12` (6-4-2, final rule of 2026-03-05).
 - Marking codes: `Marking\RU\MarkingCode` (every structure the Russian decrees and «Честный знак» publish:
   tobacco consumer pack, tobacco group pack, standard, shortened, plus `GenericGs1` for intact codes outside them;
-  `structure()`, `identifier()`; `verificationCode()` is non-null, stricter than the plan's `?string`; codes with lost
+  `structure()`, `identifier()`; `verificationCode()` is never null; codes with lost
   GS separators are refused), `Marking\RU\MarkingIdentifier` (КИ, `fromDocumentForm()`, `toDocumentForm()`),
   `Marking\RU\MarkingCodeStructure`;
   `Marking\EU\FmdPackCode` (Delegated Regulation (EU) 2016/161 unique identifier, GS1 and IFA format 06),

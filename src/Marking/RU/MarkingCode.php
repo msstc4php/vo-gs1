@@ -18,10 +18,13 @@ use Override;
  * operator's keys.
  *
  * Input: the tobacco consumer-pack code (29 characters, optionally after `]d1`, `]d2` or a leading GS), or a
- * GS1-structured code in any notation {@see ElementString} accepts. A code whose GS separators were lost (copied
- * from a web form) is refused, never split at a guessed position: a group holding, at one of its published lengths,
- * the AI a published structure puts next is refused. With intact separators, a code that fits no published structure
- * is {@see MarkingCodeStructure::GenericGs1}.
+ * GS1-structured code in any notation {@see ElementString} accepts. Data is never split at a guessed position. A
+ * code whose GS separators were lost (copied from a web form) is refused when a group of an unpublished length holds,
+ * at one of its published lengths, the AI a published structure puts next, or when no (92)/(93) is left. With intact
+ * separators, a code that fits no published structure is {@see MarkingCodeStructure::GenericGs1}.
+ *
+ * Residual, undetectable without the separators: a GenericGs1 code (unpublished serial length) whose GS after (21)
+ * was lost can have its next AIs swallowed into the serial and be accepted as a different code.
  *
  * Canonical form: the pack code as is; a GS1-structured code as barcode data, AIs in the order given, GS (U+001D)
  * after each group that is not of predefined length except the last, as the operator issues it.

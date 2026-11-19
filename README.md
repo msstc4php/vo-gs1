@@ -289,17 +289,20 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   | `GenericGs1` | (01), (21), then (92) or (93) somewhere, intact GS separators; AI-table checks only | none: lengths or groups no page publishes |
 
   Accessors: `gtin()`, `serial()`, `verificationKey()` (91), `verificationCode()` (92, 93 or the pack's 4th group),
-  `identifier()` (never throws), `elementString()` (null for the pack). `verificationCode()` is never null (the
-plan typed it `?string`; every structure has a tail). Input: the pack code (optionally after `]d1`, `]d2` or a
-  leading GS) or a GS1 code in any `ElementString` notation. **A code whose GS separators were lost** (copied from a
-  web form) is refused, never split: a group holding, at one of its published lengths, the AI a published structure
-  puts next (`21` + 6 characters + `93…`, `91` + 4 + `92…`, …) is refused, and a code without (92)/(93) is refused.
-  29 GS-free characters that read both as a pack and as such a code throw `AmbiguousValueException`. The operator
+  `identifier()` (never throws), `elementString()` (null for the pack). `verificationCode()` is never null. Input:
+  the pack code (optionally after `]d1`, `]d2` or a leading GS) or a GS1 code in any `ElementString` notation.
+  **Lost GS separators** (a code copied from a web form): data is never split at a guessed position. A group of an
+  unpublished length that holds, at one of its published lengths, the AI a published structure puts next
+  (`21` + 6 characters + `93…`, `91` + 4 + `92…`, …) is refused, and so is a code left without (92)/(93); 29 GS-free
+  characters that read both as a pack and as such a code throw `AmbiguousValueException`. **Residual:** a
+  `GenericGs1` code (unpublished serial length) whose GS after (21) was lost can have its next AIs swallowed into the
+  serial and is then accepted as a different code; without the separators this cannot be detected. The operator
   publishes no recovery rule. Canonical form: the pack as is, a GS1 code as barcode data with its GS separators,
   AIs in the order given (store the GS characters too).
 - **`RU\MarkingIdentifier`** (КИ, the code without the crypto tail): (01) + (21); with (8005) for the tobacco group pack
   (Decree No. 224, p. 44: "первые 3 группы"); the first 25 characters of the pack. `from()` takes the
-  canonical forms only: bracketed `(01)…(21)…` or the 25 pack characters. `fromDocumentForm()` reads the operator's
+  canonical forms only: bracketed `(01)…(21)…` or the 25 pack characters (any 25-character string is read as a
+  pack КИ by `from()`). `fromDocumentForm()` reads the operator's
   `01…21…` (which `toDocumentForm()` gives); 25 characters that read both as a pack КИ and as `01…21…` + 7 throw
   `AmbiguousValueException` there.
 - **Russian product groups covered** (structure read on the operator's pages, decree cited there): tobacco and

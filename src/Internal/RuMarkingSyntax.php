@@ -99,7 +99,11 @@ final class RuMarkingSyntax
         }
 
         if (self::isPackShaped($input, self::PACK_IDENTIFIER_LENGTH)) {
-            return self::packIdentifier($input);
+            try {
+                return self::packIdentifier($input);
+            } catch (InvalidMarkingCodeException $exception) {
+                throw new InvalidMarkingCodeException($exception->getMessage() . ' 25 characters are read as a pack КИ; read the document form 01…21… with fromDocumentForm().', $exception->getCode(), previous: $exception);
+            }
         }
 
         throw new InvalidMarkingCodeException(self::IDENTIFIER . ' must be the 25 pack characters or the bracketed form (01)…(21)…; read the document form 01…21… with fromDocumentForm().');

@@ -317,6 +317,7 @@ final class MarkingCodeTest extends TestCase
 
         self::assertSame('(01)' . self::GTIN . '(21)5Ab+cDe-fGh.J', (string) $identifier);
         self::assertTrue(MarkingIdentifier::fromDocumentForm(self::GTIN . "5U!Mq'XAbC1")->isTobaccoConsumerPack());
+        self::assertSame('(01)04606203086627(21)5aB3x_Y', (string) MarkingIdentifier::fromDocumentForm('0104606203086627215aB3x_Y'));
         self::assertTrue(MarkingIdentifier::fromDocumentForm('(01)' . self::GTIN . '(21)5aB3x_YZ')->equals(MarkingIdentifier::from('(01)' . self::GTIN . '(21)5aB3x_YZ')));
     }
 
@@ -350,6 +351,7 @@ final class MarkingCodeTest extends TestCase
         yield 'tobacco group serial of 6' => ['(01)' . self::GTIN . '(21)5aB3x_(8005)012500', 'Russian marking identifier AI (21) has 6 characters; the tobacco group pack structure has 7.'];
         yield 'serial running into (93)' => ['(01)' . self::GTIN . '(21)5aB3x_93Ab', 'Russian marking identifier AI (21) runs into AI (93) at a published length: a GS separator was lost.'];
         yield 'pack with a wrong check digit' => ['04600439931257' . "5U!Mq'XAbC1", 'Russian marking identifier (tobacco consumer pack) has a wrong GTIN check digit.'];
+        yield 'document form whose pack reading fails' => ['0104606203086627215aB3x_Y', 'Russian marking identifier (tobacco consumer pack) has a wrong GTIN check digit. 25 characters are read as a pack КИ; read the document form 01…21… with fromDocumentForm().'];
         yield 'pack-shaped after a letter' => ['X4600439931256' . "5U!Mq'XAbC1", 'Russian marking identifier must be the 25 pack characters or the bracketed form (01)…(21)…; read the document form 01…21… with fromDocumentForm().'];
         yield 'bad bracketed form' => ['(01)04600439931257(21)5aB3x_', 'Russian marking identifier is not a valid element string: Element string AI (01) data fails the GS1 csum check.'];
     }

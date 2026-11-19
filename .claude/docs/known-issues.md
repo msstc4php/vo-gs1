@@ -119,6 +119,11 @@
   Fix round 2 ruling: groups of a published length are never checked (20-char random serials contain `93` etc. a few
   percent of the time). Remaining cost: a would-be `GenericGs1` code with such a sequence at such an offset is
   refused. Identifiers apply the same rule, so canonical round trips stay consistent.
+- Opposite residual (fix round 3, controller ruling: no new heuristic): a `GenericGs1` code with an unpublished serial
+  length whose GS after (21) was lost can swallow the next AIs into the serial and be accepted as a different code.
+  Undetectable without the separators; a "(92) without (91)" refusal was rejected (would refuse valid generic codes).
+- `MarkingIdentifier::from()` reads any 25 pack-shaped characters as a pack КИ; its check-digit failure message points
+  to `fromDocumentForm()`.
 - 29 GS-free characters `01` + GTIN + `21` + 5 + `93` + 4 are pack-shaped: ambiguous if the first 14 digits are also a
   valid GTIN, else refused as lost GS. GTIN `04600439931256` happens to give a valid `01046004399312`; tests use
   `04606203086627` for the non-ambiguous case.

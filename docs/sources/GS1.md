@@ -957,7 +957,9 @@ next, is refused as a lost separator — (21) at 6, 7, 13 or 20 followed by `91`
 at 44 or 88 by `3103`; (93) at 4 by `3103` or `335y`. A group of a published length is unambiguous with intact GS
 separators, whatever it contains (a 20-character serial with `93` at offset 13 is a serial). The same rule applies to
 identifiers. Cost: a code that would otherwise be `GenericGs1` (unpublished length) is refused when such a sequence
-sits at such an offset. A GS-less code with no tail is refused for lacking (92)/(93).
+sits at such an offset. Opposite residual (fix round 3): a `GenericGs1` code (unpublished serial length) whose GS after
+(21) was lost can have its next AIs swallowed into the serial and is accepted as a different code — undetectable
+without the separators. No "(92) without (91)" refusal is added: it would refuse possibly valid generic codes. A GS-less code with no tail is refused for lacking (92)/(93).
 
 ## Unreachable or deferred
 
