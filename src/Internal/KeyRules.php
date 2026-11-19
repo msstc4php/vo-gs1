@@ -10,10 +10,14 @@ use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidIdentificationKeyException;
  * @internal
  *
  * Shared checks of the identification keys. Messages name the key and the length or the reason, never the input.
+ *
+ * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 1.2.3.3 (GS1 Company Prefix)
+ * @see https://github.com/gs1/gs1-syntax-dictionary `src/lint_gcppos1.c`, `GCP_MIN_LENGTH` (tag 2026-01-27)
  */
 final class KeyRules
 {
-    private const int COMPANY_PREFIX_MIN = 3;
+    /** Section 1.2.3.3: "a unique string of four to twelve digits". */
+    private const int COMPANY_PREFIX_MIN = 4;
 
     private const int COMPANY_PREFIX_MAX = 12;
 
@@ -61,7 +65,7 @@ final class KeyRules
     }
 
     /**
-     * A key that starts with the GS1 Company Prefix needs its first digits to decode the GS1 Prefix.
+     * A key that starts with the GS1 Company Prefix: the dictionary's `gcppos1` linter requires four leading digits.
      */
     public static function startsWithPrefixDigits(string $value, string $subject): void
     {
@@ -82,10 +86,11 @@ final class KeyRules
      * Company prefix followed by the reference: the body of a key, without check digit.
      *
      * @param int|list<int> $bodyLengths allowed digit counts of the body
+     * @param int $minPrefix shortest prefix: 4 (GS1 Company Prefix), 3 for the GS1-8 Prefix of a GTIN-8
      */
-    public static function body(string $subject, string $companyPrefix, string $reference, int|array $bodyLengths): string
+    public static function body(string $subject, string $companyPrefix, string $reference, int|array $bodyLengths, int $minPrefix = self::COMPANY_PREFIX_MIN): string
     {
-        self::assertCompanyPrefix($subject, $companyPrefix);
+        self::assertCompanyPrefix($subject, $companyPrefix, $minPrefix);
 
         $body = $companyPrefix . $reference;
         $lengths = (array) $bodyLengths;
@@ -105,17 +110,17 @@ final class KeyRules
      */
     public static function textBody(string $subject, string $companyPrefix, string $reference): string
     {
-        self::assertCompanyPrefix($subject, $companyPrefix);
+        self::assertCompanyPrefix($subject, $companyPrefix, self::COMPANY_PREFIX_MIN);
 
         return $companyPrefix . $reference;
     }
 
-    private static function assertCompanyPrefix(string $subject, string $companyPrefix): void
+    private static function assertCompanyPrefix(string $subject, string $companyPrefix, int $min): void
     {
         $length = \strlen($companyPrefix);
-        if ($length < self::COMPANY_PREFIX_MIN || $length > self::COMPANY_PREFIX_MAX
+        if ($length < $min || $length > self::COMPANY_PREFIX_MAX
             || \strspn($companyPrefix, Gs1Charsets::DIGITS) !== $length) {
-            throw self::fail($subject, \sprintf('company prefix must have %d to %d digits', self::COMPANY_PREFIX_MIN, self::COMPANY_PREFIX_MAX));
+            throw self::fail($subject, \sprintf('company prefix must have %d to %d digits', $min, self::COMPANY_PREFIX_MAX));
         }
     }
 }

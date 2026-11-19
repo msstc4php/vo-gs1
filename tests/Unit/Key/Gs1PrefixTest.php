@@ -73,6 +73,10 @@ final class Gs1PrefixTest extends TestCase
         yield '299' => ['29912345', Gs1Prefix::RestrictedCirculation];
         yield '300' => ['30012345', Gs1Prefix::MemberOrganisation];
         yield '952' => ['95212345', Gs1Prefix::Demonstration];
+        yield '953' => ['95312345', Gs1Prefix::MemberOrganisation];
+        yield '976' => ['97612345', Gs1Prefix::MemberOrganisation];
+        yield '977 reserved' => ['97712345', Gs1Prefix::Unknown];
+        yield '999 reserved' => ['99912345', Gs1Prefix::Unknown];
         yield 'three digits only' => ['952', Gs1Prefix::Demonstration];
     }
 

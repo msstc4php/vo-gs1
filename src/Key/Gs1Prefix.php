@@ -11,7 +11,7 @@ use MSSTC4PHP\ValueObject\Gs1\Internal\KeyRules;
  * What the leading digits of a key (its GS1 Prefix) say about the number: restricted circulation, coupons, ISBN,
  * ISSN and so on. The allocation of a prefix to one GS1 Member Organisation is a registry fact that the General
  * Specifications do not carry, so every prefix that issues company numbers decodes as `MemberOrganisation`. A
- * well-formed prefix outside the table (`951`, `984`-`989`) decodes as `Unknown` and is never refused.
+ * well-formed prefix outside the table (`951`, `984`-`989`, and `977`-`999` for a GTIN-8) decodes as `Unknown` and is never refused.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 1.2.3.1, Tables 1-4 and 1-5
  * @see docs/sources/GS1.md "GS1 Prefix list"
@@ -69,6 +69,7 @@ enum Gs1Prefix
         return match (true) {
             $three <= '099', $three >= '200' && $three <= '299' => self::RestrictedCirculation,
             $three === '952' => self::Demonstration,
+            $three >= '977' => self::Unknown,
             default => self::MemberOrganisation,
         };
     }

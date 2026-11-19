@@ -51,10 +51,12 @@ final class Grai extends AbstractStringValueObject implements IdentificationKey
     #[Override]
     protected function parse(string $value): string
     {
-        KeyRules::checkedDigits(\substr($value, 0, 14), self::TYPE, 14);
+        KeyRules::digits(\substr($value, 0, 14), self::TYPE, 14);
         if ($value[0] !== '0') {
             throw KeyRules::fail(self::TYPE, 'must start with a zero');
         }
+
+        KeyRules::checkedDigits(\substr($value, 1, 13), self::TYPE, 13);
 
         if (\strlen($value) > 14) {
             KeyRules::text(\substr($value, 14), 'GRAI serial', Gs1Charsets::CSET_82, self::SERIAL_MAX);

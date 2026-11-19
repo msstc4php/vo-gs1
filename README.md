@@ -34,7 +34,7 @@ length is a registry fact); `gs1Prefix()` reads the GS1 Prefix range instead.
 | Class | AI | Notes |
 |---|---|---|
 | `Gtin` | 01 | 8, 12, 13 or 14 digits; keeps the form given, `equals()` compares the 14-digit form; `format()`, `toGtin14()`, `asGtin13/12/8()` |
-| `Gln` | 414, 254 ... | 13 digits |
+| `Gln` | 410-417 | 13 digits |
 | `Sscc` | 00 | 18 digits; `extensionDigit()` |
 | `Grai` | 8003 | `0` + 13 digits + optional serial; `assetType()`, `serial()` |
 | `Giai` | 8004 | company prefix + asset reference, no check digit |

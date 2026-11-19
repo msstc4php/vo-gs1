@@ -56,9 +56,27 @@ final class GtinTest extends TestCase
         self::assertFalse(new Gtin('4006381333931')->equals(Gln::from('0614141123452')));
     }
 
-    public function testSeparatorsAreStripped(): void
+    public function testSeparatorsAreRefused(): void
     {
-        self::assertSame('4006381333931', (string) new Gtin('4006 3813-33931'));
+        $this->expectException(InvalidIdentificationKeyException::class);
+        $this->expectExceptionMessage('GTIN must contain digits only.');
+
+        new Gtin('4006 81333931');
+    }
+
+    public function testEqualGtinsDecodeToTheSameGs1Prefix(): void
+    {
+        foreach (['96385074', '00000096385074', '0000096385074'] as $form) {
+            self::assertSame(Gs1Prefix::MemberOrganisation, new Gtin($form)->gs1Prefix(), $form);
+        }
+
+        foreach (['02345673', '00000002345673'] as $form) {
+            self::assertSame(Gs1Prefix::RestrictedCirculation, new Gtin($form)->gs1Prefix(), $form);
+        }
+
+        foreach (['4006381333931', '04006381333931'] as $form) {
+            self::assertSame(Gs1Prefix::MemberOrganisation, new Gtin($form)->gs1Prefix(), $form);
+        }
     }
 
     public function testFormatLengths(): void
@@ -106,6 +124,7 @@ final class GtinTest extends TestCase
     public static function badParts(): iterable
     {
         yield 'prefix too short' => ['40', '063813339', 'GTIN company prefix must have 3 to 12 digits.'];
+        yield 'prefix of 3 is a GS1-8 Prefix only for GTIN-8' => ['400', '6381333931', 'GTIN company prefix and reference must have 7 or 11 or 12 digits in total, got 13.'];
         yield 'prefix too long' => ['4006381333931', '', 'GTIN company prefix must have 3 to 12 digits.'];
         yield 'prefix not digits' => ['40A', '06381333', 'GTIN company prefix must have 3 to 12 digits.'];
         yield 'body of 10' => ['4006381', '333', 'GTIN company prefix and reference must have 7 or 11 or 12 digits in total, got 10.'];

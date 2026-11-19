@@ -14,7 +14,9 @@ use Override;
  * Global Model Number (AI 8013), the Basic UDI-DI of GS1: the GS1 Company Prefix and the model reference (up to 23
  * characters of CSET 82) followed by two check characters (MOD 1021,32).
  *
- * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 7.9.5 and 3.9.13
+ * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 1.2.3.3 (GS1 Company Prefix, four to twelve digits) and Table 7-20 (CSET 82)
+ * @see https://github.com/gs1/gs1-syntax-dictionary `src/lint_gcppos1.c` (four leading digits), tag 2026-01-27
+ * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, sections 7.9.5 and 3.9.13
  * @see https://github.com/gs1/gs1-syntax-dictionary GS1 Barcode Syntax Dictionary, AI 8013 (`X..25,csumalpha`)
  */
 final class Gmn extends AbstractStringValueObject implements IdentificationKey
@@ -26,7 +28,7 @@ final class Gmn extends AbstractStringValueObject implements IdentificationKey
     public static function fromParts(string $companyPrefix, string $reference): self
     {
         $body = KeyRules::textBody(self::TYPE, $companyPrefix, $reference);
-        KeyRules::text($body, self::TYPE, Gs1Charsets::CSET_82, self::MAX - 2);
+        KeyRules::text($body, 'GMN company prefix and model reference', Gs1Charsets::CSET_82, self::MAX - 2);
 
         return new self($body . GmnCheckCharacters::compute($body));
     }

@@ -11,25 +11,25 @@ use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
 use Override;
 
 /**
- * Global Trade Item Number (AI 01): 8, 12, 13 or 14 digits, the last one the check digit. Spaces and hyphens are
- * stripped; the value keeps the form given (EAN-8, UPC-A, EAN-13 or GTIN-14), because the leading zeros of a GTIN-12
+ * Global Trade Item Number (AI 01): 8, 12, 13 or 14 digits, the last one the check digit. The value keeps the form given (EAN-8, UPC-A, EAN-13 or GTIN-14), because the leading zeros of a GTIN-12
  * are part of its U.P.C. Company Prefix. Leading zeros do not change the GTIN, so {@see equals()} compares the
  * 14-digit form: `4006381333931` equals `04006381333931`.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, sections 1.3.1, 2.1.1.10 and 7.9.1
- * @see docs/sources/GS1.md "GTIN formats and the 14-digit form"
+ * @see docs/sources/GS1.md "GTIN formats and the 14-digit form" and "GS1 Prefix list"
  */
 final class Gtin extends AbstractStringValueObject implements IdentificationKey
 {
     private const string TYPE = 'GTIN';
 
     /**
-     * Builds a GTIN-8, GTIN-12 or GTIN-13 from the company prefix and the item reference (a GTIN-14 has its
-     * indicator digit before the prefix: pass the 14 digits to the constructor instead).
+     * Builds a GTIN-13 or GTIN-12 from the GS1 Company Prefix (U.P.C. Company Prefix for a GTIN-12, with its
+     * leading zero) and the item reference, or a GTIN-8 from the GS1-8 Prefix and the item reference. A GTIN-14 has
+     * its indicator digit before the prefix: pass the 14 digits to the constructor instead.
      */
     public static function fromParts(string $companyPrefix, string $reference): self
     {
-        $body = KeyRules::body(self::TYPE, $companyPrefix, $reference, [7, 11, 12]);
+        $body = KeyRules::body(self::TYPE, $companyPrefix, $reference, [7, 11, 12], 3);
 
         return new self($body . Gs1CheckDigit::compute($body));
     }
@@ -65,14 +65,11 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
     #[Override]
     public function gs1Prefix(): Gs1Prefix
     {
-        $length = \strlen($this->value);
+        $gtin14 = $this->toGtin14();
 
-        return match ($length) {
-            8 => Gs1Prefix::fromGtin8Digits($this->value),
-            12 => Gs1Prefix::fromDigits('0' . $this->value),
-            13 => Gs1Prefix::fromDigits($this->value),
-            default => Gs1Prefix::fromDigits(\substr($this->value, 1)),
-        };
+        return \str_starts_with($gtin14, '000000')
+            ? Gs1Prefix::fromGtin8Digits(\substr($gtin14, 6))
+            : Gs1Prefix::fromDigits(\substr($gtin14, 1));
     }
 
     #[Override]
@@ -84,15 +81,13 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
     #[Override]
     protected function parse(string $value): string
     {
-        $digits = \str_replace([' ', '-'], '', $value);
-
-        if (!\in_array(\strlen($digits), [8, 12, 13, 14], true)) {
-            throw KeyRules::fail(self::TYPE, \sprintf('must have 8, 12, 13 or 14 digits, got %d characters', \strlen($digits)));
+        if (!\in_array(\strlen($value), [8, 12, 13, 14], true)) {
+            throw KeyRules::fail(self::TYPE, \sprintf('must have 8, 12, 13 or 14 digits, got %d characters', \strlen($value)));
         }
 
-        KeyRules::checkedDigits($digits, self::TYPE, \strlen($digits));
+        KeyRules::checkedDigits($value, self::TYPE, \strlen($value));
 
-        return $digits;
+        return $value;
     }
 
     private function shortened(int $length): ?string

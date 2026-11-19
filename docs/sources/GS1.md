@@ -58,30 +58,83 @@ separately".
 and section 1.3.1 adds "there SHALL be consistency within the database field about whether these leading zeroes are
 present or not", and that the leading zeroes of a GTIN-12 "are meaningful since they are part of the U.P.C. Company
 Prefix … Therefore these zeroes must be preserved when storing the GTIN-12". Per the plan's fallback, `Gtin` (Task 4)
-keeps the form given and compares the 14-digit form for equality. The GS1 Digital Link URI Syntax (section 4) does
+keeps the form given and compares the 14-digit form for equality. `Gtin` does not strip spaces or hyphens, like every other key. The GS1 Digital Link URI Syntax (section 4) does
 require 14 digits in a URI.
 
-### GS1 Prefix list (section 1.2.3.1, Table 1-4; GS1-8: Table 1-5) — `Key\Gs1Prefix` (Task 4)
+### GS1 Prefix list (section 1.2.3.1, Table 1-4; GS1-8: Table 1-5) — `Key\Gs1Prefix`
 
-Table 1-4 (GS1 Prefix ranges), as `Gs1Prefix` decodes it (paraphrased; section 1.2.3.1): `02`, `04` and `20 – 29`
-issue Restricted Circulation Numbers; `952` is for demonstrations and examples; `977` is allocated to the ISSN
-International Centre; `981 – 983` and `99` issue coupon identification. Two rows verbatim:
+Rows of Table 1-4 ("Synopsis of GS1 Prefix ranges") that `Gs1Prefix::fromDigits()` branches on, verbatim:
 
 | GS1 Prefix range | Significance |
 |---|---|
+| 0000000 | Used to issue Restricted Circulation Numbers within a company |
+| 0000001 – 0000099 | Unused to avoid collision with GTIN-8 |
+| 02 | Used to issue Restricted Circulation Numbers within a geographic region (MO defined) |
+| 04 | Used to issue Restricted Circulation Numbers within a company (GS1 user company defined) |
 | 20 – 29 | Used to issue Restricted Circulation Numbers within a geographic region (MO defined) |
+| 951 | Previously used (2004-2012) to issue General Manager Numbers for the EPC General Identifier (GID) scheme … GS1 discontinued issuance of new General Manager Numbers in June 2023. |
+| 952 | Used for demonstrations and examples of the GS1 system |
+| 977 | Allocated to ISSN International Centre for serial publications |
 | 978 – 979 | Allocated to International ISBN Agency for books, a portion of 979 sub-allocated to International ISMN Agency for music |
+| 980 | Used to issue GS1 identification of refund receipts (MO defined) |
+| 981 – 983 | Used to issue GS1 coupon identification for common currency areas (MO defined) |
+| 984 – 989 | Reserved for future use |
+| 99 | Used to issue GS1 coupon identification (MO defined) |
 
-The remaining ranges issue GS1 Company Prefixes, except `0000000` (RCN within a
-company), `0000001 – 0000099` ("Unused to avoid collision with GTIN-8", Table
-1-4, section 1.2.3.1), `951` (discontinued GID numbers), `980` (refund receipts)
-and `984 – 989` (reserved). Table 1-5 (GS1-8 Prefixes, for GTIN-8) gives
-`000 – 099` and `200 – 299` to Restricted Circulation Numbers and `952` to
-demonstrations. The allocation of a prefix to a given Member Organisation is not
-in the General Specifications; it is GS1's published prefix list
-(<https://www.gs1.org/standards/id-keys/company-prefix>), to be pinned in Task 4.
+Every other row ("Used to issue GS1 Company Prefixes", with or without "from which U.P.C. Company Prefixes can be
+derived") is decoded as `MemberOrganisation`; `951` and `984 – 989` as `Unknown`. Table 1-5 ("Synopsis of GS1-8
+Prefixes", section 1.2.3.2, "a unique string of two or more digits"), `Gs1Prefix::fromGtin8Digits()`:
+
+| GS1-8 Prefixes | Significance |
+|---|---|
+| 000 – 099 | Used to issue Restricted Circulation Numbers within a company (company defined) |
+| 200 – 299 | Used to issue Restricted Circulation Numbers within a company (company defined) |
+| 952 | Used for demonstrations and examples of the GS1 system |
+| 977 – 999 | Reserved for future use |
+
+(`100 – 199`, `300 – 951` and `953 – 976` "Used to issue GTIN-8s" decode as `MemberOrganisation`; `977 – 999` as
+`Unknown`.) The allocation of a prefix to a given Member Organisation is not in the General Specifications; it is
+GS1's published prefix list (<https://www.gs1.org/standards/id-keys/company-prefix>), not fetched, so `Gs1Prefix` does
+not name Member Organisations. `Gtin::gs1Prefix()` decodes the 14-digit form, so equal GTINs give one result: a form
+that starts with six zeros is read as a GTIN-8 (the dictionary's `gcppos1` note normalises a GS1-8 Prefix "by
+prefixing `00000`" to the 13-digit space), any other by dropping the indicator digit.
 
 > Note: Once a GS1 Prefix is issued, no other GS1 Prefix that begins with the same digits SHALL be issued
+
+### GS1 Company Prefix length (section 1.2.3.3) — `Internal\KeyRules`
+
+> A GS1 Company Prefix is a unique string of four to twelve digits used to issue GS1 identification keys. The first
+> digits are a valid GS1 Prefix and the length of the GS1 Company Prefix SHALL be at least one digit longer than the
+> length of the GS1 Prefix.
+
+So `fromParts()` takes a company prefix of 4 to 12 digits (3 for the GS1-8 Prefix of a GTIN-8, Table 1-5). For the
+keys that begin with the company prefix and have no check digit (`Giai`, `Ginc`, `Cpid`, `Gmn`; dictionary linter
+`gcppos1`) the dictionary's reference implementation (`src/lint_gcppos1.c`, tag `2026-01-27`, Apache-2.0) says:
+
+> `#define GCP_MIN_LENGTH 4  ///< Currently the shortest GS1 Company Prefix is four digits.`
+
+> Any character within the minimum-length GCP prefix that is outside the range '0' to '9' is illegal.
+
+and "The `gcppos1` linter checks whether an input starts with a GS1 Company Prefix", so those keys must start with four
+digits. The `zero` linter of GRAI (`N1,zero N13,csum`) "ensures that the given data has a zero value".
+
+### Character sets (section 7.11) — `Internal\Gs1Charsets`
+
+Table 7-20 "GS1 AI encodable character set 82" lists `! " % & ' ( ) * + , - . / 0-9 : ; < = > ? A-Z _ a-z`; Table 7-21
+"GS1 AI encodable character set 39" lists `# - / 0-9 A-Z` (Number Sign, Hyphen/Minus, Solidus, the ten digits, the
+capital letters). Section 7.11: Table 7-20 is for "all characters allowed for use in GS1 Application Identifier (AI)
+element strings with the exception of the Component and Parts Identifier"; Table 7-21 lists "all the characters
+allowed for use in the GS1 Application Identifier for Component and Parts Identifier" (`Cpid`, AI 8010; the
+dictionary types it `Y..30`).
+
+### Examples used by the key tests (GS1 General Specifications 26.0)
+
+The text of the document carries these keys, which the tests use: GRAI plain syntax `9524141234564789` (GS1 Company
+Prefix 9524141, asset type 23456, check digit 4, serial 789; element string `(8003)09524141234564789`), SSCC
+`095212340005678903` (section on Digital Link URIs), GLN `(414)9521234500018`, GIAI `09521234500XY09`
+(`...?8004=09521234500XY09`), GMN `1987654Ad4X4bL5ttr2310c2K` (Figure 7-15) and the SSCC of Table 7-9. **Gap:** the
+document's text (pdftotext) has no example value for GDTI, GCN, GSIN, GSRN, GINC or CPID (the coupon examples of
+2.6.2.1 are images); their tests use company prefix 0614141 with check digits computed by `Gs1CheckDigit`.
 
 ### Dates and the century window (sections 3.4.2 and 7.12)
 
@@ -298,4 +351,3 @@ The operator's knowledge base on markirovka.ru ("Официальный сайт
 | EUR-Lex (2016/161, 2018/574) | 2026-11-19 | HTML, PDF and ELI URLs: HTTP 202, empty body | text read on legislation.gov.uk; retry in Task 8 |
 | ICCBBA ST-011 v1.9.0 | 2026-11-19 | the registry page linking it is on a host outside the sandbox allowlist | ST-017 covers the UDI-DI structure; Task 7 |
 | GS1 prefix allocation list (MO per prefix) | 2026-11-19 | not fetched | `Gs1Prefix` decodes the General Specifications tables only; Member Organisations are not named |
-| CSET 39 definition (`Cpid`) | 2026-11-19 | not quoted from the General Specifications | the dictionary names AI 8010 as type `Y` (CSET 39); the set `#-/0-9A-Z` is in `Internal\Gs1Charsets` and should be confirmed against the General Specifications |

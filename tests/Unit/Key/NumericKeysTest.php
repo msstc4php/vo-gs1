@@ -34,6 +34,11 @@ use PHPUnit\Framework\TestCase;
 #[UsesClass(Gs1Prefix::class)]
 final class NumericKeysTest extends TestCase
 {
+    public function testGlnFromTheGeneralSpecificationsExample(): void
+    {
+        self::assertSame('9521234500018', (string) Gln::fromParts('9521234', '50001'));
+    }
+
     public function testGlnFromPartsAndGs1Prefix(): void
     {
         $gln = Gln::fromParts('0614141', '12345');
@@ -51,6 +56,7 @@ final class NumericKeysTest extends TestCase
         self::assertSame('3', $sscc->extensionDigit());
         self::assertSame(Gs1Prefix::MemberOrganisation, $sscc->gs1Prefix());
         self::assertSame('0', Sscc::fromParts('0614141', '123456789')->extensionDigit());
+        self::assertSame('095212340005678903', (string) Sscc::fromParts('9521234', '000567890'));
     }
 
     public function testSsccPrefixIsReadAfterTheExtensionDigit(): void
@@ -75,6 +81,15 @@ final class NumericKeysTest extends TestCase
         self::assertSame('06141411234567890', (string) $gsin);
         self::assertSame(Gs1Prefix::MemberOrganisation, $gsrn->gs1Prefix());
         self::assertSame(Gs1Prefix::MemberOrganisation, $gsin->gs1Prefix());
+    }
+
+    public function testGraiFromTheGeneralSpecificationsExample(): void
+    {
+        $grai = Grai::fromParts('9524141', '23456', '789');
+
+        self::assertSame('09524141234564789', (string) $grai);
+        self::assertSame('09524141234564', $grai->assetType());
+        self::assertSame('789', $grai->serial());
     }
 
     public function testGraiAndItsParts(): void
@@ -116,7 +131,7 @@ final class NumericKeysTest extends TestCase
         $this->expectException(InvalidIdentificationKeyException::class);
         $this->expectExceptionMessage('GRAI must start with a zero.');
 
-        Grai::from('10614141123459');
+        Grai::from('10614141123450');
     }
 
     public function testGdtiAndItsParts(): void
@@ -172,6 +187,7 @@ final class NumericKeysTest extends TestCase
      */
     public static function wrongValues(): iterable
     {
+        yield 'GRAI zero before the check digit' => [Grai::class, '10614141123450', 'GRAI must start with a zero.'];
         yield 'GLN check digit' => [Gln::class, '0614141123453', 'GLN has a wrong check digit.'];
         yield 'SSCC check digit' => [Sscc::class, '376104250021234560', 'SSCC has a wrong check digit.'];
         yield 'GSRN check digit' => [Gsrn::class, '061414112345678903', 'GSRN has a wrong check digit.'];
