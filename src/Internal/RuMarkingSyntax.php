@@ -8,15 +8,18 @@ use LogicException;
 use MSSTC4PHP\ValueObject\Exception\AmbiguousValueException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidMarkingCodeException;
+use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingCode;
 use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingCodeStructure;
 use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingIdentifier;
 
 /**
  * @internal
  *
- * The published structures of Russian marking codes. GS1-structured codes are read with
- * {@see ElementStringSyntax}, which never splits data whose GS separators were lost; the fixed lengths of the
- * published groups then refuse a code whose groups ran together.
+ * Russian marking codes and identifiers. GS1-structured codes are read with {@see ElementStringSyntax}, which never
+ * splits data whose GS separators were lost: a variable-length group then swallows the next one. Such data is refused
+ * when a group holds, at one of its published lengths, the AI a published structure puts next (see
+ * {@see PUBLISHED_NEXT}); otherwise a code that fits no published structure is accepted as
+ * {@see MarkingCodeStructure::GenericGs1} on the AI table's checks alone.
  *
  * @see docs/sources/GS1.md "Russian marking"
  */
@@ -34,14 +37,17 @@ final class RuMarkingSyntax
 
     private const string PACK_IDENTIFIER = '/^([0-9]{14})(.{7})(.{4})$/sD';
 
+    private const int PACK_LENGTH = 29;
+
+    private const int PACK_IDENTIFIER_LENGTH = 25;
+
     /** @var non-empty-list<positive-int> */
     private const array STANDARD_SERIALS = [6, 13, 20];
 
     /** @var non-empty-list<positive-int> every published serial length occurs in the shortened structure */
     private const array SHORTENED_SERIALS = [6, 7, 13, 20];
 
-    /** @var non-empty-list<positive-int> */
-    private const array TOBACCO_GROUP_SERIALS = [7];
+    private const int TOBACCO_GROUP_SERIAL = 7;
 
     /** @var non-empty-list<positive-int> */
     private const array STANDARD_CODE_LENGTHS = [44, 88];
@@ -54,6 +60,19 @@ final class RuMarkingSyntax
     /** @var list<non-empty-string> weight (dairy, meat) or volume (beer) after AI (93) */
     private const array SHORTENED_EXTRAS = ['3103', '3350', '3351', '3352', '3353', '3354', '3355'];
 
+    /**
+     * Per AI: its published lengths and the AIs a published structure puts after it. Finding one of those AIs at one
+     * of those lengths inside the data means the GS separator between them was lost.
+     *
+     * @var array<non-empty-string, array{non-empty-list<positive-int>, non-empty-list<non-empty-string>}>
+     */
+    private const array PUBLISHED_NEXT = [
+        'ai21' => [self::SHORTENED_SERIALS, ['91', '93', '8005']],
+        'ai91' => [[self::KEY_LENGTH], ['92']],
+        'ai92' => [self::STANDARD_CODE_LENGTHS, self::STANDARD_EXTRAS],
+        'ai93' => [[self::KEY_LENGTH], self::SHORTENED_EXTRAS],
+    ];
+
     /** @var non-empty-list<non-empty-string> prefixes a scanner may put before the pack code */
     private const array PACK_PREFIXES = [']d1', ']d2', ElementStringSyntax::GS];
 
@@ -61,7 +80,7 @@ final class RuMarkingSyntax
     {
         self::checkLength($input, self::CODE);
         $pack = self::stripPackPrefix($input);
-        if (self::isPackShaped($pack, 29)) {
+        if (self::isPackLike($pack)) {
             return self::pack($pack);
         }
 
@@ -69,14 +88,33 @@ final class RuMarkingSyntax
     }
 
     /**
-     * @throws AmbiguousValueException when 25 characters read both as a tobacco pack КИ and as AI (01) + (21)
+     * The canonical forms only: the 25 pack characters or the bracketed element string.
      */
     public static function identifier(string $input): RuMarkingParts
     {
         self::checkLength($input, self::IDENTIFIER);
+        if (\str_starts_with($input, '(')) {
+            return self::gs1Identifier(self::elements($input, self::IDENTIFIER));
+        }
+
+        if (self::isPackShaped($input, self::PACK_IDENTIFIER_LENGTH)) {
+            return self::packIdentifier($input);
+        }
+
+        throw new InvalidMarkingCodeException(self::IDENTIFIER . ' must be the 25 pack characters or the bracketed form (01)…(21)…; read the document form 01…21… with fromDocumentForm().');
+    }
+
+    /**
+     * The operator's document form `01…21…` (GS before AI (8005)) or the 25 pack characters.
+     *
+     * @throws AmbiguousValueException when 25 characters read both as a pack КИ and as `01` + GTIN + `21` + 7
+     */
+    public static function documentForm(string $input): RuMarkingParts
+    {
+        self::checkLength($input, self::IDENTIFIER);
         $candidates = [];
         $packFailure = null;
-        if (self::isPackShaped($input, 25)) {
+        if (self::isPackShaped($input, self::PACK_IDENTIFIER_LENGTH)) {
             try {
                 $candidates[] = self::packIdentifier($input);
             } catch (InvalidMarkingCodeException $exception) {
@@ -93,7 +131,7 @@ final class RuMarkingSyntax
         }
 
         if (\count($candidates) > 1) {
-            throw new AmbiguousValueException(self::IDENTIFIER . ' (tobacco consumer pack or AI (01) and (21))', [MarkingIdentifier::class]);
+            throw new AmbiguousValueException(self::IDENTIFIER . ' document form (both a tobacco consumer pack КИ and AI (01) + (21))', [MarkingIdentifier::class]);
         }
 
         return $candidates[0];
@@ -122,8 +160,16 @@ final class RuMarkingSyntax
     }
 
     /**
-     * Fourteen digits and CSET 82 for the rest; a GS1-structured code never fits, it carries GS or brackets.
+     * 29 characters starting with 14 digits and without FNC1 (GS or `^`): no GS1-structured code fits, every one
+     * needs a separator after its variable-length AI (21).
      */
+    private static function isPackLike(string $input): bool
+    {
+        return \strlen($input) === self::PACK_LENGTH
+            && \strspn($input, Gs1Charsets::DIGITS, 0, 14) === 14
+            && \strcspn($input, ElementStringSyntax::GS . '^') === self::PACK_LENGTH;
+    }
+
     private static function isPackShaped(string $input, int $length): bool
     {
         return \strlen($input) === $length
@@ -131,8 +177,27 @@ final class RuMarkingSyntax
             && \strspn($input, Gs1Charsets::CSET_82, 14) === $length - 14;
     }
 
+    /**
+     * @throws AmbiguousValueException when the 29 characters are also `01` + GTIN + `21` + 5 + `93` + 4 without GS
+     */
     private static function pack(string $input): RuMarkingParts
     {
+        if (!self::isPackShaped($input, self::PACK_LENGTH)) {
+            throw new InvalidMarkingCodeException(self::CODE . ' (tobacco consumer pack) must have characters of GS1 character set 82 after the GTIN.');
+        }
+
+        $lostSeparators = \str_starts_with($input, '01')
+            && Gs1CheckDigit::isValid(\substr($input, 2, 14))
+            && \substr($input, 16, 2) === '21'
+            && \substr($input, 23, 2) === '93';
+        if ($lostSeparators) {
+            if (Gs1CheckDigit::isValid(\substr($input, 0, 14))) {
+                throw new AmbiguousValueException(self::CODE . ' (both a tobacco consumer pack and AI (01), (21), (93) with lost GS separators)', [MarkingCode::class]);
+            }
+
+            throw new InvalidMarkingCodeException(self::CODE . ' reads as AI (01), (21) and (93) whose GS separator was lost.');
+        }
+
         if (\preg_match(self::PACK, $input, $match) !== 1) {
             throw new LogicException('Russian marking code lost its pack groups.');
         }
@@ -182,26 +247,8 @@ final class RuMarkingSyntax
     private static function gs1Code(array $elements): RuMarkingParts
     {
         $serial = self::serialAfterKey($elements) ?? throw new InvalidMarkingCodeException(self::CODE . ' must start with AI (01) and AI (21).');
-
-        if (!isset($elements[2])) {
-            throw new InvalidMarkingCodeException(self::CODE . ' has no verification code: AI (21) must be followed by AI (91), (93) or (8005).');
-        }
-
-        $structure = match ($elements[2]->spec->ai) {
-            '91' => MarkingCodeStructure::Standard,
-            '93' => MarkingCodeStructure::Shortened,
-            '8005' => MarkingCodeStructure::TobaccoGroupPack,
-            default => throw new InvalidMarkingCodeException(self::CODE . ' AI (21) must be followed by AI (91), (93) or (8005).'),
-        };
-
-        self::checkSerial($serial, $structure, self::CODE);
-        [$key, $code, $extras] = match ($structure) {
-            MarkingCodeStructure::Standard => self::standardTail($elements),
-            MarkingCodeStructure::Shortened => [null, self::fixedLength($elements[2], self::KEY_LENGTH), \array_slice($elements, 3)],
-            default => [null, self::tobaccoGroupCode($elements), []],
-        };
-        self::checkExtras($extras, $structure);
-
+        self::checkLostSeparators($elements, self::CODE);
+        [$structure, $key, $code] = self::published($elements) ?? self::generic($elements);
         $identifierElements = \array_slice($elements, 0, $structure === MarkingCodeStructure::TobaccoGroupPack ? 3 : 2);
 
         return new RuMarkingParts(
@@ -223,15 +270,19 @@ final class RuMarkingSyntax
     {
         $count = \count($elements);
         $serial = self::serialAfterKey($elements);
-        if (!$serial instanceof AiElement || $count > 3 || ($count === 3 && $elements[2]->spec->ai !== '8005')) {
+        $tobaccoGroup = $count === 3 && $elements[2]->spec->ai === '8005';
+        if (!$serial instanceof AiElement || ($count > 2 && !$tobaccoGroup)) {
             throw new InvalidMarkingCodeException(self::IDENTIFIER . ' must be AI (01) and AI (21), with AI (8005) for a tobacco group pack.');
         }
 
-        $structure = $count === 3 ? MarkingCodeStructure::TobaccoGroupPack : null;
-        self::checkSerial($serial, $structure, self::IDENTIFIER);
+        if ($tobaccoGroup && \strlen($serial->value) !== self::TOBACCO_GROUP_SERIAL) {
+            throw new InvalidMarkingCodeException(\sprintf('%s AI (21) has %d characters; the tobacco group pack structure has 7.', self::IDENTIFIER, \strlen($serial->value)));
+        }
+
+        self::checkLostSeparators($elements, self::IDENTIFIER);
         $canonical = ElementStringSyntax::bracketedForm($elements);
 
-        return new RuMarkingParts($structure, $canonical, $elements[0]->value, $serial->value, null, null, $canonical, ElementStringSyntax::barcodeData($elements));
+        return new RuMarkingParts(null, $canonical, $elements[0]->value, $serial->value, null, null, $canonical, ElementStringSyntax::barcodeData($elements));
     }
 
     /**
@@ -246,96 +297,91 @@ final class RuMarkingSyntax
         return $serial !== null && $elements[0]->spec->ai === '01' && $serial->spec->ai === '21' ? $serial : null;
     }
 
-    private static function checkSerial(AiElement $serial, ?MarkingCodeStructure $structure, string $type): void
-    {
-        $lengths = match ($structure) {
-            MarkingCodeStructure::Standard => self::STANDARD_SERIALS,
-            MarkingCodeStructure::TobaccoGroupPack => self::TOBACCO_GROUP_SERIALS,
-            default => self::SHORTENED_SERIALS,
-        };
-        $length = \strlen($serial->value);
-        if (!\in_array($length, $lengths, true)) {
-            $where = $structure instanceof MarkingCodeStructure ? 'the ' . $structure->label() . ' structure has' : 'the published structures have';
-
-            throw new InvalidMarkingCodeException(\sprintf('%s AI (21) has %d characters; %s %s.', $type, $length, $where, self::listLengths($lengths)));
-        }
-    }
-
     /**
-     * @param non-empty-list<positive-int> $lengths
+     * @param non-empty-list<AiElement> $elements
      */
-    private static function listLengths(array $lengths): string
+    private static function checkLostSeparators(array $elements, string $type): void
     {
-        $last = \array_pop($lengths);
-
-        return $lengths === [] ? (string) $last : \implode(', ', $lengths) . ' or ' . $last;
+        foreach ($elements as $element) {
+            [$lengths, $next] = self::PUBLISHED_NEXT['ai' . $element->spec->ai] ?? [[], []];
+            foreach ($lengths as $length) {
+                foreach ($next as $ai) {
+                    if (\str_starts_with(\substr($element->value, $length), $ai)) {
+                        throw new InvalidMarkingCodeException(\sprintf('%s AI (%s) runs into AI (%s) at a published length: a GS separator was lost.', $type, $element->spec->ai, $ai));
+                    }
+                }
+            }
+        }
     }
 
     /**
      * @param non-empty-list<AiElement> $elements
      *
-     * @return array{non-empty-string, non-empty-string, list<AiElement>}
+     * @return ?array{MarkingCodeStructure, ?non-empty-string, non-empty-string}
      */
-    private static function standardTail(array $elements): array
+    private static function published(array $elements): ?array
     {
-        $key = self::fixedLength($elements[2], self::KEY_LENGTH);
-        if (!isset($elements[3]) || $elements[3]->spec->ai !== '92') {
-            throw new InvalidMarkingCodeException(self::CODE . ' AI (91) must be followed by AI (92).');
+        $serialLength = \strlen($elements[1]->value ?? '');
+        $third = $elements[2] ?? null;
+        $fourth = $elements[3] ?? null;
+        if (!$third instanceof AiElement) {
+            return null;
         }
 
-        $length = \strlen($elements[3]->value);
-        if (!\in_array($length, self::STANDARD_CODE_LENGTHS, true)) {
-            throw new InvalidMarkingCodeException(\sprintf('%s AI (92) must have 44 or 88 characters, got %d.', self::CODE, $length));
+        if ($third->spec->ai === '93') {
+            return \in_array($serialLength, self::SHORTENED_SERIALS, true)
+                && \strlen($third->value) === self::KEY_LENGTH
+                && self::extrasPublished(\array_slice($elements, 3), self::SHORTENED_EXTRAS)
+                ? [MarkingCodeStructure::Shortened, null, $third->value] : null;
         }
 
-        return [$key, $elements[3]->value, \array_slice($elements, 4)];
-    }
-
-    /**
-     * @param non-empty-list<AiElement> $elements
-     *
-     * @return non-empty-string
-     */
-    private static function tobaccoGroupCode(array $elements): string
-    {
-        if (!isset($elements[3]) || $elements[3]->spec->ai !== '93') {
-            throw new InvalidMarkingCodeException(self::CODE . ' AI (8005) must be followed by AI (93).');
+        if (!$fourth instanceof AiElement) {
+            return null;
         }
 
-        return self::fixedLength($elements[3], self::KEY_LENGTH);
-    }
-
-    /**
-     * @return non-empty-string
-     */
-    private static function fixedLength(AiElement $element, int $length): string
-    {
-        if (\strlen($element->value) !== $length) {
-            throw new InvalidMarkingCodeException(\sprintf('%s AI (%s) must have %d characters, got %d.', self::CODE, $element->spec->ai, $length, \strlen($element->value)));
-        }
-
-        return $element->value;
-    }
-
-    /**
-     * The tobacco group pack takes "произвольное количество дополнительных групп данных" (Decree No. 224, p. 44);
-     * the other structures only the one optional group their pages publish.
-     *
-     * @param list<AiElement> $extras
-     */
-    private static function checkExtras(array $extras, MarkingCodeStructure $structure): void
-    {
-        $allowed = match ($structure) {
-            MarkingCodeStructure::Standard => self::STANDARD_EXTRAS,
-            MarkingCodeStructure::Shortened => self::SHORTENED_EXTRAS,
+        return match ($third->spec->ai) {
+            '91' => \in_array($serialLength, self::STANDARD_SERIALS, true)
+                && \strlen($third->value) === self::KEY_LENGTH
+                && $fourth->spec->ai === '92'
+                && \in_array(\strlen($fourth->value), self::STANDARD_CODE_LENGTHS, true)
+                && self::extrasPublished(\array_slice($elements, 4), self::STANDARD_EXTRAS)
+                ? [MarkingCodeStructure::Standard, $third->value, $fourth->value] : null,
+            '8005' => $serialLength === self::TOBACCO_GROUP_SERIAL
+                && $fourth->spec->ai === '93'
+                && \strlen($fourth->value) === self::KEY_LENGTH
+                ? [MarkingCodeStructure::TobaccoGroupPack, null, $fourth->value] : null,
             default => null,
         };
-        if ($allowed === null || $extras === []) {
-            return;
+    }
+
+    /**
+     * At most the one optional group the pages publish. The tobacco group pack takes "произвольное количество
+     * дополнительных групп данных" (Decree No. 224, p. 44); further groups make a code generic, not invalid.
+     *
+     * @param list<AiElement> $extras
+     * @param list<non-empty-string> $allowed
+     */
+    private static function extrasPublished(array $extras, array $allowed): bool
+    {
+        return $extras === [] || (\count($extras) === 1 && \in_array($extras[0]->spec->ai, $allowed, true));
+    }
+
+    /**
+     * Intact separators, no published structure: AI (01) and (21) first and a crypto tail somewhere after them.
+     *
+     * @param non-empty-list<AiElement> $elements
+     *
+     * @return array{MarkingCodeStructure, ?non-empty-string, non-empty-string}
+     */
+    private static function generic(array $elements): array
+    {
+        $values = [];
+        foreach ($elements as $element) {
+            $values['ai' . $element->spec->ai] ??= $element->value;
         }
 
-        if (\count($extras) > 1 || !\in_array($extras[0]->spec->ai, $allowed, true)) {
-            throw new InvalidMarkingCodeException(\sprintf('%s has a data group the %s structure does not publish after its verification code.', self::CODE, $structure->label()));
-        }
+        $code = $values['ai92'] ?? $values['ai93'] ?? throw new InvalidMarkingCodeException(self::CODE . ' has no verification code: AI (92) or AI (93).');
+
+        return [MarkingCodeStructure::GenericGs1, $values['ai91'] ?? null, $code];
     }
 }

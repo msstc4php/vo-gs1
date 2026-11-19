@@ -114,7 +114,7 @@ final class MarkingCodeTest extends TestCase
         self::assertSame(self::GTIN, (string) $identifier->gtin());
         self::assertSame('5Ab+cDe-fGh.J', $identifier->serial());
         self::assertSame('01' . self::GTIN . '215Ab+cDe-fGh.J', $identifier->toDocumentForm());
-        self::assertTrue($identifier->equals(MarkingIdentifier::from('01' . self::GTIN . '215Ab+cDe-fGh.J')));
+        self::assertTrue($identifier->equals(MarkingIdentifier::fromDocumentForm('01' . self::GTIN . '215Ab+cDe-fGh.J')));
         self::assertFalse($identifier->isTobaccoConsumerPack());
     }
 
@@ -132,11 +132,11 @@ final class MarkingCodeTest extends TestCase
 
     public function testTheTobaccoGroupIdentifierKeepsItsPriceGroupAndItsSeparator(): void
     {
-        $identifier = MarkingIdentifier::from('01' . self::GTIN . "215U!Mq'X" . self::GS . '8005012500');
+        $identifier = MarkingIdentifier::fromDocumentForm('01' . self::GTIN . "215U!Mq'X" . self::GS . '8005012500');
 
         self::assertSame('(01)' . self::GTIN . "(21)5U!Mq'X(8005)012500", (string) $identifier);
         self::assertSame('01' . self::GTIN . "215U!Mq'X" . self::GS . '8005012500', $identifier->toDocumentForm());
-        self::assertTrue($identifier->equals(MarkingIdentifier::from($identifier->toDocumentForm())));
+        self::assertTrue($identifier->equals(MarkingIdentifier::fromDocumentForm($identifier->toDocumentForm())));
     }
 
     public function testScannerOutputWithSymbologyIdentifierIsTheSameCode(): void
@@ -165,13 +165,15 @@ final class MarkingCodeTest extends TestCase
      */
     public static function lostSeparators(): iterable
     {
-        yield 'shortened, GS after (21) lost' => ['01' . self::GTIN . '215aB3x_93Ab1+', 'Russian marking code has no verification code: AI (21) must be followed by AI (91), (93) or (8005).'];
-        yield 'shortened serial 13, GS after (21) lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J93Ab1+', 'Russian marking code has no verification code: AI (21) must be followed by AI (91), (93) or (8005).'];
+        yield 'shortened, GS after (21) lost' => ['01' . self::GTIN . '215aB3x_93Ab1+', 'Russian marking code AI (21) runs into AI (93) at a published length: a GS separator was lost.'];
+        yield 'shortened serial 13, GS after (21) lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J93Ab1+', 'Russian marking code AI (21) runs into AI (93) at a published length: a GS separator was lost.'];
         yield 'standard, both GS lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J91EE1092' . self::CODE_44, 'Russian marking code is not a valid element string: Element string AI (21) data must have 1 to 20 characters, got 65.'];
-        yield 'standard, GS after (21) lost' => ['01' . self::GTIN . '215aB3x_91EE10' . self::GS . '92' . self::CODE_44, 'Russian marking code AI (21) must be followed by AI (91), (93) or (8005).'];
-        yield 'standard, GS after (91) lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE1092' . self::CODE_44, 'Russian marking code AI (91) must have 4 characters, got 50.'];
-        yield 'tobacco group, GS after (21) lost' => ['01' . self::GTIN . "215U!Mq'X8005012500" . self::GS . '93Ab1+', 'Russian marking code AI (21) has 17 characters; the shortened structure has 6, 7, 13 or 20.'];
-        yield 'dairy weight, GS before (3103) lost' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1+3103000350', 'Russian marking code AI (93) must have 4 characters, got 14.'];
+        yield 'standard, GS after (21) lost' => ['01' . self::GTIN . '215aB3x_91EE10' . self::GS . '92' . self::CODE_44, 'Russian marking code AI (21) runs into AI (91) at a published length: a GS separator was lost.'];
+        yield 'standard, GS after (91) lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE1092' . self::CODE_44, 'Russian marking code AI (91) runs into AI (92) at a published length: a GS separator was lost.'];
+        yield 'tobacco group, GS after (21) lost' => ['01' . self::GTIN . "215U!Mq'X8005012500" . self::GS . '93Ab1+', 'Russian marking code AI (21) runs into AI (8005) at a published length: a GS separator was lost.'];
+        yield 'dairy weight, GS before (3103) lost' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1+3103000350', 'Russian marking code AI (93) runs into AI (3103) at a published length: a GS separator was lost.'];
+        yield '29 characters, GS lost, 5-character serial' => ['010460620308662721abcde93Ab1+', 'Russian marking code reads as AI (01), (21) and (93) whose GS separator was lost.'];
+        yield 'serial 6 with a lost GS before (8005)' => ['01' . self::GTIN . '215aB3x_8005012500' . self::GS . '93Ab1+', 'Russian marking code AI (21) runs into AI (8005) at a published length: a GS separator was lost.'];
     }
 
     #[DataProvider('lostSeparators')]
@@ -193,21 +195,13 @@ final class MarkingCodeTest extends TestCase
         yield 'at the length bound' => [\str_repeat('1', 255), 'Russian marking code is not a valid element string: Element string AI (11) data must have 6 characters, got 5.'];
         yield 'pack-shaped but starting with a letter' => ['X4600439931256' . "5U!Mq'XAbC1Zx9+", 'Russian marking code is not a valid element string: Element string must start with an AI.'];
         yield 'pack with a wrong GTIN check digit' => ['04600439931257' . "5U!Mq'XAbC1Zx9+", 'Russian marking code (tobacco consumer pack) has a wrong GTIN check digit.'];
-        yield 'pack with a character outside CSET 82' => [self::GTIN . "5U!Mq'XAbC1Zx9#", 'Russian marking code is not a valid element string: Element string contains an unknown AI.'];
+        yield 'pack with a character outside CSET 82' => [self::GTIN . "5U!Mq'XAbC1Zx9#", 'Russian marking code (tobacco consumer pack) must have characters of GS1 character set 82 after the GTIN.'];
         yield 'no (21) after (01)' => ['01' . self::GTIN . '10ABC' . self::GS . '93Ab1+', 'Russian marking code must start with AI (01) and AI (21).'];
         yield 'not starting with (01)' => ['215aB3x_' . self::GS . '93Ab1+', 'Russian marking code must start with AI (01) and AI (21).'];
+        yield 'identifier only' => ['01' . self::GTIN . '215aB3x_', 'Russian marking code has no verification code: AI (92) or AI (93).'];
         yield 'only (01)' => ['01' . self::GTIN, 'Russian marking code must start with AI (01) and AI (21).'];
-        yield 'standard without (92)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10', 'Russian marking code AI (91) must be followed by AI (92).'];
-        yield 'standard with (93) after (91)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '93Ab1+', 'Russian marking code AI (91) must be followed by AI (92).'];
-        yield 'standard with a short (92)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '92ABC', 'Russian marking code AI (92) must have 44 or 88 characters, got 3.'];
-        yield 'standard with serial 7' => ['01' . self::GTIN . '215Ab+cDe' . self::GS . '91EE10' . self::GS . '92' . self::CODE_44, 'Russian marking code AI (21) has 7 characters; the standard structure has 6, 13 or 20.'];
-        yield 'standard with an unpublished extra group' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '92' . self::CODE_44 . self::GS . '10ABC', 'Russian marking code has a data group the standard structure does not publish after its verification code.'];
-        yield 'standard with volume' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '92' . self::CODE_44 . self::GS . '3353000500', 'Russian marking code has a data group the standard structure does not publish after its verification code.'];
-        yield 'shortened with two weights' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1+' . self::GS . '3103000350' . self::GS . '3353000500', 'Russian marking code has a data group the shortened structure does not publish after its verification code.'];
-        yield 'shortened with a short (93)' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1', 'Russian marking code AI (93) must have 4 characters, got 3.'];
-        yield 'tobacco group with serial 6' => ['01' . self::GTIN . '215aB3x_' . self::GS . '8005012500' . self::GS . '93Ab1+', 'Russian marking code AI (21) has 6 characters; the tobacco group pack structure has 7.'];
-        yield 'tobacco group without (93)' => ['01' . self::GTIN . "215U!Mq'X" . self::GS . '8005012500', 'Russian marking code AI (8005) must be followed by AI (93).'];
-        yield 'tobacco group with a short (93)' => ['01' . self::GTIN . "215U!Mq'X" . self::GS . '8005012500' . self::GS . '93Ab1', 'Russian marking code AI (93) must have 4 characters, got 3.'];
+        yield 'standard without (92)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10', 'Russian marking code has no verification code: AI (92) or AI (93).'];
+        yield 'tobacco group without (93)' => ['01' . self::GTIN . "215U!Mq'X" . self::GS . '8005012500', 'Russian marking code has no verification code: AI (92) or AI (93).'];
     }
 
     #[DataProvider('invalidCodes')]
@@ -221,9 +215,76 @@ final class MarkingCodeTest extends TestCase
         }
     }
 
+    /**
+     * @return iterable<string, array{string, string, string|null, string}>
+     */
+    public static function genericCodes(): iterable
+    {
+        yield 'serial of 8, GS, (93)' => ['01' . self::GTIN . '215aB3x_YZ' . self::GS . '93Ab1+', '5aB3x_YZ', null, 'Ab1+'];
+        yield 'shortened with a further group' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1+' . self::GS . '240ABC', '5aB3x_', null, 'Ab1+'];
+        yield 'standard with serial 7' => ['01' . self::GTIN . '215Ab+cDe' . self::GS . '91EE10' . self::GS . '92' . self::CODE_44, '5Ab+cDe', 'EE10', self::CODE_44];
+        yield 'standard with a short (92)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '92ABC', '5Ab+cDe-fGh.J', 'EE10', 'ABC'];
+        yield 'standard with (93) after (91)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '93Ab1+', '5Ab+cDe-fGh.J', 'EE10', 'Ab1+'];
+        yield 'standard with volume' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '92' . self::CODE_44 . self::GS . '3353000500', '5Ab+cDe-fGh.J', 'EE10', self::CODE_44];
+        yield 'shortened with two weights' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1+' . self::GS . '31030003503353000500', '5aB3x_', null, 'Ab1+'];
+        yield 'shortened with a short (93)' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1', '5aB3x_', null, 'Ab1'];
+        yield 'tobacco group with serial 6' => ['01' . self::GTIN . '215aB3x_' . self::GS . '8005012500' . self::GS . '93Ab1+', '5aB3x_', null, 'Ab1+'];
+        yield 'separator and caret, 29 characters' => ['01' . self::GTIN . '215aB3' . self::GS . '93Ab1+', '5aB3', null, 'Ab1+'];
+        yield 'another AI between serial and tail' => ['01' . self::GTIN . '215aB3x_' . self::GS . '240ABC' . self::GS . '93Ab1+', '5aB3x_', null, 'Ab1+'];
+        yield '(92) wins over (93)' => ['01' . self::GTIN . '215aB3x_' . self::GS . '92ABC' . self::GS . '93Ab1+', '5aB3x_', null, 'ABC'];
+        yield 'tobacco group with a short (93)' => ['01' . self::GTIN . "215U!Mq'X" . self::GS . '8005012500' . self::GS . '93Ab1', "5U!Mq'X", null, 'Ab1'];
+    }
+
+    #[DataProvider('genericCodes')]
+    public function testIntactSeparatorsOutsideThePublishedStructuresAreGeneric(string $value, string $serial, ?string $key, string $code): void
+    {
+        $marking = MarkingCode::from($value);
+
+        self::assertSame(MarkingCodeStructure::GenericGs1, $marking->structure());
+        self::assertSame($value, (string) $marking);
+        self::assertSame($serial, $marking->serial());
+        self::assertSame($key, $marking->verificationKey());
+        self::assertSame($code, $marking->verificationCode());
+        self::assertSame('(01)' . self::GTIN . '(21)' . $serial, (string) $marking->identifier());
+        self::assertSame((string) $marking, (string) MarkingCode::from((string) $marking));
+    }
+
+    public function testA29CharacterStringFittingThePackAndALostSeparatorCodeIsAmbiguous(): void
+    {
+        try {
+            MarkingCode::from('010460043993050121abcde93Ab1+');
+            self::fail('Expected AmbiguousValueException.');
+        } catch (AmbiguousValueException $exception) {
+            self::assertSame([MarkingCode::class], $exception->candidates());
+            self::assertSame('Ambiguous Russian marking code (both a tobacco consumer pack and AI (01), (21), (93) with lost GS separators): the value fits MarkingCode.', $exception->getMessage());
+        }
+    }
+
+    public function testCaretNotationOf29CharactersIsNotAPack(): void
+    {
+        self::assertSame(MarkingCodeStructure::GenericGs1, MarkingCode::from('01' . self::GTIN . '215aB3^93Ab1+')->structure());
+    }
+
+    public function testPacksThatOnlyPartlyLookLikeALostSeparatorCodeArePacks(): void
+    {
+        // Starts like "01" + GTIN, but no "21" where the serial AI would stand.
+        self::assertSame(MarkingCodeStructure::TobaccoConsumerPack, MarkingCode::from('0104600439930501XXabcde93Ab1+')->structure());
+        // "21" and "93" in place, but the pack does not start with "01".
+        self::assertSame(MarkingCodeStructure::TobaccoConsumerPack, MarkingCode::from(self::GTIN . 'xy21abcdd93Zx9+')->structure());
+    }
+
+    public function testThePackIdentifierNeverThrowsEvenWhenItAlsoReadsAsADocumentForm(): void
+    {
+        $code = MarkingCode::from("0104600439930501215U!Mq'XZx9+");
+
+        self::assertSame(MarkingCodeStructure::TobaccoConsumerPack, $code->structure());
+        self::assertSame("0104600439930501215U!Mq'X", (string) $code->identifier());
+        self::assertTrue($code->identifier()->isTobaccoConsumerPack());
+    }
+
     public function testStructureLabels(): void
     {
-        self::assertSame(['tobacco consumer pack', 'tobacco group pack', 'standard', 'shortened'], \array_map(static fn (MarkingCodeStructure $structure): string => $structure->label(), MarkingCodeStructure::cases()));
+        self::assertSame(['tobacco consumer pack', 'tobacco group pack', 'standard', 'shortened', 'generic GS1'], \array_map(static fn (MarkingCodeStructure $structure): string => $structure->label(), MarkingCodeStructure::cases()));
     }
 
     public function testTheTobaccoGroupAcceptsAnyFurtherGroup(): void
@@ -245,20 +306,29 @@ final class MarkingCodeTest extends TestCase
         }
     }
 
-    public function testAn25CharacterIdentifierFittingBothFormsIsAmbiguous(): void
+    public function testTheDocumentFormIsReadByItsOwnFactory(): void
+    {
+        $identifier = MarkingIdentifier::fromDocumentForm('01' . self::GTIN . '215Ab+cDe-fGh.J');
+
+        self::assertSame('(01)' . self::GTIN . '(21)5Ab+cDe-fGh.J', (string) $identifier);
+        self::assertTrue(MarkingIdentifier::fromDocumentForm(self::GTIN . "5U!Mq'XAbC1")->isTobaccoConsumerPack());
+        self::assertTrue(MarkingIdentifier::fromDocumentForm('(01)' . self::GTIN . '(21)5aB3x_YZ')->equals(MarkingIdentifier::from('(01)' . self::GTIN . '(21)5aB3x_YZ')));
+    }
+
+    public function testA25CharacterDocumentFormFittingBothReadingsIsAmbiguous(): void
     {
         // "01" + 12 digits of this GTIN is itself a valid GTIN-14, so the 25 characters also read as a pack КИ.
         $value = '0104600439930501' . "215U!Mq'X";
 
         try {
-            MarkingIdentifier::from($value);
+            MarkingIdentifier::fromDocumentForm($value);
             self::fail('Expected AmbiguousValueException.');
         } catch (AmbiguousValueException $exception) {
             self::assertSame([MarkingIdentifier::class], $exception->candidates());
-            self::assertSame('Ambiguous Russian marking identifier (tobacco consumer pack or AI (01) and (21)): the value fits MarkingIdentifier.', $exception->getMessage());
-            self::assertStringNotContainsString('04600439930501', $exception->getMessage());
+            self::assertSame('Ambiguous Russian marking identifier document form (both a tobacco consumer pack КИ and AI (01) + (21)): the value fits MarkingIdentifier.', $exception->getMessage());
         }
 
+        self::assertTrue(MarkingIdentifier::from($value)->isTobaccoConsumerPack());
         self::assertSame('04600439930501', (string) MarkingIdentifier::from("(01)04600439930501(21)5U!Mq'X")->gtin());
     }
 
@@ -269,12 +339,14 @@ final class MarkingCodeTest extends TestCase
     {
         yield 'empty' => ['', 'Russian marking identifier is empty.'];
         yield 'too long' => [\str_repeat('1', 256), 'Russian marking identifier must have at most 255 characters, got 256.'];
-        yield 'with crypto tail' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1+', 'Russian marking identifier must be AI (01) and AI (21), with AI (8005) for a tobacco group pack.'];
-        yield 'serial of 8' => ['01' . self::GTIN . '215aB3x_YZ', 'Russian marking identifier AI (21) has 8 characters; the published structures have 6, 7, 13 or 20.'];
-        yield 'four groups' => ['01' . self::GTIN . "215U!Mq'X" . self::GS . '8005012500' . self::GS . '93Ab1+', 'Russian marking identifier must be AI (01) and AI (21), with AI (8005) for a tobacco group pack.'];
-        yield 'tobacco group serial of 6' => ['01' . self::GTIN . '215aB3x_' . self::GS . '8005012500', 'Russian marking identifier AI (21) has 6 characters; the tobacco group pack structure has 7.'];
+        yield 'document form' => ['01' . self::GTIN . '215aB3x_', 'Russian marking identifier must be the 25 pack characters or the bracketed form (01)…(21)…; read the document form 01…21… with fromDocumentForm().'];
+        yield 'with crypto tail' => ['(01)' . self::GTIN . '(21)5aB3x_(93)Ab1+', 'Russian marking identifier must be AI (01) and AI (21), with AI (8005) for a tobacco group pack.'];
+        yield 'four groups' => ['(01)' . self::GTIN . "(21)5U!Mq'X(8005)012500(93)Ab1+", 'Russian marking identifier must be AI (01) and AI (21), with AI (8005) for a tobacco group pack.'];
+        yield 'tobacco group serial of 6' => ['(01)' . self::GTIN . '(21)5aB3x_(8005)012500', 'Russian marking identifier AI (21) has 6 characters; the tobacco group pack structure has 7.'];
+        yield 'serial running into (93)' => ['(01)' . self::GTIN . '(21)5aB3x_93Ab', 'Russian marking identifier AI (21) runs into AI (93) at a published length: a GS separator was lost.'];
         yield 'pack with a wrong check digit' => ['04600439931257' . "5U!Mq'XAbC1", 'Russian marking identifier (tobacco consumer pack) has a wrong GTIN check digit.'];
-        yield 'garbage' => ['ABC', 'Russian marking identifier is not a valid element string: Element string must start with an AI.'];
+        yield 'pack-shaped after a letter' => ['X4600439931256' . "5U!Mq'XAbC1", 'Russian marking identifier must be the 25 pack characters or the bracketed form (01)…(21)…; read the document form 01…21… with fromDocumentForm().'];
+        yield 'bad bracketed form' => ['(01)04600439931257(21)5aB3x_', 'Russian marking identifier is not a valid element string: Element string AI (01) data fails the GS1 csum check.'];
     }
 
     #[DataProvider('invalidIdentifiers')]
@@ -284,5 +356,25 @@ final class MarkingCodeTest extends TestCase
         $this->expectExceptionMessage($message);
 
         MarkingIdentifier::from($value);
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function invalidDocumentForms(): iterable
+    {
+        yield 'pack with a wrong check digit, no GS1 reading' => ['04600439931257' . "5U!Mq'XAbC1", 'Russian marking identifier (tobacco consumer pack) has a wrong GTIN check digit.'];
+        yield 'garbage' => ['ABC', 'Russian marking identifier is not a valid element string: Element string must start with an AI.'];
+        yield 'lost GS before (8005)' => ['01' . self::GTIN . "215U!Mq'X8005012500", 'Russian marking identifier AI (21) runs into AI (8005) at a published length: a GS separator was lost.'];
+        yield 'too long' => [\str_repeat('1', 256), 'Russian marking identifier must have at most 255 characters, got 256.'];
+    }
+
+    #[DataProvider('invalidDocumentForms')]
+    public function testInvalidDocumentFormsAreRefused(string $value, string $message): void
+    {
+        $this->expectException(InvalidMarkingCodeException::class);
+        $this->expectExceptionMessage($message);
+
+        MarkingIdentifier::fromDocumentForm($value);
     }
 }

@@ -33,9 +33,9 @@ core.
 | `Udi\Ndc`, `Udi\NdcConfiguration`, `Udi\Ndc12` | NDC 10/11 digits, hyphens required; bare digits → `AmbiguousValueException([Ndc::class])` + `Ndc::candidates()`; `Ndc12` 6-4-2 |
 | `Internal\Iso7064Mod37`, `Internal\IfaMod97`, `Internal\UdiDates` | ICCBBA MOD 37-2 (Horner), IFA mod 97 over ASCII, UTC calendar/ordinal dates (null when the day does not exist) |
 | `Marking\RU\MarkingCode`, `MarkingIdentifier`, `MarkingCodeStructure` | String VOs over `Internal\RuMarkingSyntax` (+ readonly `RuMarkingParts`); code canonical = pack as is / GS1 barcode data with GS; identifier canonical = 25 pack chars / bracketed `(01)…(21)…[(8005)…]` |
-| `Internal\RuMarkingSyntax` | Pack shape (14 digits + CSET 82, prefix `]d1`/`]d2`/GS stripped), GS1 structures by the AI after (21): 91 → standard, 93 → shortened, 8005 → tobacco group; fixed lengths and order; identifier ambiguity |
+| `Internal\RuMarkingSyntax` | Pack-like (29, 14 digits, no GS/`^`; prefix `]d1`/`]d2`/GS stripped) incl. the 5-char-serial lost-GS ambiguity; GS1: lost-GS rule (`PUBLISHED_NEXT`) first, then published structures by the AI after (21) (91/93/8005), else `GenericGs1`; `identifier()` canonical-only, `documentForm()` with ambiguity |
 | `Marking\EU\FmdPackCode`, `Internal\IfaPackData` | GS1 (01/21/10/17 required, canonical barcode data) or IFA `[)>` RS `06` GS … RS EOT (9N/S/1T/D once each, 8P repeatable, other DIs kept) |
-| `Marking\EU\Ppn`, `Marking\EU\TobaccoUnitIdentifier` | IFA mod 97 + PZN mod 11 (PRA 11), `toNtin()` = `04150` + PZN; tobacco UI ≤ 50 alnum, `YYMMDDhh` UTC |
+| `Marking\EU\Ppn`, `Marking\EU\TobaccoUnitIdentifier`, `TobaccoUnitIdentifierWithoutTimeStamp` | IFA mod 97 + PZN mod 11 (PRA 11), `toNtin()` = `04150` + PZN; tobacco UI ≤ 50 alnum, `YYMMDDhh` UTC; carrier content without time stamp (Art 21(4)) 3-42 alnum |
 
 Helpers throw `\LogicException` (message without input) on a precondition violation: the value objects check the
 format first.

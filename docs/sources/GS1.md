@@ -833,10 +833,16 @@ for each following digit." Example PRA `11` + PZN `03752864`, sum 3409, remainde
   Universal Time)" → `manufacturedAt()` is UTC.
 - Article 3(4): the ID issuer code "shall be composed of alphanumeric characters and comply with … ISO/IEC
   15459-2:2015"; no length given, so `issuerPart()` is everything before the time stamp.
-- Article 21: data carriers (Data Matrix, QR Code, DotCode); no character set beyond "alphanumeric".
+- Article 21(1)-(3): unit level UIs are encoded in a Data Matrix, QR Code or DotCode, by manufacturers and importers
+  (electronically delivered UIs) or by the ID issuer (physically delivered ones). Article 21(4): "By way of
+  derogation from paragraph 1, manufacturers and importers may add the time stamp separately from the data carrier"
+  "in the format YYMMDDhh as a human readable code." So a data carrier may legally hold the UI without its time
+  stamp → `TobaccoUnitIdentifierWithoutTimeStamp` (3 to 42 alphanumeric characters, no time-stamp accessors; trailing
+  digits are never guessed to be a time stamp), joined with `withTimeStamp()` (UTC) into a `TobaccoUnitIdentifier`.
+  No character set beyond "alphanumeric" is given.
 
-Package decisions: `[0-9A-Za-z]`; minimum length 11 (three elements of at least one character plus eight); century
-2000.
+Package decisions: `[0-9A-Za-z]`; minimum length 11 (three elements of at least one character plus eight) for the full
+UI, 3 without the time stamp; century 2000 (`withTimeStamp()` refuses other years).
 
 ## 9. Russian marking (Task 8) — `Marking\RU\`, `Internal\RuMarkingSyntax`
 
@@ -844,10 +850,12 @@ Package decisions: `[0-9A-Za-z]`; minimum length 11 (three elements of at least 
 
 - The operator's knowledge base on markirovka.ru («Честный знак», designated by the Government) publishes «Состав
   кода маркировки» per product group, each citing the group's decree. Read with an HTML fetch (no JavaScript needed).
-- Decree No. 224 (tobacco) text: quoted from the КонтурЭкстерн mirror
-  (`kontur-extern.ru/info/normativ/document/1/492244-…`, edition of 28.03.2025, labelled "не действует" there, the
-  later edition not read); publication.pravo.gov.ru and legalacts.ru closed the socket, consultant.ru showed only the
-  decree's cover text.
+- Decree No. 224 (tobacco) text: quoted from the КонтурЭкстерн mirror. Fix round 1 read the current edition,
+  `kontur-extern.ru/info/normativ/document/1/505024-postanovlenie-pravitelstva-rf-ot-28-02-2019-n-224`: "Редакция от
+  29.12.2025", status "Действует", in force from 01.03.2026, amended last by No. 1848 of 20.11.2025 and No. 2192 of
+  29.12.2025. Paragraphs 43-45 carry no amendment marks and read as quoted below (the edition of 28.03.2025, read
+  first, has the same text). publication.pravo.gov.ru and legalacts.ru closed the socket, consultant.ru showed only
+  the decree's cover text.
 - docs.crpt.ru "Описание вариантов передачи КМ / КИ / КиЗ в разрезе товарных групп" (linked from the operator's
   retail page): not found by search.
 - The operator pages give format lines, none prints a real code. The tests build one code per structure from those
@@ -865,8 +873,11 @@ Package decisions: `[0-9A-Za-z]`; minimum length 11 (three elements of at least 
   "код проверки (4 символа)"; "первые 3 группы образуют код идентификации групповой упаковки"; "произвольное
   количество дополнительных групп данных". p. 45 (set): the same four groups. → `TobaccoGroupPack`.
 - p. 2: "код товара" is the catalogue code; p. 44 carries it in AI (01), so the pack's 14 digits are checked as a GTIN.
-- Pack character set: "специальных символов" is not listed; CSET 82 is used (operator community answer of
-  2024-02-19 on the water page: "GS1 subset of ISO/IEC 646 … GS1 General Specifications, section 7.11").
+- Pack character set: Decree No. 224 does not list its "специальных символов". CSET 82 is used on the strength of an
+  answer in the comments of the operator's **packaged water** page (2024-02-19: serial characters follow the "GS1
+  subset of ISO/IEC 646 … GS1 General Specifications, section 7.11"); it is not a tobacco-specific statement. Pack-
+  shaped input (29 characters, 14 leading digits, no GS) with any other character is refused with its own message.
+- p. 43 also says the first three groups "образуют код идентификации потребительской упаковки" (current edition).
 
 ### GS1-structured groups (operator pages; page date, decree)
 
@@ -915,12 +926,20 @@ Package decisions: `[0-9A-Za-z]`; minimum length 11 (three elements of at least 
 is enforced for every structure. Bicycles: the paragraph also says the operator's serial "9 или 13 символов" while the
 group is "состоит из 13 символов" and the format line gives 12 + 1; 13 is used.
 
-Merged structures (same AIs, same lengths, different groups): `Standard` = (01) + (21) of 6, 13 or 20 + (91) of 4 +
+Merged structures (same AIs, same lengths, different groups), the published structures being matched first: `Standard` = (01) + (21) of 6, 13 or 20 + (91) of 4 +
 (92) of 44 or 88, with an optional (3103); `Shortened` = (01) + (21) of 6, 7, 13 or 20 + (93) of 4, with an optional
 (3103) or (335Y). Only the optional groups the pages publish are accepted, at most one. The structures cannot overlap
 with the pack code: every GS1-structured code needs a GS (or brackets) after the variable-length (21), the pack is 29
-characters of CSET 82. So `MarkingCode` never throws `AmbiguousValueException`; `MarkingIdentifier` does, for 25
-characters that read both as a pack КИ (14 + 7 + 4) and as `01` + GTIN + `21` + 7.
+characters of CSET 82. The one exception is 29 GS-free characters that are also `01` + GTIN + `21` + 5 + `93` + 4 (a shortened code with
+a 5-character serial whose separator was lost): when the pack reading (GTIN check digit of the first 14) is valid too,
+`MarkingCode` throws `AmbiguousValueException`, otherwise it refuses the lost separator. `MarkingIdentifier::
+fromDocumentForm()` throws it for 25 characters that read both as a pack КИ (14 + 7 + 4) and as `01` + GTIN + `21` +
+7; the constructor takes only the unambiguous canonical forms.
+
+Controller ruling (fix round 1): a GS1-structured code with intact separators that fits no published structure
+(another serial length, further AIs, other tail lengths) is accepted as `GenericGs1` on the AI table's checks, if it
+starts with (01) and (21) and carries (92) or (93). Published lengths are used for the pack and to detect lost
+separators.
 
 ### Identification code (КИ) in documents
 
@@ -932,8 +951,11 @@ gives 24 characters for the 6-character serial (dairy) and 25 for МОТП/АТ�
 ### Lost GS separators (Review Focus 4)
 
 No operator page documents a recovery rule (splitting by fixed lengths); the footwear page says only that the trailing
-GS "может не присутствовать в конце буквенно-цифровой последовательности КМ". So nothing is recovered: a code whose GS
-separators were lost is refused by the fixed published lengths and the published order (see known-issues).
+GS "может не присутствовать в конце буквенно-цифровой последовательности КМ". So nothing is recovered. Rule (fix round 1): a group that holds, at
+one of its published lengths, the AI a published structure puts next is refused as a lost separator — (21) at 6, 7, 13
+or 20 followed by `91`, `93` or `8005`; (91) at 4 by `92`; (92) at 44 or 88 by `3103`; (93) at 4 by `3103` or `335y`.
+The same rule applies to identifiers. A serial that really contains such a sequence at such an offset is refused too
+(never mis-split). A GS-less code with no tail is refused for lacking (92)/(93).
 
 ## Unreachable or deferred
 

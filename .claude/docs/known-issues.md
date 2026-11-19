@@ -111,18 +111,22 @@
 ## Marking codes (Task 8)
 
 - No operator page prints a real code; tests build codes from the published format lines (GTIN `04600439931256`).
-- Lost GS: `ElementStringSyntax` never splits, so (21) swallows the rest up to the next GS. What refuses the code is
-  the structure: crypto tail required, fixed lengths ((91) 4, (92) 44/88, (93) 4) and serial lengths per structure
-  (standard 6/13/20, shortened 6/7/13/20, tobacco group 7). Without the serial lengths, a tobacco group code that lost
-  the GS after (21) (`21` + 7 + `8005…` GS `93…`) would read as a shortened code with a 17-character serial.
-- Serial lengths are the union of the groups read (36 operator pages). A group with an unpublished length (bicycles'
-  text mentions "9 или 13") would be refused: add it to `RuMarkingSyntax` with its source when found.
-- `MarkingIdentifier` is ambiguous for 25 characters (pack КИ vs `01` + GTIN + `21` + 7) when both readings have valid
-  GTIN check digits, ~1 in 10 of the GS1 ones. Canonical form is therefore bracketed. Residual edge: a pack КИ whose
-  25 characters also read as `01…21…` (GTIN starting `01`, serial `dd21…`) makes `MarkingCode::identifier()` throw
-  `AmbiguousValueException`.
-- Decree No. 224 text came from the КонтурЭкстерн mirror, edition 28.03.2025 (later amendments: No. 1848 of
-  20.11.2025, No. 2192 of 29.12.2025, not read); the operator's tobacco page (2024-09-30) agrees on the structure.
+- Fix round 1 rulings: intact-GS codes outside the published structures are `GenericGs1` (AI table only; needs
+  (01), (21) first and (92) or (93)). Published lengths serve the pack and lost-GS detection only.
+- Lost GS: `ElementStringSyntax` never splits, so (21) swallows the rest up to the next GS. `RuMarkingSyntax::
+  PUBLISHED_NEXT` refuses a group that holds, at a published length, the AI a published structure puts next (e.g.
+  tobacco group `21` + 7 + `8005…` GS `93…` → serial runs into 8005 at 7). Side effect: a genuine serial containing
+  `93`/`91`/`8005` at offset 6, 7, 13 is refused (never mis-split). Identifiers apply the same rule, so canonical
+  round trips stay consistent.
+- 29 GS-free characters `01` + GTIN + `21` + 5 + `93` + 4 are pack-shaped: ambiguous if the first 14 digits are also a
+  valid GTIN, else refused as lost GS. GTIN `04600439931256` happens to give a valid `01046004399312`; tests use
+  `04606203086627` for the non-ambiguous case.
+- `MarkingIdentifier::from()` takes only canonical forms (25 pack chars, bracketed); `fromDocumentForm()` handles
+  `01…21…` and the ambiguity. `MarkingCode::identifier()` therefore never throws.
+- Decree No. 224: current edition (29.12.2025, in force 01.03.2026) read on the КонтурЭкстерн mirror in fix round 1;
+  pp. 43-45 unchanged. The CSET 82 pack charset rests on a comment answer on the operator's water page.
+- EU tobacco: Art 21(4) allows the time stamp outside the carrier → `TobaccoUnitIdentifierWithoutTimeStamp`; never
+  strip trailing digits by guess. `withTimeStamp()` refuses years outside 2000-2099.
 - Strings of 255 (`1`×255) or 512 `1`s parse as valid GS1 element strings (repeated AI (11)); length-bound tests
   assert the later message, not a parse failure.
 - IFA expiry `DD = 00` → last day of the month (package decision, IFA only says "month and year"); century 2000-2099

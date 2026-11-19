@@ -286,25 +286,29 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   | `TobaccoGroupPack` | (01), (21) of 7, (8005) of 6, (93) of 4, then any further groups | No. 224, pp. 44-45 |
   | `Standard` | (01), (21) of 6, 13 or 20, (91) of 4, (92) of 44 or 88; optional (3103) | per group, see GS1.md |
   | `Shortened` | (01), (21) of 6, 7, 13 or 20, (93) of 4; optional (3103) or (335y) | per group, see GS1.md |
+  | `GenericGs1` | (01), (21), then (92) or (93) somewhere, intact GS separators; AI-table checks only | none: lengths or groups no page publishes |
 
   Accessors: `gtin()`, `serial()`, `verificationKey()` (91), `verificationCode()` (92, 93 or the pack's 4th group),
-  `identifier()`, `elementString()` (null for the pack). Input: the pack code (optionally after `]d1`, `]d2` or a
+  `identifier()` (never throws), `elementString()` (null for the pack). `verificationCode()` is never null (the
+plan typed it `?string`; every structure has a tail). Input: the pack code (optionally after `]d1`, `]d2` or a
   leading GS) or a GS1 code in any `ElementString` notation. **A code whose GS separators were lost** (copied from a
-  web form) is refused, never split: the groups must stand in the published order with the published lengths, so
-  data that ran together fails (`…21` + 13 + `93…` without GS reads as one serial and no crypto tail). The operator
+  web form) is refused, never split: a group holding, at one of its published lengths, the AI a published structure
+  puts next (`21` + 6 characters + `93…`, `91` + 4 + `92…`, …) is refused, and a code without (92)/(93) is refused.
+  29 GS-free characters that read both as a pack and as such a code throw `AmbiguousValueException`. The operator
   publishes no recovery rule. Canonical form: the pack as is, a GS1 code as barcode data with its GS separators,
   AIs in the order given (store the GS characters too).
 - **`RU\MarkingIdentifier`** (КИ, the code without the crypto tail): (01) + (21); with (8005) for the tobacco group pack
-  (Decree No. 224, p. 44: "первые 3 группы"); the first 25 characters of the pack. Canonical: bracketed
-  `(01)…(21)…`, or the 25 pack characters; `toDocumentForm()` gives the operator's `01…21…`, which is accepted as
-  input. 25 characters that read both as a pack КИ and as `01…21…` + 7 throw `AmbiguousValueException`.
+  (Decree No. 224, p. 44: "первые 3 группы"); the first 25 characters of the pack. `from()` takes the
+  canonical forms only: bracketed `(01)…(21)…` or the 25 pack characters. `fromDocumentForm()` reads the operator's
+  `01…21…` (which `toDocumentForm()` gives); 25 characters that read both as a pack КИ and as `01…21…` + 7 throw
+  `AmbiguousValueException` there.
 - **Russian product groups covered** (structure read on the operator's pages, decree cited there): tobacco and
   nicotine products, light industry, footwear, tyres, perfume, cameras, dairy, packaged water, beer, non-alcoholic beer, non-alcoholic
   beverages, BAD, antiseptics, medical devices, medicines (MDLP), veterinary medicines, canned food, sweets, grocery,
   meat, caviar, pet food, vegetable oils, sports nutrition, construction materials, household goods, cosmetics and
   household chemicals, toys, bicycles, technical rehabilitation equipment, radio-electronics, electronic nicotine
   delivery systems, motor oils, cables, optical fibre, polymer pipes.
-- **Not covered** (structure not read): auto parts, pharmaceutical raw materials, frozen and semi-finished food,
+- **Not covered** (structure not read; such codes parse as `GenericGs1` when their separators are intact): auto parts, pharmaceutical raw materials, frozen and semi-finished food,
   heating appliances, titanium products, fertilisers, pyrotechnics, fire safety equipment, printed matter, wheelchairs
   (listed as a group of its own), fur coats (an RFID КиЗ, not a Data Matrix code) and alcohol (EGAIS excise stamps,
   another system). Their codes still parse when they
@@ -318,10 +322,14 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   IFA message with its trailer (control characters included).
 - **`EU\Ppn`**: PRA Code + product number + two check digits (IFA modulo 97); for PRA Code 11 the PZN check digit
   too. `fromParts()`, `praCode()`, `productNumber()`, `pzn()`, `toNtin()`.
-- **`EU\TobaccoUnitIdentifier`** (Implementing Regulation (EU) 2018/574, Article 8): 11 to 50 alphanumeric
-  characters ending with the time stamp `YYMMDDhh` in UTC; `issuerPart()`, `timeStamp()`, `manufacturedAt()`. Format
-  only otherwise: the ID issuer's own structure (possibly encrypted) is not published. Century 2000: a package
-  decision.
+- **`EU\TobaccoUnitIdentifier`** (Implementing Regulation (EU) 2018/574, Article 8): the full UI, 11 to 50
+  alphanumeric characters ending with the time stamp `YYMMDDhh` in UTC; `issuerPart()`, `timeStamp()`,
+  `manufacturedAt()`, `withoutTimeStamp()`. Format only otherwise: the ID issuer's own structure (possibly encrypted)
+  is not published. Century 2000: a package decision.
+- **`EU\TobaccoUnitIdentifierWithoutTimeStamp`**: what a data carrier holds when the time stamp is printed beside it
+  (Article 21(4)), 3 to 42 alphanumeric characters, no time-stamp accessors. Use it for scanned content unless you
+  know the carrier includes the time stamp: trailing digits are never guessed to be one.
+  `withTimeStamp($manufacturedAt)` builds the full UI (UTC hour).
 - Size limits before parsing: Russian codes and identifiers 255 characters, FMD pack codes 512.
 
 ## GS1 Application Identifier table

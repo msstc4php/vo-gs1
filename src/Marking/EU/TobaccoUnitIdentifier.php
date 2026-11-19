@@ -17,6 +17,9 @@ use Override;
  * first and the time stamp of manufacture `YYMMDDhh` (UTC) last. The serial number and product code between them are
  * the ID issuer's own, possibly encrypted or compressed, so they are format only.
  *
+ * A data carrier may hold the UI without its time stamp, printed separately (Article 21(4)): that content is
+ * {@see TobaccoUnitIdentifierWithoutTimeStamp}; trailing digits are never guessed to be a time stamp.
+ *
  * The century is 2000 (a package decision: the regulation dates from 2018 and the time stamp has two year digits).
  * Each of the three issuer elements takes at least one character, so the minimum length is 11.
  *
@@ -52,6 +55,11 @@ final class TobaccoUnitIdentifier extends AbstractStringValueObject
         $parts = $this->parts();
 
         return $parts[2] . $parts[3] . $parts[4] . $parts[5];
+    }
+
+    public function withoutTimeStamp(): TobaccoUnitIdentifierWithoutTimeStamp
+    {
+        return new TobaccoUnitIdentifierWithoutTimeStamp($this->issuerPart());
     }
 
     /**

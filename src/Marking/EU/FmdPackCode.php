@@ -36,8 +36,8 @@ final class FmdPackCode extends AbstractStringValueObject
 
     private const string TYPE = 'FMD pack code';
 
-    /** Section 4.3: the GS1 Germany prefix of the NTIN-DE, made 14 digits. */
-    private const string NTIN_DE_PREFIX = '04150';
+    /** Section 4.3: "0 4150 12345678 2", the GS1 Germany prefix of the NTIN-DE, the PZN and the check digit. */
+    private const string NTIN_DE = '/^04150([0-9]{8})[0-9]$/D';
 
     /** @var non-empty-list<non-empty-string> */
     private const array MANDATORY_AIS = ['01', '21', '10', '17'];
@@ -103,14 +103,7 @@ final class FmdPackCode extends AbstractStringValueObject
             return $productCode->pzn();
         }
 
-        $gtin14 = $productCode->toGtin14();
-        if (!\str_starts_with($gtin14, self::NTIN_DE_PREFIX)) {
-            return null;
-        }
-
-        $pzn = \substr($gtin14, \strlen(self::NTIN_DE_PREFIX), 8);
-
-        return $pzn === '' ? null : $pzn;
+        return \preg_match(self::NTIN_DE, $productCode->toGtin14(), $match) === 1 ? $match[1] : null;
     }
 
     /**

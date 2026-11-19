@@ -19,7 +19,9 @@ use Override;
  *
  * Input: the tobacco consumer-pack code (29 characters, optionally after `]d1`, `]d2` or a leading GS), or a
  * GS1-structured code in any notation {@see ElementString} accepts. A code whose GS separators were lost (copied
- * from a web form) is refused, never split at a guessed position.
+ * from a web form) is refused, never split at a guessed position: a group holding, at one of its published lengths,
+ * the AI a published structure puts next is refused. With intact separators, a code that fits no published structure
+ * is {@see MarkingCodeStructure::GenericGs1}.
  *
  * Canonical form: the pack code as is; a GS1-structured code as barcode data, AIs in the order given, GS (U+001D)
  * after each group that is not of predefined length except the last, as the operator issues it.
@@ -58,7 +60,7 @@ final class MarkingCode extends AbstractStringValueObject
     }
 
     /**
-     * AI (92) or (93), or the fourth group of the tobacco consumer-pack code.
+     * AI (92) or (93), or the fourth group of the tobacco consumer-pack code; never null, every structure has one.
      *
      * @return non-empty-string
      */
@@ -67,6 +69,9 @@ final class MarkingCode extends AbstractStringValueObject
         return $this->parts()->verificationCode ?? throw new LogicException('Russian marking code lost its verification code.');
     }
 
+    /**
+     * Built from this code's own parts in a canonical form, so it never throws.
+     */
     public function identifier(): MarkingIdentifier
     {
         return new MarkingIdentifier($this->parts()->identifier);

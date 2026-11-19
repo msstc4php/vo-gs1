@@ -14,8 +14,7 @@ use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingCodeStructure;
 final readonly class RuMarkingParts
 {
     /**
-     * @param ?MarkingCodeStructure $structure null for an identifier of AI (01) and (21) only, which every
-     *                                         GS1-structured code shares
+     * @param ?MarkingCodeStructure $structure null for a GS1-structured identifier
      * @param non-empty-string $value the canonical form
      * @param non-empty-string $gtin 14 digits
      * @param non-empty-string $serial

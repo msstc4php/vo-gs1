@@ -25,6 +25,12 @@ enum MarkingCodeStructure: string
     case Shortened = 'shortened';
 
     /**
+     * AI (01) and (21) first, a crypto tail (AI (92) or (93)) after them, intact GS separators, but serial lengths or
+     * further groups no page publishes: checked against the GS1 AI table only.
+     */
+    case GenericGs1 = 'generic_gs1';
+
+    /**
      * @return non-empty-string
      */
     public function label(): string
@@ -34,6 +40,7 @@ enum MarkingCodeStructure: string
             self::TobaccoGroupPack => 'tobacco group pack',
             self::Standard => 'standard',
             self::Shortened => 'shortened',
+            self::GenericGs1 => 'generic GS1',
         };
     }
 }
