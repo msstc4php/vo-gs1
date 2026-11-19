@@ -372,6 +372,14 @@ final class ElementStringTest extends TestCase
         self::assertSame(7089, \strlen($element->toBarcodeData()));
 
         try {
+            // 16 + 283 x ("91" + 22 characters) + 282 GS = 7090 characters of data.
+            ElementString::from('(01)09506000134352' . \str_repeat('(91)' . \str_repeat('A', 22), 283));
+            self::fail('Expected an exception.');
+        } catch (InvalidElementStringException $exception) {
+            self::assertSame('Element string data must have at most 7089 characters, got 7090.', $exception->getMessage());
+        }
+
+        try {
             ElementString::from(\str_repeat('9', 14178));
             self::fail('Expected an exception.');
         } catch (InvalidElementStringException $exception) {

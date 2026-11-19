@@ -11,8 +11,8 @@ use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
  * @internal
  *
  * Reads a GS1 element string in any of its notations and checks it against the AI table: data format, linters,
- * repeated AIs and the dictionary's `ex` rule; unmet `req` rules are reported, not refused. Messages name the AI and the reason, never the
- * data, and never an AI that is not in the table.
+ * repeated AIs and the dictionary's `ex` rule; unmet `req` rules are reported, not refused. Messages name the AI and
+ * the reason, never the data, and never an AI that is not in the table.
  *
  * Notations: bracketed (`(01)…(10)…`, a literal `(` in data escaped as `\(`), and unbracketed with FNC1 written as
  * GS (U+001D) or `^`, optionally after one of the symbology identifiers of GS1 AI element strings or one leading FNC1.

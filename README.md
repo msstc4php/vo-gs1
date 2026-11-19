@@ -77,9 +77,12 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
 - **Canonical form:** the bracketed form, `(` in data escaped as `\(`. Notations of the same data are equal.
 - **AI order is kept as given.** The same AIs in another order give another canonical string, so they are not
   `equals()`. Normalise the order yourself if you compare element strings from different sources.
-- **Accessors:** `get($ai)`, `has($ai)`, `ais()` (each AI once, in order), `unmetRequirements()`, `gtin()` (AI 01), `sscc()` (AI 00),
-  `batch()` (10), `serial()` (21), `expiryDate()` (17), `productionDate()` (11), `toBarcodeData()` (GS after every AI
-  not of predefined length, except the last).
+- **Accessors:** `get($ai)`, `has($ai)`, `ais()` (each AI once, in order), `unmetRequirements()`, `gtin()` (AI 01),
+  `sscc()` (AI 00), `batch()` (10), `serial()` (21), `expiryDate()` (17), `productionDate()` (11), `toBarcodeData()`
+  (GS after every AI not of predefined length, except the last).
+- **Stored values and dictionary updates:** the accessors re-read the stored canonical value against the AI table of
+  the installed version. A table update ships as a minor release; if it removes an AI or tightens its format, a value
+  stored under the older table can throw `InvalidElementStringException` from an accessor (and from `from()`).
 - **Dates:** the century follows GS1's sliding window around the UTC year of `$today` (an argument, default now, so a
   stored value keeps its meaning when you pass the day it was read); `DD = 00` is the last day of the month; the result
   is 00:00:00 UTC. An impossible month or day is refused where the AI's linter says so (`yymmd0`, `yymmdd`); that

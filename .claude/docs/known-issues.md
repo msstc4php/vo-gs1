@@ -35,7 +35,9 @@
 - Association checks run over distinct AIs and look patterns up by expansion (`35nn` → 100 keys), so repeats cannot
   make them quadratic; input is capped at 14178 characters before parsing and data at 7089 (GS1 QR Code capacity).
 - `ElementString` keeps no parsed state: the parent's final constructor allows no readonly initialisation, so accessors
-  re-parse the canonical value (bounded by the size cap).
+  re-parse the canonical value (bounded by the size cap). Consequence: a value stored under an older dictionary can
+  throw `InvalidElementStringException` from accessors after a dictionary release (a minor release) removes or
+  tightens one of its AIs. Stated in the README.
 - `iso4217`: vo-base `CurrencyCode` lacks the ISO non-currency codes 955-965, 994, 999 that GS1's linter accepts; they
   are listed in `AiLinters::ISO_4217_NON_CURRENCY`. vo-base also accepts withdrawn codes the linter refuses (lenient).
 - GS1 Syntax Engine clone used for quotes: `main` at `58c1dc8` (its newest tags are 2023); cite the commit.

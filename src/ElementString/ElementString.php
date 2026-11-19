@@ -54,8 +54,9 @@ final class ElementString extends AbstractStringValueObject
      */
     public function ais(): array
     {
-        $ais = [$this->elements()[0]->spec->ai];
-        foreach ($this->elements() as $element) {
+        $elements = $this->elements();
+        $ais = [$elements[0]->spec->ai];
+        foreach ($elements as $element) {
             if (!\in_array($element->spec->ai, $ais, true)) {
                 $ais[] = $element->spec->ai;
             }
