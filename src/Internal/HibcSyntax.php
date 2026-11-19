@@ -16,6 +16,7 @@ use MSSTC4PHP\ValueObject\Gs1\Udi\HibcDateFormat;
  * each ending with its Mod 43 check character
  *
  * @see https://www.hibcc.org/wp-content/uploads/SLS-2.6-Final.pdf ANSI/HIBC 2.6-2016 (R2026), sections 2.1.1, 2.2.1, 2.2.1.1, 2.3, Appendices E and F
+ * @see https://web.archive.org/web/20130203212925/http://www.hibcc.org/wp-content/uploads/2012/09/ANSI-HIBC-2.3-SLS-2009.pdf ANSI/HIBC 2.3-2009, Appendix E1.1 (legacy quantity `$$8`/`$$9`)
  * @see docs/sources/GS1.md "HIBCC"
  */
 final class HibcSyntax
@@ -184,9 +185,10 @@ final class HibcSyntax
                 : self::with($primary, null, $match[2], null, '');
         }
 
+        // ANSI/HIBC 2.3: a quantity alone leaves the date flag and the lot field out ("+$$848GQ").
         $pattern = '/^\$\$(?<serial>\+?)(?:8(?<q2>[0-9]{2})|9(?<q5>[0-9]{5}))?'
-            . '(?:(?<mmyy>[01][0-9]{3})|2(?<mmddyy>[0-9]{6})|3(?<yymmdd>[0-9]{6})|4(?<yymmddhh>[0-9]{8})'
-            . '|5(?<yyjjj>[0-9]{5})|6(?<yyjjjhh>[0-9]{7})|7)(?<text>' . $field . '{0,18})$/D';
+            . '(?:(?<=[0-9]{2})$|(?:(?<mmyy>[01][0-9]{3})|2(?<mmddyy>[0-9]{6})|3(?<yymmdd>[0-9]{6})|4(?<yymmddhh>[0-9]{8})'
+            . '|5(?<yyjjj>[0-9]{5})|6(?<yyjjjhh>[0-9]{7})|7)(?<text>' . $field . '{0,18})$)/D';
         if (\preg_match($pattern, $data, $match, PREG_UNMATCHED_AS_NULL) !== 1) {
             throw self::fail('secondary data must follow a format of Appendix F');
         }

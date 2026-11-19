@@ -17,6 +17,7 @@ and are not part of the repository. Later tasks extend the sections they impleme
 | [ANSI/HIBC 2.6 Supplier Labeling Standard](https://www.hibcc.org/wp-content/uploads/SLS-2.6-Final.pdf) | ANSI/HIBC 2.6-2016 (R2026) | 2026-11-19 | read (PDF) |
 | [HIBCC Mod 43 Check Character](https://www.hibcc.org/wp-content/uploads/Mod-43-Check-Character.pdf) | Appendix B of ANSI/HIBC 2.5-2015 | 2026-11-19 | read; same text as 2.6 Appendix B |
 | [HIBC Basic UDI-DI](https://www.hibcc.org/wp-content/uploads/HIBCC-Basic-UDI-DI.pdf) | undated | 2026-11-19 | read (PDF) |
+| [ANSI/HIBC 2.3-2009 (Internet Archive copy)](https://web.archive.org/web/20130203212925/http://www.hibcc.org/wp-content/uploads/2012/09/ANSI-HIBC-2.3-SLS-2009.pdf) | 2009, capture 2013-02-03 | 2026-11-19 | read (PDF): legacy quantity layout only |
 | [ICCBBA ST-017, Coding and Labeling of Medical Devices Containing MPHO](https://iccbba.org/wp-content/uploads/2025/08/1a7593_815cf8e500b9438a860dd8fae533b2b4.pdf) | v1.0.1, September 2024 | 2026-11-19 | read (PDF): ISBT 128 is reachable |
 | [21 CFR 207.33 (eCFR, current)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-C/part-207/subpart-B/section-207.33) | current text | 2026-11-19 | read |
 | [FDA final rule, 91 FR 10749, doc 2026-04368](https://www.federalregister.gov/documents/2026/03/05/2026-04368/revising-the-national-drug-code-format-and-drug-label-barcode-requirements) | published 2026-03-05, effective 2033-03-07 | 2026-11-19 | read (full text) |
@@ -578,10 +579,22 @@ Structure as it had been in previous versions of the standard". Appendix H:
 > Among these is the use of quantity in the secondary data structure. […] Existing labels are still valid but should
 > not be used for Unique Device Identification (UDI).
 
-So such labels are accepted (never refuse a valid value). The earlier editions that define the layout were not
-reachable on hibcc.org (2026-11-19 UTC: SLS 2.3/2.4/2.5 URLs 404); the package reads the layout of those editions as
-remembered: `$$8` + 2-digit quantity or `$$9` + 5-digit quantity (also after `$$+`), then the 2.6 date format flag
-(`0`-`7`) and its date, then lot or serial. Treat this one layout as unverified.
+So such labels are accepted (never refuse a valid value). The layout is the one of ANSI/HIBC 2.3-2009, read in an
+unmodified Internet Archive copy of HIBCC's own PDF:
+<https://web.archive.org/web/20130203212925/http://www.hibcc.org/wp-content/uploads/2012/09/ANSI-HIBC-2.3-SLS-2009.pdf>
+(capture 2013-02-03 21:29:25 UTC; fetched 2026-11-19 UTC; hibcc.org itself no longer serves 2.3-2.5). Appendix E1.1:
+
+> The digits 8 and 9 specify the Quantity Field format. The first digit following the Quantity Field should be 0
+> through 7 to define the Date Field format as defined above.
+
+> 8 Two digit Quantity Field follows / 9 Five digit Quantity Field follows
+
+> If the Secondary Code specifies only the Quantity, both the Date Field and the Lot/Batch/Serial Number Field should
+> be null
+
+Examples (primary `+A123BJC5D6E71G`, link `G`): `+$$872404121523G2` ("Quantity is 72 and Date is 12/15/04 23:00
+G.M.T."), `+$$9014407A1234G8` ("Quantity is 1440 and Lot # is A1234"), `+$$848GQ` ("Quantity is 48"); Table F1 rows
+`+$$824LC`, `+$$900100LC`. E1.1 applies the flag after "$$" or "$$+", so `$$+8`/`$$+9` are read too.
 
 **Package decisions (not in the standard):** a two-digit year is 20YY (no century rule is given; a fixed rule keeps a
 stored value's meaning independent of the clock); an MMYY date is the last day of that month (as GS1's `DD = 00`);

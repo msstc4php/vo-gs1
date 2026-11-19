@@ -194,7 +194,8 @@ final class HibcUdiTest extends TestCase
         yield 'product number of 19' => [self::withCheck('+A123' . \str_repeat('P', 19) . '1'), $primary];
         yield 'product number with a space' => [self::withCheck('+A123BJ C1'), $primary];
         yield 'empty secondary' => [self::concatenated(''), $secondary];
-        yield 'quantity flag 9 without a date flag' => [self::concatenated('$$912347'), $secondary];
+        yield 'quantity flag 9 with three digits' => [self::concatenated('$$9123'), $secondary];
+        yield 'quantity then a letter' => [self::concatenated('$$848A'), $secondary];
         yield 'quantity flag 8 with one digit' => [self::concatenated('$$8'), $secondary];
         yield 'S with a serial secondary' => [self::concatenated('$$+7AB/SXY'), 'supplemental serial number S is for a lot secondary, the secondary data carries a serial number'];
         yield 'flag letter' => [self::concatenated('$$A'), $secondary];
@@ -329,8 +330,29 @@ final class HibcUdiTest extends TestCase
     }
 
     /**
-     * Quantity in the secondary data, dropped in 2.6 but "Existing labels are still valid" (Appendix H).
+     * Quantity in the secondary data, dropped in 2.6 but "Existing labels are still valid" (Appendix H); the layout
+     * and these secondary symbols of the primary +A123BJC5D6E71G are ANSI/HIBC 2.3-2009, Appendix E1.1.
      */
+    public function testQuantityExamplesOfHibc23(): void
+    {
+        $hour = HibcUdi::fromSymbols(self::PRIMARY, '+$$872404121523G2');
+        self::assertSame(72, $hour->quantity());
+        self::assertSame('2004-12-15 23', $hour->expiryDate()?->format('Y-m-d H'));
+
+        $lot = HibcUdi::fromSymbols(self::PRIMARY, '+$$9014407A1234G8');
+        self::assertSame(1440, $lot->quantity());
+        self::assertSame('A1234', $lot->lot());
+        self::assertNull($lot->expiryDate());
+
+        $alone = HibcUdi::fromSymbols(self::PRIMARY, '+$$848GQ');
+        self::assertSame(48, $alone->quantity());
+        self::assertNull($alone->lot());
+        self::assertNull($alone->expiryDateFormat());
+
+        self::assertSame('2005-09-30', HibcUdi::fromSymbols(self::PRIMARY, '+$$0905A1234G/')->expiryDate()?->format('Y-m-d'));
+        self::assertSame(100, HibcUdi::from(self::concatenated('$$+900100'))->quantity());
+    }
+
     public function testLegacyQuantityFormats(): void
     {
         $two = HibcUdi::from(self::concatenated('$$80230512313C001'));

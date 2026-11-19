@@ -223,8 +223,8 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   `unitOfMeasure()`, `lot()`, `serial()` (secondary data, else `S`), `expiryDate()` (secondary data, else `14D`),
   `expiryDateFormat()` (`HibcDateFormat`), `manufactureDate()` (`16D`), `quantity()` (`Q`). Every format of Appendix F
   is read, including the legacy `$`, `$+` and five-digit Julian forms, and the pre-2.6 quantity forms `$$8`/`$$9`
-  (Appendix H: "Existing labels are still valid but should not be used for Unique Device Identification"; their
-  layout comes from earlier editions that were not reachable). `/S` is refused next to a serial secondary ("Serial
+  (Appendix H: "Existing labels are still valid but should not be used for Unique Device Identification"; layout
+  and examples from ANSI/HIBC 2.3-2009, quantity in `quantity()`). `/S` is refused next to a serial secondary ("Serial
   number when Lot number is used"). In a separate secondary symbol with supplemental data the link character may stand
   after the lot/serial or before the check character; two valid readings are refused as ambiguous. **Not in the standard, chosen here:** two-digit
   years are 20YY (no clock dependence), an MMYY expiry is the last day of the month, dates are UTC with the hour where
