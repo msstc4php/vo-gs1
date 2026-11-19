@@ -58,8 +58,8 @@ separately".
 and section 1.3.1 adds "there SHALL be consistency within the database field about whether these leading zeroes are
 present or not", and that the leading zeroes of a GTIN-12 "are meaningful since they are part of the U.P.C. Company
 Prefix … Therefore these zeroes must be preserved when storing the GTIN-12". Per the plan's fallback, `Gtin` (Task 4)
-keeps the form given and compares the 14-digit form for equality. `Gtin` does not strip spaces or hyphens, like every other key. The GS1 Digital Link URI Syntax (section 4) does
-require 14 digits in a URI.
+keeps the form given and compares the 14-digit form for equality. `Gtin` does not strip spaces or hyphens, like
+every other key. The GS1 Digital Link URI Syntax (section 4) does require 14 digits in a URI.
 
 ### GS1 Prefix list (section 1.2.3.1, Table 1-4; GS1-8: Table 1-5) — `Key\Gs1Prefix`
 
@@ -107,7 +107,8 @@ prefixing `00000`" to the 13-digit space), any other by dropping the indicator d
 > digits are a valid GS1 Prefix and the length of the GS1 Company Prefix SHALL be at least one digit longer than the
 > length of the GS1 Prefix.
 
-So `fromParts()` takes a company prefix of 4 to 12 digits (3 for the GS1-8 Prefix of a GTIN-8, Table 1-5). For the
+So `fromParts()` takes a company prefix of 4 to 12 digits, also for GTIN-12 and GTIN-13. For a GTIN-8 it takes the
+GS1-8 Prefix, which Table 1-5 (section 1.2.3.2) defines as "a unique string of two or more digits": 2 to 12 digits. For the
 keys that begin with the company prefix and have no check digit (`Giai`, `Ginc`, `Cpid`, `Gmn`; dictionary linter
 `gcppos1`) the dictionary's reference implementation (`src/lint_gcppos1.c`, tag `2026-01-27`, Apache-2.0) says:
 

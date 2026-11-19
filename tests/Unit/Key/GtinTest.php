@@ -116,6 +116,7 @@ final class GtinTest extends TestCase
         self::assertSame('4006381333931', (string) Gtin::fromParts('4006381', '33393'));
         self::assertSame('036000291452', (string) Gtin::fromParts('0360002', '9145'));
         self::assertSame('96385074', (string) Gtin::fromParts('963', '8507'));
+        self::assertSame('96385074', (string) Gtin::fromParts('96', '38507'));
     }
 
     /**
@@ -123,10 +124,12 @@ final class GtinTest extends TestCase
      */
     public static function badParts(): iterable
     {
-        yield 'prefix too short' => ['40', '063813339', 'GTIN company prefix must have 3 to 12 digits.'];
-        yield 'prefix of 3 is a GS1-8 Prefix only for GTIN-8' => ['400', '6381333931', 'GTIN company prefix and reference must have 7 or 11 or 12 digits in total, got 13.'];
-        yield 'prefix too long' => ['4006381333931', '', 'GTIN company prefix must have 3 to 12 digits.'];
-        yield 'prefix not digits' => ['40A', '06381333', 'GTIN company prefix must have 3 to 12 digits.'];
+        yield 'prefix too short' => ['40', '063813339', 'GTIN company prefix must have 4 to 12 digits.'];
+        yield 'GTIN-13 with a 3-digit prefix' => ['400', '638133393', 'GTIN company prefix must have 4 to 12 digits.'];
+        yield 'GTIN-12 with a 3-digit prefix' => ['036', '00029145', 'GTIN company prefix must have 4 to 12 digits.'];
+        yield 'GTIN-8 with a 1-digit prefix' => ['9', '638507', 'GTIN company prefix must have 2 to 12 digits.'];
+        yield 'prefix too long' => ['4006381333931', '', 'GTIN company prefix must have 4 to 12 digits.'];
+        yield 'prefix not digits' => ['40A1', '6381333', 'GTIN company prefix must have 4 to 12 digits.'];
         yield 'body of 10' => ['4006381', '333', 'GTIN company prefix and reference must have 7 or 11 or 12 digits in total, got 10.'];
         yield 'reference not digits' => ['4006381', '3339A', 'GTIN company prefix and reference must contain digits only.'];
     }

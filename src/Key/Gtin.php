@@ -11,9 +11,10 @@ use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
 use Override;
 
 /**
- * Global Trade Item Number (AI 01): 8, 12, 13 or 14 digits, the last one the check digit. The value keeps the form given (EAN-8, UPC-A, EAN-13 or GTIN-14), because the leading zeros of a GTIN-12
- * are part of its U.P.C. Company Prefix. Leading zeros do not change the GTIN, so {@see equals()} compares the
- * 14-digit form: `4006381333931` equals `04006381333931`.
+ * Global Trade Item Number (AI 01): 8, 12, 13 or 14 digits, the last one the check digit. The value keeps the form
+ * given (EAN-8, UPC-A, EAN-13 or GTIN-14), because the leading zeros of a GTIN-12 are part of its U.P.C. Company
+ * Prefix. Leading zeros do not change the GTIN, so {@see equals()} compares the 14-digit form: `4006381333931`
+ * equals `04006381333931`.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, sections 1.3.1, 2.1.1.10 and 7.9.1
  * @see docs/sources/GS1.md "GTIN formats and the 14-digit form" and "GS1 Prefix list"
@@ -29,7 +30,8 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
      */
     public static function fromParts(string $companyPrefix, string $reference): self
     {
-        $body = KeyRules::body(self::TYPE, $companyPrefix, $reference, [7, 11, 12], 3);
+        $minPrefix = \strlen($companyPrefix . $reference) === 7 ? 2 : 4;
+        $body = KeyRules::body(self::TYPE, $companyPrefix, $reference, [7, 11, 12], $minPrefix);
 
         return new self($body . Gs1CheckDigit::compute($body));
     }
