@@ -24,6 +24,14 @@ core.
 | `Epc\EpcScheme`, `Epc\EpcTagEncoding` | Backed enums of the 20 pure identity schemes and 22 tag encodings; `hasElementString()`, `filterBits()`, `isPartitioned()` |
 | `Epc\EpcPureIdentityUri`, `Epc\EpcTagUri` | String VOs, value = URI with upper-case escape hex; tag parse re-validates the embedded pure URI |
 | `Internal\EpcSyntax` | Per-scheme grammar (one regex each), CP 6..12, ES mapping both ways, tag parse, control fields, field limits per encoding |
+| `Udi\Udi`, `Udi\IssuingAgency` | UDI contract (`deviceIdentifier()`, `issuingAgency()`); enum GS1, HIBCC, ICCBBA, IFA (IFA only for Basic UDI-DI) |
+| `Udi\Gs1Udi` | String VO over `ElementString`, must have AI (01); value = bracketed form |
+| `Udi\HibcUdi`, `Internal\HibcSyntax`, `Internal\HibcData` | HIBC LIC primary / concatenated (+ supplemental `/S`, `/16D`, `/14D`, `/Q`); value = concatenated form; `fromSymbols()` joins two symbols via the link character; accessors re-parse |
+| `Udi\IsbtUdi`, `Internal\IsbtSyntax`, `Internal\IsbtData` | ISBT 128 (ST-017): compound `=+aabbb` or HRI in, value = HRI (header dropped); `toCompoundMessage()` |
+| `Udi\UdiFactory` | First character → class (`+` HIBC, `=` ISBT, `(` `]` digit GS `^` GS1), else `InvalidUdiException` |
+| `Udi\BasicUdiDi\*` | `BasicUdiDi` interface (`issuingEntity()`), one class per entity with its check characters; `BasicUdiDiFactory` tries all, 0 → invalid, >1 → `AmbiguousValueException` |
+| `Udi\Ndc`, `Udi\NdcConfiguration`, `Udi\Ndc12` | NDC 10/11 digits, hyphens required; bare digits → `AmbiguousValueException([Ndc::class])` + `Ndc::candidates()`; `Ndc12` 6-4-2 |
+| `Internal\Iso7064Mod37`, `Internal\IfaMod97`, `Internal\UdiDates` | ICCBBA MOD 37-2 (Horner), IFA mod 97 over ASCII, UTC calendar/ordinal dates (null when the day does not exist) |
 
 Helpers throw `\LogicException` (message without input) on a precondition violation: the value objects check the
 format first.

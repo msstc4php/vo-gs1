@@ -22,6 +22,7 @@ and are not part of the repository. Later tasks extend the sections they impleme
 | [FDA final rule, 91 FR 10749, doc 2026-04368](https://www.federalregister.gov/documents/2026/03/05/2026-04368/revising-the-national-drug-code-format-and-drug-label-barcode-requirements) | published 2026-03-05, effective 2033-03-07 | 2026-11-19 | read (full text) |
 | Delegated Regulation (EU) 2016/161 | OJ L 32, 9.2.2016 | 2026-11-19 | EUR-Lex unreachable (see below); text read on legislation.gov.uk |
 | [IFA PPN-Code Specification for Retail Packaging](https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA_Spec_PPN_Code_Handelspackung_EN.pdf) | Version 3.06, 6 November 2023 | 2026-11-19 | read (PDF) |
+| [IFA Coding System for medical devices (UDI specification)](https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA-Info_Spec_UDI_Code_EN.pdf) | Version 2.5, 1 April 2026 | 2026-11-19 | read (PDF), section 3.5 |
 | [IFA Check Digit Calculations of PZN, PPN and Basic UDI-DI](https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA-Info_Check_Digit_Calculations_PZN_PPN_UDI_EN.pdf) | undated | 2026-11-19 | read (PDF) |
 | Implementing Regulation (EU) 2018/574 | OJ L 96, 16.4.2018 | 2026-11-19 | EUR-Lex unreachable; text read on legislation.gov.uk |
 | Russian Government decrees per product group | see section 9 | 2026-11-19 | located on publication.pravo.gov.ru |
@@ -522,7 +523,7 @@ string. Binary and hex tag encodings and the EPC Raw URI are out of scope.
 **Examples.** Section 6.3 and Annex E: every scheme and every encoding has a test value from them where TDS gives one
 (`gdti-113` has none; its test reuses the GDTI example of 7.10).
 
-## 5. HIBCC (Task 7) — `Internal\Mod43`
+## 5. HIBCC (Task 7) — `Internal\Mod43`, `Udi\HibcUdi`, `Udi\BasicUdiDi\HibccBasicUdiDi`
 
 ANSI/HIBC 2.6-2016, reaffirmed 2026 (cover: "ANSI/HIBC 2.6 – 2016 (R2026)"), Appendix B.2.0:
 
@@ -538,38 +539,148 @@ Table B1: `0`-`9` = 0-9, `A`-`Z` = 10-35, `-` = 36, `.` = 37, Sp = 38, `$` = 39,
 the check character may be a space. The stand-alone "Mod 43 Check Character" PDF on hibcc.org is the same appendix in
 its 2.5-2015 edition.
 
-HIBC Basic UDI-DI (undated PDF on hibcc.org): structure `++` + LIC (4, first character alphabetical) + Global Model
-Identifier (1-17) + check characters (2), example `++A999MODELIDENTIFIER11S8`.
+### Primary data structure (section 2.1.1, Table 1) — `HibcUdi`
+
+> The HIBC LIC Primary Data Structure format encodes a “+” data identifier of the HIBC Supplier Data Structure, a
+> 4-character Labeler Identification Code (LIC), a 1 to 18 character Product or Catalog Number (PCN), a one-digit Unit
+> of Measure Identifier (U/M), and a single Check Character (C).
+
+LIC: "a 4-character alphanumeric identifier, with the first character always being alphabetic". PCN: "The allowed
+characters are A through Z and 0 through 9." U/M: "Numeric value only, 0 through 9". Section 2.1 titles the structure
+"Primary Data Structure (Device Identifier)": `HibcUdi::deviceIdentifier()` is the primary structure with its check
+character. Examples: `+A123BJC5D6E71G` (4.3.1), `+H123ABC01234567890D` (Appendix C).
+
+### Secondary data structure (section 2.2.1, Table 2, Appendices E and F)
+
+Table 2: `+`, the reference identifier R ("1, 2, 3, or 5"), the expiry date field D ("0 or 4-9"), lot or serial B
+("0-18", alphanumeric), link character L, check character C.
+
+> Note 1: The HIBC Secondary Data Structure is distinguished from the Primary Data Structure in that the Primary Data
+> Structure has an alphabetic character following the HIBC Supplier Labeling Flag Character “+”, while the Secondary
+> Data Structure has a numeric character or a “$” following the HIBC Supplier Labeling Flag Character.
+
+Appendix E1.1, the date format flag after `$$` or `$$+`: "0, 1 First digit of month in MMYY (month/year) Date format",
+"2 MMDDYY", "3 YYMMDD", "4 YYMMDDHH (year/month/day/hour G.M.T.)", "5 YYJJJ (year/Julian day)", "6 YYJJJHH",
+"7 Date Field is null, Lot Field follows". `$` + alphanumeric: lot only ("This format is included for backward
+compatibility only"); `$+` + alphanumeric: serial only. A leading digit: the five-digit Julian date, and Note 1 of
+Table F1:
+
+> Software that interprets encoded HIBCC secondary data fields should allow lot/batch data following the fixed-length
+> numeric Julian date.
+
+("optional variable length (0 to 13)"). Section 3.0: "The use of the special characters “.” and “-“ are permitted in
+the Lot and Serial fields". Appendix A: Julian dating is the day of the year, February 29 being 060 in a leap year.
+Table F1's example data (lot `3C001`, serial `0001`, expiry 28 September 2005, 22:00) is the test table.
+
+**Package decisions (not in the standard):** a two-digit year is 20YY (no century rule is given; a fixed rule keeps a
+stored value's meaning independent of the clock); an MMYY date is the last day of that month (as GS1's `DD = 00`);
+dates are UTC, with the hour of the HH formats ("G.M.T."), otherwise 00:00.
+
+### Concatenation (section 2.2.1.1) — `HibcUdi::fromSymbols()`
+
+> When combining the Primary and Secondary Code into a single symbol (known as concatenation), a forward slash (/) is
+> used as a delimiter between the primary and secondary data. In addition, the primary data Link Character, the plus
+> (+) at the start of the secondary data, and the secondary data Link Character are omitted. Only one Check Character
+> at the end of the symbol will be used which will check the entire data string.
+
+Appendix E1.3: "The Link Character for the Secondary Data Structure is the last character from the Primary Data String
+in the Primary Symbol (Check Character)." Examples: `+A99912345/$$52001510X33` (2.2.1.1), secondary symbol
+`+$$52001510X3GD` of primary `+A123BJC5D6E71G` (4.3.2), concatenated `+A123BJC5D6E71/$$52001510X3C` (4.3.3). In a
+separate secondary symbol with supplemental data the link character is read as the second-to-last character (Table 2's
+`L C` at the end; section 2.3.1: "the check character will be inserted at the end of the total string").
+
+### Supplemental data (section 2.3)
+
+> The Secondary Supplemental Data field is constructed with a “/” character followed by a Data Identifier (DI),
+> followed by data. Multiple Secondary Supplemental data fields are possible.
+
+DIs: `S` serial ("an1 + an18", 2.3.2.1), `16D` date of manufacture ("an3+n8 … (YYYYMMDD)"), `14D` expiry
+("an3+n8 … (YYYYMMDD)"), `Q` quantity ("an1+n1...n5"); "Quantity must be the last field in supplemental data". Other
+DIs are refused (the standard names no others). Examples: `+A99912345/$$52001510X3/16D20111212/S77DEFG457`,
+`+A99912345/$10X3/16D20111231/14D202001313`, `+A99912349/$10X3/16D20111231/14D20200131/Q500Z`.
+
+### HIBC Basic UDI-DI — `HibccBasicUdiDi`
+
+HIBC Basic UDI-DI (undated PDF on hibcc.org): structure `++` + LIC (4, "the first character always being
+alphabetical") + Global Model Identifier (1-17, "Variable Length Alphanumeric") + check characters (2), example
+`++A999MODELIDENTIFIER11S8`.
 
 > The HIBCC keying check character scheme utilizes Modulo 1021 arithmetic to calculate the check value and then two
 > characters from a 32-character set to represent the check value.
 
-The weights are the primes from 2 on the character next to the pair, leftwards — the GS1 MOD 1021,32 scheme; its
-example values (`1` = 14) match GS1 Table 7-18. Task 7 verifies the example with `GmnCheckCharacters`.
+The weights are the primes from 2 on the character next to the pair, leftwards, over the whole string including `++`
+(the worked example ends `+ 8*79 + 8*83`); Table 1 equals GS1 CSET 82 (`+` = 8, `1` = 14) and Table 2 equals CSET 32,
+so `GmnCheckCharacters` computes it: `++A999MODELIDENTIFIER11` → `S8` (sum 16089, value 774). The Global Model
+Identifier is accepted in both cases: Table 1 assigns values to small letters too.
 
-## 6. ICCBBA (ISBT 128) (Task 7)
+## 6. ICCBBA (ISBT 128) (Task 7) — `Udi\IsbtUdi`, `Udi\BasicUdiDi\IccbbaBasicUdiDi`
 
-Reachable. ST-017 v1.0.1 (September 2024), section 2.1: the UDI-DI is the Processor Product Identification Code,
-"Structure: =/nnnnnppppppqqqqq" (`nnnnn` alphanumeric `{A-N, P-Z, 0-9}`, `pppppp` and `qqqqq` `{A-Z, 0-9}`); example
-UDI `=+06000=/A9999XYZ100T0476=,000025=A99971712345600=>019032=}017032&,1000000000000XYZ123`. Appendix 1 (Basic UDI-DI):
-"The Basic UDI-DI format is identical to the UDI-DI format with the exception that it carries an additional two digits
-that form a mod 37-2 checksum", structure `nnnnnppppppqqqqqbb`. ST-011 (medical devices using ISBT 128, v1.9.0, April
-2024) was not fetched: its links point to a portal outside the allowed hosts; Task 7 uses ST-017 or retries ST-011.
+Reachable: [ST-017 v1.0.1](https://iccbba.org/wp-content/uploads/2025/08/1a7593_815cf8e500b9438a860dd8fae533b2b4.pdf)
+(September 2024), re-read on 2026-11-19 (UTC). ST-011 was not needed: ST-017 defines every structure the UDI uses.
 
-## 7. FDA NDC (Task 7)
+| Data structure | ST-017 | Structure | Enforced |
+|---|---|---|---|
+| Processor Product Identification Code [034] (UDI-DI) | 2.1 | `=/nnnnnppppppqqqqq`: `nnnnn` "{A-N, P-Z, 0-9}", `pppppp` and `qqqqq` "{A-Z, 0-9}" | yes |
+| Donation Identification Number [001] | 3.1 | `=αppppyynnnnnnff`: α "{A–N; P–Z; 1–9}", pppp "First two characters alphanumeric {A-N, P-Z, 0-9}; second two characters numeric", yy and nnnnnn numeric, ff "{0–9}, {A-H, J-N, P, R-Y}" | yes |
+| Product Divisions [032] (serial) | 3.2 | `=,dddddd`, "{A-Z, 0-9}" | yes |
+| Expiration Date [004] | 3.3 | `=>cyyjjj`, numeric | yes, and the day must exist |
+| Production Date [008] | 3.4 | `=}cyyjjj`, numeric | yes, and the day must exist |
+| MPHO Lot Number [035] | 3.5 | `&,1` + "up to 18 characters" {A–Z; 0–9} | yes |
+| Compound Message [023] | 4.1 | `=+aabbb`: "aa shall specify the number of ISBT 128 data structures that follow" | count checked |
 
-21 CFR 207.33(b), current eCFR text (with the cross-reference "Link to an amendment published at 91 FR 10770, Mar. 5,
-2026"):
+Rules quoted from 4.1 and chapter 5:
+
+> To satisfy medical device regulations, the compound message shall always begin with the Processor Product
+> Identification Code [Data Structure 034] (the DI). In addition, to meet traceability requirements, the Product
+> Divisions [Data Structure 032] and Donation Identification Number [Data Structure 001] shall also be present.
+
+> If non-UDI data structures are included in the compound message, they must appear after the PIs.
+
+> The software should always verify the integrity of the data string, including checking that the correct number of
+> data structures appears and, when specified sequence messages are used, that the sequence of data structures is
+> correct.
+
+"Elements of the message are divided either by the “=” or the “&” character." Specified sequences 034-037 (Table 3)
+are checked; other RT017 numbers are format only (RT017 is published in ICCBBA's password-protected area). Non-UDI
+data structures are kept unparsed (printable ASCII, at least three characters). The DIN "flag characters … should be
+ignored" (chapter 5) and "shall be set to 00" for medical devices (3.1): reading software ignores them, so any flag of
+the structure's character set is accepted and `donationIdentificationNumber()` returns the first 13 characters.
+
+Dates: "These are presented in a YYYJJJ format where the first three characters form a three-digit year … Thus, 019032
+refers to 1 Feb 2019": the year is 2000 + `cyy`. Expiration: "the date at the end of which the item expires".
+
+Value: the human-readable concatenation (6.2.2: the compound message identifier and message code are "Characters NOT to
+print in human readable UDI text"), so `=+04000…` and its HRI are one value. Examples: chapter 5
+`=+06000=/A9999XYZ100T0476=,000025=A99971712345600=>019032=}017032&,1000000000000XYZ123`, 4.3.1
+`=+04000=/A9997XYZ100T0479=A99991712345600=,000012=>019031`, 4.3.2 `=+04035=/A9997XYZ100T0479=,000012=A99991712345600=>019031`.
+
+Appendix 1 (Basic UDI-DI): "The Basic UDI-DI format is identical to the UDI-DI format with the exception that it
+carries an additional two digits that form a mod 37-2 checksum", structure `nnnnnppppppqqqqqbb`. Checksum steps: the
+ISO 7064 value of each of the first sixteen characters ("character F has value 15"), times "the nth power of 2 where n
+is the position of the character from the right-hand end", summed, "Find the modulus 37 value", "Subtract … from 38",
+"Find the modulus 37 value", "If the value from step six is a single digit add a leading zero". Example
+`A9990ABC123T0480` → sum 1211040 → `08`. Table 7 (RT061) is an image; the values used are ISO/IEC 7064's (`0`-`9`,
+`A`-`Z` = 10-35), consistent with the example (`A` = 10, `T` = 29). The EU requirement quoted there: "the Basic UDI-DI
+code value shall have maximum 25 characters".
+
+## 7. FDA NDC (Task 7) — `Udi\Ndc`, `Udi\Ndc12`
+
+21 CFR 207.33(b), current eCFR text (versioner API, issue date 2026-11-17; with the cross-reference "Link to an
+amendment published at 91 FR 10770, Mar. 5, 2026"):
 
 > (1) Except as described in paragraph (b)(4) of this section, the NDC must consist of 10 or 11 digits, divided into
 > three segments
 
+> (i) If a labeler code is either 5 or 6 digits in length, it may be combined with: (A) A product code consisting of 4
+> digits and a package code consisting of 1 digit for a total NDC length of 10 or 11 digits (5-4-1 or 6-4-1), or (B) A
+> product code consisting of 3 digits and a package code consisting of 2 digits for a total NDC length of 10 or 11
+> digits (5-3-2 or 6-3-2).
+
 > (ii) If a labeler code is 4 digits in length, it may be combined only with a product code consisting of 4 digits and
 > a package code consisting of 2 digits for a total NDC length of 10 digits (4-4-2).
 
-and (b)(2)(i): a 5- or 6-digit labeler code with 4-1 or 3-2 (5-4-1, 6-4-1, 5-3-2, 6-3-2). The 11-digit 6-x-x forms are
-in the current rule; the final rule discusses what would happen "If, in the absence of this final rule, FDA were to
-begin issuing 6-digit labeler codes". Task 7 decides whether `Ndc` accepts them.
+`Ndc` accepts all five configurations. The (b)(4) "alternatively formatted NDC" for certain HCT/Ps has no published
+format and is not accepted.
 
 Final rule "Revising the National Drug Code Format and Drug Label Barcode Requirements", 91 FR 10749, published
 2026-03-05, effective 2033-03-07 (Federal Register API: `effective_on` 2033-03-07). Amended 207.33(b)(1):
@@ -577,8 +688,57 @@ Final rule "Revising the National Drug Code Format and Drug Label Barcode Requir
 > the NDC must consist of 12 digits, divided into three segments as follows: (i) The first segment of the NDC is the
 > labeler code and consists of 6 digits.
 
-with a 4-digit product code and 2-digit package code. Table 1 of the rule shows the HIPAA 11-digit conversion
-`10010-001-01` → `10010-0001-01` → `10010000101`.
+with "(ii) … product code and consists of 4 digits" and "(iii) … package code and consists of 2 digits" (`Ndc12`).
+
+Why the hyphens are required (Response 8 and Table 2, "Illustration of Ambiguity With Unhyphenated NDC":
+`9999912345` → `9999-9123-45`, `99999-123-45`, `99999-1234-5`):
+
+> if hyphens are removed from an FDA-assigned NDC in an electronic system, there is no reliable way to know where the
+> hyphens were in the original NDC.
+
+The 11-digit billing form (`Ndc::toBillingFormat()`) is HHS's HIPAA standard, which this FDA rule describes (the HHS
+source itself, 65 FR 50312, was not fetched):
+
+> The HIPAA standard 11-digit NDC format is standardized such that the labeler code is always 5 digits, the product
+> code is always 4 digits, and the package code always 2 digits (i.e., 5-4-2 configuration). To convert a 10-digit NDC
+> to an 11-digit HIPAA standard NDC, a leading zero is added to the appropriate segment to create the 11-digit
+> configuration as defined above.
+
+Table 1: `10010-001-01` → `10010-0001-01` → `10010000101`; for a 6-digit labeler code ("Native 11-digit (6-3-2)")
+the rule notes the HIPAA update is "outside the scope of FDA authority", so `toBillingFormat()` returns null for it.
+
+`Ndc::toNdc12()`, Response 14: existing NDCs "would be converted to the uniform, 12-digit format by the addition of
+leading zeros to the labeler code, the product code, and/or the package code segments as needed to produce the 6-4-2
+format"; footnote 1: "FDA considers such an NDC in its original 10-digit format and in its converted 12-digit format
+to be the same NDC with different formats." The quote covers 10-digit NDCs; the 6-digit configurations are padded the
+same way.
+
+## IFA Basic UDI-DI (Task 7) — `Udi\BasicUdiDi\IfaBasicUdiDi`, `Internal\IfaMod97`
+
+[IFA Coding System for medical devices](https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA-Info_Spec_UDI_Code_EN.pdf),
+Version 2.5 (1 April 2026), section 3.5 and Figure 9 ("Specifications of the BUDI"): IAC `PP` (2), manufacturer code
+(5, data type "A/Num", character set `0–9`, footnote 14: "At present, exclusively numeric manufacturer codes are
+assigned"), Device Group Code (1 … 16, "0 – 9; A – Z; “.”"), check digits (2, "Modulo 97"); "String length: 10 ... 25".
+
+> Finally, the two-digit check digit is added, calculated over the complete data field including the "PP" according
+> to Modulo 97.
+
+The calculation (Check Digit Calculations of PZN, PPN and Basic UDI-DI, see section 8): ASCII values weighted from 2
+on the left, sum modulo 97, two digits. Example: `PP12345ABCD.12345678.90` → sum 16203, remainder 4 → "the complete
+Basic UDI-DI: PP12345ABCD.12345678.9004". The manufacturer code is accepted alphanumeric (the data type), so a future
+alphanumeric code is not refused.
+
+### Basic UDI-DI per issuing entity — `BasicUdiDiFactory`
+
+| Entity | Class | Check characters |
+|---|---|---|
+| GS1 | `Gs1BasicUdiDi` (the GMN, section 1) | MOD 1021,32 pair |
+| HIBCC | `HibccBasicUdiDi` | MOD 1021,32 pair over `++…` |
+| ICCBBA | `IccbbaBasicUdiDi` | ISO 7064 MOD 37-2, two digits |
+| IFA | `IfaBasicUdiDi` | modulo 97 over ASCII, two digits |
+
+All four are enforced with their check characters. The factory tries all four; a value valid for several (e.g.
+`PP1234500000007005`, both ICCBBA and IFA) throws `AmbiguousValueException`.
 
 ## 8. EU: falsified medicines and tobacco (Task 8)
 
@@ -638,5 +798,7 @@ The operator's knowledge base on markirovka.ru ("Официальный сайт
 | Source | Date (UTC) | What was tried | Effect |
 |---|---|---|---|
 | EUR-Lex (2016/161, 2018/574) | 2026-11-19 | HTML, PDF and ELI URLs: HTTP 202, empty body | text read on legislation.gov.uk; retry in Task 8 |
-| ICCBBA ST-011 v1.9.0 | 2026-11-19 | the registry page linking it is on a host outside the sandbox allowlist | ST-017 covers the UDI-DI structure; Task 7 |
+| ICCBBA ST-011 v1.9.0 | 2026-11-19 | the registry page linking it is on a host outside the sandbox allowlist | not needed: ST-017 defines every UDI structure (Task 7) |
+| ICCBBA RT017 (specified compound messages) | 2026-11-19 | published in ICCBBA's password-protected area | sequences other than 034-037 (ST-017 Table 3) are not order-checked |
+| HHS HIPAA rule 65 FR 50312 | 2026-11-19 | not fetched | the 5-4-2 billing form is quoted from the FDA final rule's description of it |
 | GS1 prefix allocation list (MO per prefix) | 2026-11-19 | not fetched | `Gs1Prefix` decodes the General Specifications tables only; Member Organisations are not named |

@@ -185,6 +185,71 @@ EpcTagUri::fromPureIdentityUri($epc, EpcTagEncoding::Sgtin198, 3);
   is defined by the US DoD guide (any number up to 18 digits); TDS 7.3.3/7.3.4 (no SGTIN from RCN-8 or company
   internal numbering) is not enforced.
 
+## Medical devices: UDI, Basic UDI-DI, NDC
+
+`MSSTC4PHP\ValueObject\Gs1\Udi\` holds one class per issuing agency, all implementing `Udi` (`deviceIdentifier()`,
+`issuingAgency(): IssuingAgency`), the EU Basic UDI-DI of each issuing entity, and the US National Drug Code.
+Exceptions are `InvalidUdiException`; ambiguity is vo-base `AmbiguousValueException`.
+
+```php
+use MSSTC4PHP\ValueObject\Gs1\Udi\BasicUdiDi\BasicUdiDiFactory;
+use MSSTC4PHP\ValueObject\Gs1\Udi\HibcUdi;
+use MSSTC4PHP\ValueObject\Gs1\Udi\Ndc;
+use MSSTC4PHP\ValueObject\Gs1\Udi\UdiFactory;
+
+UdiFactory::fromString('(01)09506000134352(17)201225(10)ABC123');   // Gs1Udi
+UdiFactory::fromString('+A123BJC5D6E71/$$52001510X3C');              // HibcUdi: lot 10X3, expiry 2020-01-15
+UdiFactory::fromString('=+04000=/A9997XYZ100T0479=A99991712345600=,000012=>019031');   // IsbtUdi
+HibcUdi::fromSymbols('+A123BJC5D6E71G', '+$$52001510X3GD');          // the same as the concatenated form
+
+BasicUdiDiFactory::fromString('++A999MODELIDENTIFIER11S8');           // HibccBasicUdiDi
+
+Ndc::from('10010-001-01')->toBillingFormat();                        // "10010000101"
+Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 010010-0001-01
+```
+
+- **`UdiFactory::fromString()`** picks the agency by the first character: `+` HIBC, `=` ISBT 128, `(`, `]`, a digit,
+  GS or `^` GS1. The sets do not overlap; anything else is refused, never guessed. The agency class checks the rest.
+- **`Gs1Udi`:** an `ElementString` (every notation it accepts) that must carry AI (01). `deviceIdentifier()` is the
+  14-digit GTIN; `gtin()`, `lot()` (10), `serial()` (21), `expiryDate($today)` (17), `productionDate($today)` (11),
+  `elementString()`.
+- **`HibcUdi`** (ANSI/HIBC 2.6): the primary data alone (`+A123BJC5D6E71G`) or primary and secondary data
+  concatenated in one symbol, with supplemental data (`/S`, `/16D`, `/14D`, `/Q`); the Mod 43 check character is
+  verified. A secondary symbol alone is not a UDI: pass both symbols to `fromSymbols()`, which checks the link
+  character and stores the concatenated form, so both labels of an item give equal values. `deviceIdentifier()` is the
+  primary data structure with its check character; `labelerIdentificationCode()`, `productNumber()`,
+  `unitOfMeasure()`, `lot()`, `serial()` (secondary data, else `S`), `expiryDate()` (secondary data, else `14D`),
+  `expiryDateFormat()` (`HibcDateFormat`), `manufactureDate()` (`16D`), `quantity()` (`Q`). Every format of Appendix F
+  is read, including the legacy `$`, `$+` and five-digit Julian forms. **Not in the standard, chosen here:** two-digit
+  years are 20YY (no clock dependence), an MMYY expiry is the last day of the month, dates are UTC with the hour where
+  the format has one. The check character may be a space or `/`; the value keeps it.
+- **`IsbtUdi`** (ICCBBA ST-017): the Compound Message `=+aabbb…` or the human-readable concatenation of the data
+  structures; the value is the latter (`toCompoundMessage()` rebuilds the former with an unspecified sequence). The
+  UDI starts with the Processor Product Identification Code and carries the Donation Identification Number and the
+  Product Divisions; expiration date, production date and MPHO lot number are optional; each at most once. The count
+  `aa` is checked, and the order for the specified sequences 034-037. Non-UDI data structures after the production
+  identifiers are kept unparsed. `deviceIdentifier()` (16 characters), `facilityIdentificationNumber()`,
+  `facilityProductCode()`, `productDescriptionCode()`, `donationIdentificationNumber()` (13 characters, flags
+  ignored), `serial()`, `expiryDate()`, `productionDate()` (year = 2000 + `cyy`, as ST-017's example), `lot()`.
+- **Basic UDI-DI** (`Udi\BasicUdiDi\`), every class with its entity's check characters: `Gs1BasicUdiDi` (the GMN,
+  MOD 1021,32; `gmn()`), `HibccBasicUdiDi` (`++` + LIC + model identifier, MOD 1021,32), `IccbbaBasicUdiDi` (UDI-DI +
+  ISO 7064 MOD 37-2), `IfaBasicUdiDi` (`PP` + manufacturer code + device group code, modulo 97).
+  `BasicUdiDiFactory::fromString()` tries all four: no match throws `InvalidUdiException`, several (for example
+  `PP1234500000007005`, valid for ICCBBA and IFA) throw `AmbiguousValueException` listing the classes.
+- **`Ndc`** (21 CFR 207.33(b)): the hyphenated form in any of the five configurations of `NdcConfiguration` (4-4-2,
+  5-3-2, 5-4-1, 6-3-2, 6-4-1). Bare digits are ambiguous ("there is no reliable way to know where the hyphens were",
+  FDA): `Ndc::from('9999912345')` throws `AmbiguousValueException` whose `candidates()` is `[Ndc::class]` (the
+  configurations are not classes); recover them with `Ndc::candidates('9999912345')` (4-4-2, 5-3-2, 5-4-1) and build
+  the right one with `Ndc::fromDigits($digits, $configuration)` once you know it. `labelerCode()`, `productCode()`,
+  `packageCode()`, `configuration()`, `toBillingFormat()` (HIPAA 11-digit 5-4-2, unhyphenated; null for a 6-digit
+  labeler code, for which HIPAA defines no conversion), `toNdc12()`.
+- **`Ndc12`:** the 6-4-2 format of the FDA final rule of 2026-03-05 (effective 2033-03-07), hyphenated or 12 bare
+  digits (one configuration), stored hyphenated.
+- **Format only:** ISBT 128 specified compound sequences other than 034-037 (their order is in ICCBBA's RT017, not
+  public); non-UDI ISBT 128 data structures; the alternatively formatted NDC of 207.33(b)(4) is not accepted (no
+  published format).
+- Size limits before parsing: HIBC 106 characters, ISBT 128 2048 characters and 99 data structures, NDC 13.
+
 ## GS1 Application Identifier table
 
 The AI table (data formats, FNC1 rule, linters, mandatory and invalid AI pairs) is generated from the

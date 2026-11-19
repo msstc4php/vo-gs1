@@ -77,3 +77,28 @@
   CSET 82) apply to EPC URIs too.
 - Infection: ~11 escaped mutants in Task 6 code are equivalent (regex capture positions of unused components,
   `(int)` of the whole filter match, sort keys of control fields, stem-path slice offsets used only in identity).
+
+## UDI, Basic UDI-DI, NDC (Task 7)
+
+- vo-base `AmbiguousValueException` is **final**: no subclass can carry the NDC configurations. The NDC throws it with
+  candidates `[Ndc::class]` and the configurations in the type string; callers recover them via `Ndc::candidates()`
+  and build with `Ndc::fromDigits()`. The exception is not an `InvalidUdiException` (both are
+  `InvalidValueObjectException`).
+- `Ndc::toBillingFormat()` is `?string` (brief said `string`): HIPAA's 5-4-2 has no conversion for 6-digit labeler
+  codes (FDA: "outside the scope of FDA authority"), so it returns null for 6-3-2 / 6-4-1.
+- HIBC: the check character can be a space or `/`, so always strip the last character before splitting on `/`. The
+  secondary symbol's link character is its second-to-last character even with supplemental data (our reading of
+  Table 2 + 2.3.1). Two-digit years = 20YY, MMYY = last day of month: package decisions, not HIBCC's.
+- HIBC `isSecondary()`: a digit or `$` after `+` (Table 2 Note 1); so a primary-looking LIC starting with a digit is
+  reported as "secondary data only".
+- HIBC Basic UDI-DI check = `GmnCheckCharacters` over the whole string **including `++`** (HIBCC Table 1 = CSET 82,
+  Table 2 = CSET 32); max 23 body characters fits the helper exactly.
+- ISBT 128: data structures are split at every `=`/`&` (ST-017 chapter 5); non-UDI structures are opaque, so one
+  containing `=` would be split and miscount `aa`. DIN flags are accepted per charset (reading software ignores them),
+  though 3.1 says medical devices set `00`. Dates: year = 2000 + `cyy` (from the example "019032 refers to 1 Feb 2019").
+- ICCBBA MOD 37-2 checksum is two **digits** 00-36 although 3.1's table types `bb` as alphanumeric.
+- `PP1234500000007005` is a valid ICCBBA and IFA Basic UDI-DI at once (test fixture for the ambiguity path).
+- Infection: 21 escaped mutants in Task 7 code are equivalent — `substr` length overshoots in HIBC date offsets,
+  no-op `max/min` clamps that give PHPStan `int<0, 9>` / `int<0, 99999>`, unreachable `LogicException` guards,
+  `ppic` in the required list (always first), `(int)` before string arithmetic, `calendar(…, 2)` before "last day of".
+- PhpStorm MCP inspections were not available in the Task 7 session (no `mcp__phpstorm__*` tools).

@@ -19,3 +19,8 @@
   element strings, `primaryKey()`, `toCanonical()`; non-GS1 query parameters are kept; compressed links are refused.
 - `Epc\EpcPureIdentityUri` (all twenty schemes of EPC Tag Data Standard 2.3, `EpcScheme`, element string both ways),
   `Epc\EpcTagUri` (tag URIs of the 22 encodings of `EpcTagEncoding`, with filter, partition and field limits).
+- Medical devices (`Udi\`): `Gs1Udi`, `HibcUdi` (ANSI/HIBC 2.6 primary, secondary and supplemental data, Mod 43,
+  `fromSymbols()`), `IsbtUdi` (ICCBBA ST-017 compound messages), `UdiFactory`, `IssuingAgency`, `HibcDateFormat`;
+  Basic UDI-DI per issuing entity (`Gs1BasicUdiDi`, `HibccBasicUdiDi`, `IccbbaBasicUdiDi`, `IfaBasicUdiDi`,
+  `BasicUdiDiFactory`); US NDC `Ndc` (all five 21 CFR 207.33 configurations, `candidates()`, `fromDigits()`,
+  `toBillingFormat()`, `toNdc12()`), `NdcConfiguration` and `Ndc12` (6-4-2, final rule of 2026-03-05).

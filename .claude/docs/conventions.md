@@ -22,3 +22,8 @@
   the parsed parts; keep the stored value as given when the standard defines no normal form.
 - Tests that run code of another `src/` class need `#[UsesClass]` for it: `beStrictAboutCoverageMetadata` only bites
   with coverage on, i.e. in Infection, not in plain `make test`.
+- UDI messages: `HIBC UDI …`, `ISBT 128 UDI …`, `GS1 UDI …`, `NDC …`, `<Entity> Basic UDI-DI …`; wrapped element
+  string / GMN failures append the inner message and keep it as `previous`.
+- Typed parts without `@var`: accessors re-run the class's literal regex (`preg_match(self::PATTERN, $this->value)`),
+  so PHPStan infers `numeric-string` / `non-empty-string` groups; the unreachable "lost its parts" `LogicException`
+  is the accepted cost.
