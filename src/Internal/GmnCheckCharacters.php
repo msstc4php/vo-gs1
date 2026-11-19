@@ -11,7 +11,7 @@ use LogicException;
  *
  * The GS1 check character pair of alphanumeric keys (GMN, MOD 1021,32): each character's position in CSET 82 is
  * weighted by the primes 2, 3, 5, … from the right; the sum modulo 1021 is split into two values of CSET 32. The body
- * is at most 23 characters, the longest GMN (AI 8013, X..25) without its pair.
+ * is 1 to 23 characters, the longest GMN (AI 8013, X..25) without its pair.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 7.9.5, Tables 7-18 and 7-19
  */
@@ -30,8 +30,8 @@ final class GmnCheckCharacters
     public static function compute(string $body): string
     {
         $length = \strlen($body);
-        if ($length > \count(self::PRIMES) || \strspn($body, self::CSET_82) !== $length) {
-            throw new LogicException('GMN check character input must be at most 23 characters of GS1 CSET 82.');
+        if ($length === 0 || $length > \count(self::PRIMES) || \strspn($body, self::CSET_82) !== $length) {
+            throw new LogicException('GMN check character input must be 1 to 23 characters of GS1 CSET 82.');
         }
 
         $sum = 0;

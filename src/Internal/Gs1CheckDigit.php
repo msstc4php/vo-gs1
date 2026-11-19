@@ -37,10 +37,15 @@ final class Gs1CheckDigit
     }
 
     /**
-     * Whether the last character of `$digits` is the check digit of the digits before it; those must be digits.
+     * Whether the last character of `$digits` is the check digit of the digits before it; false for fewer than two
+     * characters, and the characters before the last must be digits.
      */
     public static function isValid(string $digits): bool
     {
+        if (\strlen($digits) < 2) {
+            return false;
+        }
+
         return self::compute(\substr($digits, 0, -1)) === \substr($digits, -1);
     }
 }

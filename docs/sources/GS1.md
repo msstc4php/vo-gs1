@@ -63,27 +63,19 @@ require 14 digits in a URI.
 
 ### GS1 Prefix list (section 1.2.3.1, Table 1-4; GS1-8: Table 1-5) — `Key\Gs1Prefix` (Task 4)
 
-Table 1-4 rows used for decoding (verbatim):
+Table 1-4 (GS1 Prefix ranges), as `Gs1Prefix` decodes it (paraphrased; section 1.2.3.1): `02`, `04` and `20 – 29`
+issue Restricted Circulation Numbers; `952` is for demonstrations and examples; `977` is allocated to the ISSN
+International Centre; `981 – 983` and `99` issue coupon identification. Two rows verbatim:
 
 | GS1 Prefix range | Significance |
 |---|---|
-| 02 | Used to issue Restricted Circulation Numbers within a geographic region (MO defined) |
-| 04 | Used to issue Restricted Circulation Numbers within a company (GS1 user company defined) |
 | 20 – 29 | Used to issue Restricted Circulation Numbers within a geographic region (MO defined) |
-| 951 | Previously used (2004-2012) to issue General Manager Numbers for the EPC General Identifier (GID) scheme … |
-| 952 | Used for demonstrations and examples of the GS1 system |
-| 977 | Allocated to ISSN International Centre for serial publications |
 | 978 – 979 | Allocated to International ISBN Agency for books, a portion of 979 sub-allocated to International ISMN Agency for music |
-| 980 | Used to issue GS1 identification of refund receipts (MO defined) |
-| 981 – 983 | Used to issue GS1 coupon identification for common currency areas (MO defined) |
-| 984 – 989 | Reserved for future use |
-| 99 | Used to issue GS1 coupon identification (MO defined) |
 
-Also `0000000` (RCN within a company), `00001 – 00009`, `0001 – 0009`, `001 – 019`, `03`, `05`, `06 – 09` (GS1
-Company Prefixes from which U.P.C. Company Prefixes are derived), `10 – 19`, `300 – 950`, `953 – 976` (GS1 Company
-Prefixes). Table 1-5 (GS1-8 Prefixes, for GTIN-8): `000 – 099` and `200 – 299` RCN within a company, `100 – 199`,
-`300 – 951`, `953 – 976` GTIN-8s, `952` demonstrations, `977 – 999` reserved. The allocation of a prefix to a given
-Member Organisation is not in the General Specifications; it is GS1's published prefix list
+The remaining ranges issue GS1 Company Prefixes, except `0000000` (RCN within a company), `0000001 – 0000099`
+(unused), `951` (discontinued GID numbers), `980` (refund receipts) and `984 – 989` (reserved). Table 1-5
+(GS1-8 Prefixes, for GTIN-8) gives `000 – 099` and `200 – 299` to Restricted Circulation Numbers and `952` to
+demonstrations. The allocation of a prefix to a given Member Organisation is not in the General Specifications; it is GS1's published prefix list
 (<https://www.gs1.org/standards/id-keys/company-prefix>), to be pinned in Task 4.
 
 > Note: Once a GS1 Prefix is issued, no other GS1 Prefix that begins with the same digits SHALL be issued

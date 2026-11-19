@@ -36,7 +36,6 @@ final class GmnCheckCharactersTest extends TestCase
         yield 'mixed' => ['57453Uq3qA<H', '67'];
         yield 'first character' => ['00000!', 'HV'];
         yield 'highest values' => ['99999zzzzzzzzzzzzzzzzzz', 'T2'];
-        yield 'empty body' => ['', '22'];
         yield 'one character' => ['!', '22'];
     }
 
@@ -51,6 +50,7 @@ final class GmnCheckCharactersTest extends TestCase
      */
     public static function invalidBodies(): iterable
     {
+        yield 'empty' => [''];
         yield 'space' => ['1987654 d4'];
         yield 'hash' => ['1987654#d4'];
         yield 'non-ASCII' => ['1987654Äd4'];
@@ -61,7 +61,7 @@ final class GmnCheckCharactersTest extends TestCase
     public function testRefusesABodyOutsideCset82OrTooLong(string $body): void
     {
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('GMN check character input must be at most 23 characters of GS1 CSET 82.');
+        $this->expectExceptionMessage('GMN check character input must be 1 to 23 characters of GS1 CSET 82.');
 
         GmnCheckCharacters::compute($body);
     }

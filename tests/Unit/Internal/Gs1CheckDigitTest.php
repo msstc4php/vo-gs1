@@ -73,6 +73,14 @@ final class Gs1CheckDigitTest extends TestCase
     public static function notDigits(): iterable
     {
         yield 'empty' => [''];
+        yield from self::nonDigitBodies();
+    }
+
+    /**
+     * @return iterable<string, array{non-empty-string}>
+     */
+    public static function nonDigitBodies(): iterable
+    {
         yield 'letter' => ['12a4'];
         yield 'space' => ['12 4'];
         yield 'trailing newline' => ["1234\n"];
@@ -88,7 +96,7 @@ final class Gs1CheckDigitTest extends TestCase
         Gs1CheckDigit::compute($input);
     }
 
-    #[DataProvider('notDigits')]
+    #[DataProvider('nonDigitBodies')]
     public function testIsValidRefusesAnythingButDigits(string $input): void
     {
         $this->expectException(LogicException::class);
@@ -104,11 +112,9 @@ final class Gs1CheckDigitTest extends TestCase
         self::assertFalse(Gs1CheckDigit::isValid('1x'));
     }
 
-    public function testIsValidNeedsADigitBeforeTheCheckDigit(): void
+    public function testIsValidIsFalseBelowTwoCharacters(): void
     {
-        $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('GS1 check digit input must be ASCII digits.');
-
-        Gs1CheckDigit::isValid('0');
+        self::assertFalse(Gs1CheckDigit::isValid(''));
+        self::assertFalse(Gs1CheckDigit::isValid('0'));
     }
 }
