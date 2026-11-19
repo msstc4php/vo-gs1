@@ -107,3 +107,31 @@
   from ANSI/HIBC 2.3-2009 via an Internet Archive copy (fix round 2; quantity-only `+$$848GQ` has no date flag); `/S` beside a serial secondary accepted (fix round 3: only a heading,
   no prohibition), exposed as `supplementalSerial()`; HIBC cap 113 (serial form with `$$+9` quantity + all
   supplementals); `Gs1Udi::gtin()` guard is a `LogicException`.
+
+## Marking codes (Task 8)
+
+- No operator page prints a real code; tests build codes from the published format lines (GTIN `04600439931256`).
+- Lost GS: `ElementStringSyntax` never splits, so (21) swallows the rest up to the next GS. What refuses the code is
+  the structure: crypto tail required, fixed lengths ((91) 4, (92) 44/88, (93) 4) and serial lengths per structure
+  (standard 6/13/20, shortened 6/7/13/20, tobacco group 7). Without the serial lengths, a tobacco group code that lost
+  the GS after (21) (`21` + 7 + `8005…` GS `93…`) would read as a shortened code with a 17-character serial.
+- Serial lengths are the union of the groups read (36 operator pages). A group with an unpublished length (bicycles'
+  text mentions "9 или 13") would be refused: add it to `RuMarkingSyntax` with its source when found.
+- `MarkingIdentifier` is ambiguous for 25 characters (pack КИ vs `01` + GTIN + `21` + 7) when both readings have valid
+  GTIN check digits, ~1 in 10 of the GS1 ones. Canonical form is therefore bracketed. Residual edge: a pack КИ whose
+  25 characters also read as `01…21…` (GTIN starting `01`, serial `dd21…`) makes `MarkingCode::identifier()` throw
+  `AmbiguousValueException`.
+- Decree No. 224 text came from the КонтурЭкстерн mirror, edition 28.03.2025 (later amendments: No. 1848 of
+  20.11.2025, No. 2192 of 29.12.2025, not read); the operator's tobacco page (2024-09-30) agrees on the structure.
+- Strings of 255 (`1`×255) or 512 `1`s parse as valid GS1 element strings (repeated AI (11)); length-bound tests
+  assert the later message, not a parse failure.
+- IFA expiry `DD = 00` → last day of the month (package decision, IFA only says "month and year"); century 2000-2099
+  per IFA. Tobacco UI century 2000: package decision.
+- `FmdPackCode::pzn()` reads NTIN-DE `04150` + PZN; productCode equality between the formats = `Ppn::toNtin()`
+  equals the GTIN (the types differ, so the brief's "same productCode()" is that comparison plus `pzn()`).
+- EUR-Lex still blank on 2026-11-19 (Task 8 retry); publication.pravo.gov.ru and legalacts.ru close the socket.
+- PhpStorm MCP inspections were not available in the Task 8 session either; `/acc:code-review` not run (subagents
+  not allowed for this task), self-review instead.
+- Infection: escaped mutants in Task 8 code are equivalent or unreachable (negative string offset × 0 in the PZN
+  loop, `(int)` casts, `substr` length overshoot in the IFA day, unreachable `LogicException`s, the unused
+  `identifier` field of a parsed identifier).

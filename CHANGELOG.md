@@ -24,3 +24,9 @@
   Basic UDI-DI per issuing entity (`Gs1BasicUdiDi`, `HibccBasicUdiDi`, `IccbbaBasicUdiDi`, `IfaBasicUdiDi`,
   `BasicUdiDiFactory`); US NDC `Ndc` (all five 21 CFR 207.33 configurations, `candidates()`, `fromDigits()`,
   `toBillingFormat()`, `toNdc12()`), `NdcConfiguration` and `Ndc12` (6-4-2, final rule of 2026-03-05).
+- Marking codes: `Marking\RU\MarkingCode` (every structure the Russian decrees and «Честный знак» publish:
+  tobacco consumer pack, tobacco group pack, standard, shortened; `structure()`, `identifier()`; codes with lost GS
+  separators are refused), `Marking\RU\MarkingIdentifier` (КИ, `toDocumentForm()`), `Marking\RU\MarkingCodeStructure`;
+  `Marking\EU\FmdPackCode` (Delegated Regulation (EU) 2016/161 unique identifier, GS1 and IFA format 06),
+  `Marking\EU\Ppn` (IFA check digits, PZN, `toNtin()`), `Marking\EU\TobaccoUnitIdentifier` (Implementing Regulation
+  (EU) 2018/574, UTC time stamp).

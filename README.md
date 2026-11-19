@@ -258,6 +258,72 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   published format).
 - Size limits before parsing: HIBC 113 characters, ISBT 128 2048 characters and 99 data structures, NDC 13.
 
+## Marking codes: Russia («Честный знак») and the EU
+
+`MSSTC4PHP\ValueObject\Gs1\Marking\RU\` and `Marking\EU\`; every failure is `InvalidMarkingCodeException`, ambiguity is
+vo-base `AmbiguousValueException`. No crypto tail is verified (that needs the operator's keys); its format is.
+
+```php
+use MSSTC4PHP\ValueObject\Gs1\Marking\EU\FmdPackCode;
+use MSSTC4PHP\ValueObject\Gs1\Marking\EU\TobaccoUnitIdentifier;
+use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingCode;
+
+$code = MarkingCode::from("0104600439931256215aB3x_\x1D93Ab1+");   // dairy, shortened structure
+$code->structure();                    // MarkingCodeStructure::Shortened
+$code->identifier()->toDocumentForm(); // "0104600439931256215aB3x_" (КИ)
+
+FmdPackCode::from("[)>\x1E06\x1D9N111234567842\x1D1T1A234B5\x1DD151231\x1DS1234567890123456\x1E\x04")
+    ->productCode()->toNtin();         // Gtin 04150123456782, the product code of the GS1 form
+TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019-05-20 14:00 UTC
+```
+
+- **`RU\MarkingCode`** accepts every structure the decrees and the operator publish; `structure()` names it
+  (`MarkingCodeStructure`), the product group is not decoded (one structure serves many groups):
+
+  | Structure | Groups | Source |
+  |---|---|---|
+  | `TobaccoConsumerPack` | 14-digit GTIN + 7 serial + 4 encoded price + 4 check code, no AIs | Decree No. 224, p. 43 |
+  | `TobaccoGroupPack` | (01), (21) of 7, (8005) of 6, (93) of 4, then any further groups | No. 224, pp. 44-45 |
+  | `Standard` | (01), (21) of 6, 13 or 20, (91) of 4, (92) of 44 or 88; optional (3103) | per group, see GS1.md |
+  | `Shortened` | (01), (21) of 6, 7, 13 or 20, (93) of 4; optional (3103) or (335y) | per group, see GS1.md |
+
+  Accessors: `gtin()`, `serial()`, `verificationKey()` (91), `verificationCode()` (92, 93 or the pack's 4th group),
+  `identifier()`, `elementString()` (null for the pack). Input: the pack code (optionally after `]d1`, `]d2` or a
+  leading GS) or a GS1 code in any `ElementString` notation. **A code whose GS separators were lost** (copied from a
+  web form) is refused, never split: the groups must stand in the published order with the published lengths, so
+  data that ran together fails (`…21` + 13 + `93…` without GS reads as one serial and no crypto tail). The operator
+  publishes no recovery rule. Canonical form: the pack as is, a GS1 code as barcode data with its GS separators,
+  AIs in the order given (store the GS characters too).
+- **`RU\MarkingIdentifier`** (КИ, the code without the crypto tail): (01) + (21); with (8005) for the tobacco group pack
+  (Decree No. 224, p. 44: "первые 3 группы"); the first 25 characters of the pack. Canonical: bracketed
+  `(01)…(21)…`, or the 25 pack characters; `toDocumentForm()` gives the operator's `01…21…`, which is accepted as
+  input. 25 characters that read both as a pack КИ and as `01…21…` + 7 throw `AmbiguousValueException`.
+- **Russian product groups covered** (structure read on the operator's pages, decree cited there): tobacco and
+  nicotine products, light industry, footwear, tyres, perfume, cameras, dairy, packaged water, beer, non-alcoholic beer, non-alcoholic
+  beverages, BAD, antiseptics, medical devices, medicines (MDLP), veterinary medicines, canned food, sweets, grocery,
+  meat, caviar, pet food, vegetable oils, sports nutrition, construction materials, household goods, cosmetics and
+  household chemicals, toys, bicycles, technical rehabilitation equipment, radio-electronics, electronic nicotine
+  delivery systems, motor oils, cables, optical fibre, polymer pipes.
+- **Not covered** (structure not read): auto parts, pharmaceutical raw materials, frozen and semi-finished food,
+  heating appliances, titanium products, fertilisers, pyrotechnics, fire safety equipment, printed matter, wheelchairs
+  (listed as a group of its own), fur coats (an RFID КиЗ, not a Data Matrix code) and alcohol (EGAIS excise stamps,
+  another system). Their codes still parse when they
+  have one of the four structures above; the operator's pages for these groups were not found by search or by the
+  group index on 2026-11-19 (UTC).
+- **`EU\FmdPackCode`** (Delegated Regulation (EU) 2016/161): a GS1 element string with (01), (21), (10), (17), or the
+  IFA format `[)>` RS `06` GS `9N…` GS `S…` GS `1T…` GS `D…` RS EOT (ISO/IEC 15434 format 06, ASC data identifiers;
+  the trailer is optional on input, 8P may repeat, other DIs are kept). `productCode(): Gtin|Ppn`, `serial()`,
+  `batch()`, `expiry()`, `expiryDate($today)` (IFA: 2000-2099; `DD = 00` the last day of the month), `pzn()` (from a
+  PRA-11 PPN or an NTIN-DE `04150…`), `isIfaFormat()`, `elementString()`. Canonical form: the GS1 barcode data or the
+  IFA message with its trailer (control characters included).
+- **`EU\Ppn`**: PRA Code + product number + two check digits (IFA modulo 97); for PRA Code 11 the PZN check digit
+  too. `fromParts()`, `praCode()`, `productNumber()`, `pzn()`, `toNtin()`.
+- **`EU\TobaccoUnitIdentifier`** (Implementing Regulation (EU) 2018/574, Article 8): 11 to 50 alphanumeric
+  characters ending with the time stamp `YYMMDDhh` in UTC; `issuerPart()`, `timeStamp()`, `manufacturedAt()`. Format
+  only otherwise: the ID issuer's own structure (possibly encrypted) is not published. Century 2000: a package
+  decision.
+- Size limits before parsing: Russian codes and identifiers 255 characters, FMD pack codes 512.
+
 ## GS1 Application Identifier table
 
 The AI table (data formats, FNC1 rule, linters, mandatory and invalid AI pairs) is generated from the

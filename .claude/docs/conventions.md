@@ -27,3 +27,7 @@
 - Typed parts without `@var`: accessors re-run the class's literal regex (`preg_match(self::PATTERN, $this->value)`),
   so PHPStan infers `numeric-string` / `non-empty-string` groups; the unreachable "lost its parts" `LogicException`
   is the accepted cost.
+- Marking messages: `Russian marking code …`, `Russian marking identifier …`, `FMD pack code (GS1|IFA) …`, `PPN …`,
+  `Tobacco unit level UI …`; AI numbers and DI names are fine, data never. All throw `InvalidMarkingCodeException`.
+- Marking canonical forms carry control characters (GS; RS/EOT for the IFA format): tests assert round trips and the
+  GS count, and the Doctrine bridge must store them byte for byte.

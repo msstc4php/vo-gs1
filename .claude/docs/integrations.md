@@ -18,3 +18,5 @@
   so it is never propagated) and exposes `url()`.
 - GS1 Digital Link URI Syntax 1.7.0 (HTML) and EPC Tag Data Standard 2.3 (PDF): read 2026-11-19, quotes in GS1.md
   sections 3 and 4.
+- «Честный знак» operator knowledge base (markirovka.ru, «Состав кода маркировки» per group, plain HTML) and the IFA
+  PPN-Code Specification 3.06 (PDF): quoted in GS1.md sections 8-9, read 2026-11-19. Not dependencies.
