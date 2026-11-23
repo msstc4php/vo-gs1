@@ -19,7 +19,7 @@ use Override;
  *
  * @see https://www.legislation.gov.uk/eur/2018/574/article/21/adopted Implementing Regulation (EU) 2018/574, Article 21(4)
  * @see https://www.legislation.gov.uk/eur/2018/574/article/8/adopted Article 8
- * @see docs/sources/GS1.md "EU: falsified medicines and tobacco"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EU: falsified medicines and tobacco"
  */
 final class TobaccoUnitIdentifierWithoutTimeStamp extends AbstractStringValueObject
 {

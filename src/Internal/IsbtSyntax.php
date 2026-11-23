@@ -17,7 +17,7 @@ use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidUdiException;
  * the production identifiers and are kept, unparsed.
  *
  * @see https://iccbba.org/wp-content/uploads/2025/08/1a7593_815cf8e500b9438a860dd8fae533b2b4.pdf ICCBBA ST-017 v1.0.1, chapters 2 to 5
- * @see docs/sources/GS1.md "ICCBBA (ISBT 128)"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "ICCBBA (ISBT 128)"
  *
  * @phpstan-type Kind 'ppic'|'divisions'|'din'|'expiry'|'production'|'lot'|'other'
  */

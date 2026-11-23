@@ -17,7 +17,7 @@ use Override;
  * equals `04006381333931`.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, sections 1.3.1, 2.1.1.10 and 7.9.1
- * @see docs/sources/GS1.md "GTIN formats and the 14-digit form" and "GS1 Prefix list"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "GTIN formats and the 14-digit form" and "GS1 Prefix list"
  */
 final class Gtin extends AbstractStringValueObject implements IdentificationKey
 {

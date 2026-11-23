@@ -8,7 +8,7 @@ namespace MSSTC4PHP\ValueObject\Gs1\Marking\RU;
  * The code structures the Government decrees and the operator («Честный знак») publish. A structure serves several
  * product groups; the group itself is not encoded in the code.
  *
- * @see docs/sources/GS1.md "Russian marking"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Russian marking"
  */
 enum MarkingCodeStructure: string
 {

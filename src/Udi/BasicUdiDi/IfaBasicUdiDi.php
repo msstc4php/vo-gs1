@@ -19,7 +19,7 @@ use Override;
  *
  * @see https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA-Info_Spec_UDI_Code_EN.pdf IFA, Coding System for medical devices, Version 2.5 (1 April 2026), section 3.5, Figure 9
  * @see https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA-Info_Check_Digit_Calculations_PZN_PPN_UDI_EN.pdf IFA, Check Digit Calculations of PZN, PPN and Basic UDI-DI
- * @see docs/sources/GS1.md "IFA Basic UDI-DI"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "IFA Basic UDI-DI"
  */
 final class IfaBasicUdiDi extends AbstractStringValueObject implements BasicUdiDi
 {

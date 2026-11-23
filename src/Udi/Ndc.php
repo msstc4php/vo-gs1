@@ -19,7 +19,7 @@ use Override;
  *
  * @see https://www.ecfr.gov/current/title-21/chapter-I/subchapter-C/part-207/subpart-B/section-207.33 21 CFR 207.33(b)
  * @see https://www.federalregister.gov/documents/2026/03/05/2026-04368/revising-the-national-drug-code-format-and-drug-label-barcode-requirements 91 FR 10749, Tables 1 and 2
- * @see docs/sources/GS1.md "FDA NDC"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "FDA NDC"
  */
 final class Ndc extends AbstractStringValueObject
 {

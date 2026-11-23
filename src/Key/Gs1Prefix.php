@@ -14,7 +14,7 @@ use MSSTC4PHP\ValueObject\Gs1\Internal\KeyRules;
  * well-formed prefix outside the table (`951`, `984`-`989`, and `977`-`999` for a GTIN-8) decodes as `Unknown` and is never refused.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 1.2.3.1, Tables 1-4 and 1-5
- * @see docs/sources/GS1.md "GS1 Prefix list"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "GS1 Prefix list"
  */
 enum Gs1Prefix
 {

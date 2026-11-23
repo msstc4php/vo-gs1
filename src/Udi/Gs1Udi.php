@@ -21,7 +21,7 @@ use Override;
  * accepted; the value is the bracketed form.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 2.6.13
- * @see docs/sources/GS1.md "Element strings"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Element strings"
  */
 final class Gs1Udi extends AbstractStringValueObject implements Udi
 {

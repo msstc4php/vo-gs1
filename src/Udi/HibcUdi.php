@@ -22,7 +22,7 @@ use Override;
  * hour where the format has one. {@see expiryDateFormat()} tells which format the label used.
  *
  * @see https://www.hibcc.org/wp-content/uploads/SLS-2.6-Final.pdf ANSI/HIBC 2.6-2016 (R2026), sections 2.1 to 2.3, Appendices B, E and F
- * @see docs/sources/GS1.md "HIBCC"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "HIBCC"
  */
 final class HibcUdi extends AbstractStringValueObject implements Udi
 {

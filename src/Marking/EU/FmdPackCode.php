@@ -29,7 +29,7 @@ use Override;
  *
  * @see https://www.legislation.gov.uk/eur/2016/161/article/4/adopted Delegated Regulation (EU) 2016/161, Article 4 (EUR-Lex unreachable, see GS1.md)
  * @see https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA_Spec_PPN_Code_Handelspackung_EN.pdf IFA, PPN-Code Specification for Retail Packaging, Version 3.06, chapter 5
- * @see docs/sources/GS1.md "EU: falsified medicines and tobacco"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EU: falsified medicines and tobacco"
  */
 final class FmdPackCode extends AbstractStringValueObject
 {

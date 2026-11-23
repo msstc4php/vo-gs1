@@ -16,7 +16,7 @@ use Override;
  * (Table 12-2). The binary and hex forms are out of scope.
  *
  * @see https://ref.gs1.org/standards/tds/ EPC Tag Data Standard 2.3, sections 10, 12 and 14.6
- * @see docs/sources/GS1.md "EPC Tag Data Standard"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EPC Tag Data Standard"
  */
 final class EpcTagUri extends AbstractStringValueObject
 {

@@ -19,7 +19,7 @@ use Override;
  *
  * @see https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA_Spec_PPN_Code_Handelspackung_EN.pdf IFA, PPN-Code Specification for Retail Packaging, Version 3.06, sections 4.1.3, 4.2, 4.3, Appendix A
  * @see https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA-Info_Check_Digit_Calculations_PZN_PPN_UDI_EN.pdf IFA, Check Digit Calculations of PZN, PPN and Basic UDI-DI
- * @see docs/sources/GS1.md "EU: falsified medicines and tobacco"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EU: falsified medicines and tobacco"
  */
 final class Ppn extends AbstractStringValueObject
 {

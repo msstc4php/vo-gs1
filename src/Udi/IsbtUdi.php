@@ -23,7 +23,7 @@ use Override;
  * The DIN flag characters are kept in the value but are not part of the DIN, which reading software "should ignore".
  *
  * @see https://iccbba.org/wp-content/uploads/2025/08/1a7593_815cf8e500b9438a860dd8fae533b2b4.pdf ICCBBA ST-017 v1.0.1
- * @see docs/sources/GS1.md "ICCBBA (ISBT 128)"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "ICCBBA (ISBT 128)"
  */
 final class IsbtUdi extends AbstractStringValueObject implements Udi
 {

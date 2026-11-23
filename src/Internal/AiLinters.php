@@ -17,7 +17,7 @@ use MSSTC4PHP\ValueObject\I18n\CurrencyCode;
  * is recorded in docs/sources/GS1.md.
  *
  * @see https://github.com/gs1/gs1-syntax-dictionary `src/lint_*.c` at tag 2026-01-27
- * @see docs/sources/GS1.md "Linters"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Linters"
  */
 final class AiLinters
 {

@@ -25,7 +25,7 @@ use Override;
  *
  * @see https://www.legislation.gov.uk/eur/2018/574/article/8/adopted Implementing Regulation (EU) 2018/574, Article 8 (EUR-Lex unreachable, see GS1.md)
  * @see https://www.legislation.gov.uk/eur/2018/574/article/2/adopted Article 2: time stamp "recorded in UTC"
- * @see docs/sources/GS1.md "EU: falsified medicines and tobacco"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EU: falsified medicines and tobacco"
  */
 final class TobaccoUnitIdentifier extends AbstractStringValueObject
 {

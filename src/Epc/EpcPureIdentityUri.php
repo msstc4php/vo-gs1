@@ -18,7 +18,7 @@ use Override;
  * strings after that normalisation only (section 6.1), so `A` and `%41` stay different.
  *
  * @see https://ref.gs1.org/standards/tds/ EPC Tag Data Standard 2.3, sections 5, 6 and 7
- * @see docs/sources/GS1.md "EPC Tag Data Standard"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EPC Tag Data Standard"
  */
 final class EpcPureIdentityUri extends AbstractStringValueObject
 {

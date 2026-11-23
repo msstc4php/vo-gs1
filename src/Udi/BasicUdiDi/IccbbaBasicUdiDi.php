@@ -18,7 +18,7 @@ use Override;
  * Description Code (`00000` when the UDI-DIs use several) and the ISO/IEC 7064 MOD 37-2 checksum of the first 16.
  *
  * @see https://iccbba.org/wp-content/uploads/2025/08/1a7593_815cf8e500b9438a860dd8fae533b2b4.pdf ICCBBA ST-017 v1.0.1, Appendix 1 (example A9990ABC123T0480 → 08)
- * @see docs/sources/GS1.md "ICCBBA (ISBT 128)"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "ICCBBA (ISBT 128)"
  */
 final class IccbbaBasicUdiDi extends AbstractStringValueObject implements BasicUdiDi
 {

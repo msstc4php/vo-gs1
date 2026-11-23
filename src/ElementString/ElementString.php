@@ -29,7 +29,7 @@ use Override;
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, sections 1.4.2, 3, 7.8, 7.12
  * @see https://github.com/gs1/gs1-syntax-dictionary GS1 Barcode Syntax Dictionary
- * @see docs/sources/GS1.md "Element strings"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Element strings"
  */
 final class ElementString extends AbstractStringValueObject
 {

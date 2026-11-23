@@ -22,7 +22,7 @@ use MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingIdentifier;
  * puts next, with valid data (see {@see PUBLISHED_NEXT}). Otherwise a code that fits no published structure is
  * accepted as {@see MarkingCodeStructure::GenericGs1} on the AI table's checks alone.
  *
- * @see docs/sources/GS1.md "Russian marking"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Russian marking"
  */
 final class RuMarkingSyntax
 {

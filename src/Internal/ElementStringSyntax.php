@@ -19,7 +19,7 @@ use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, sections 1.4.2, 5.1.3 (Table 5-2), 7.8.3, 7.8.4
  * @see https://github.com/gs1/gs1-syntax-engine GS1 Barcode Syntax Engine, `gs1encoders.h` and `ai.c`
- * @see docs/sources/GS1.md "Element strings"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Element strings"
  */
 final class ElementStringSyntax
 {

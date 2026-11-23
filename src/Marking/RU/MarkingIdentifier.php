@@ -25,7 +25,7 @@ use Override;
  * {@see AmbiguousValueException} when both readings are valid.
  *
  * @see https://markirovka.ru/knowledge/tovarnye-gruppy/upakovannaya-voda/sostav-koda-identifikatsii-dlya-ukazaniya-v-dokumentakh-v-razdele-markirovka-obuv «Состав кода идентификации для указания в документах»
- * @see docs/sources/GS1.md "Russian marking"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Russian marking"
  */
 final class MarkingIdentifier extends AbstractStringValueObject
 {

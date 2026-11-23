@@ -17,7 +17,7 @@ use MSSTC4PHP\ValueObject\Gs1\Udi\HibcDateFormat;
  *
  * @see https://www.hibcc.org/wp-content/uploads/SLS-2.6-Final.pdf ANSI/HIBC 2.6-2016 (R2026), sections 2.1.1, 2.2.1, 2.2.1.1, 2.3, Appendices E and F
  * @see https://web.archive.org/web/20130203212925/http://www.hibcc.org/wp-content/uploads/2012/09/ANSI-HIBC-2.3-SLS-2009.pdf ANSI/HIBC 2.3-2009, Appendix E1.1 (legacy quantity `$$8`/`$$9`)
- * @see docs/sources/GS1.md "HIBCC"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "HIBCC"
  */
 final class HibcSyntax
 {

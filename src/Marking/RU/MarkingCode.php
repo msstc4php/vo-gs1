@@ -36,7 +36,7 @@ use Override;
  * after each group that is not of predefined length except the last, as the operator issues it.
  *
  * @see https://markirovka.ru/knowledge/tovarnye-gruppy/ «Честный знак», «Состав кода маркировки» per product group
- * @see docs/sources/GS1.md "Russian marking"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Russian marking"
  */
 final class MarkingCode extends AbstractStringValueObject
 {

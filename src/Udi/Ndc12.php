@@ -15,7 +15,7 @@ use Override;
  * package code. Accepted with hyphens or as 12 bare digits (one configuration, so no ambiguity); stored hyphenated.
  *
  * @see https://www.federalregister.gov/documents/2026/03/05/2026-04368/revising-the-national-drug-code-format-and-drug-label-barcode-requirements 91 FR 10749, amended 21 CFR 207.33(b)(1)
- * @see docs/sources/GS1.md "FDA NDC"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "FDA NDC"
  */
 final class Ndc12 extends AbstractStringValueObject
 {

@@ -8,7 +8,7 @@ namespace MSSTC4PHP\ValueObject\Gs1\Udi;
  * The organisations that issue UDIs: GS1, HIBCC and ICCBBA are the FDA-accredited issuing agencies; IFA is an EU
  * issuing entity and issues Basic UDI-DIs only in this package.
  *
- * @see docs/sources/GS1.md sections 5 to 7
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md sections 5 to 7
  */
 enum IssuingAgency: string
 {

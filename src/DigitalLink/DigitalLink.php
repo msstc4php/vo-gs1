@@ -30,7 +30,7 @@ use Override;
  * is read as the qualifier in the path. Compressed links are refused: URI Syntax 1.7.0 no longer defines compression.
  *
  * @see https://ref.gs1.org/standards/digital-link/uri-syntax/ GS1 Digital Link Standard: URI Syntax 1.7.0
- * @see docs/sources/GS1.md "GS1 Digital Link URI Syntax"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "GS1 Digital Link URI Syntax"
  */
 final class DigitalLink extends AbstractStringValueObject
 {

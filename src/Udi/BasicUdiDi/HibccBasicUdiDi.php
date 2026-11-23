@@ -17,7 +17,7 @@ use Override;
  * every preceding character, `++` included, encoded in a 32-character set — the GS1 MOD 1021,32 scheme.
  *
  * @see https://www.hibcc.org/wp-content/uploads/HIBCC-Basic-UDI-DI.pdf HIBCC, HIBC Basic UDI-DI (example ++A999MODELIDENTIFIER11S8)
- * @see docs/sources/GS1.md "HIBCC"
+ * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "HIBCC"
  */
 final class HibccBasicUdiDi extends AbstractStringValueObject implements BasicUdiDi
 {
