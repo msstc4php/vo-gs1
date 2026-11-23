@@ -24,7 +24,9 @@ Not on Packagist yet; register the GitHub repositories:
 }
 ```
 
-Runtime requirement: `msstc4php/vo-base ^1.2`. No framework.
+Runtime requirement: `msstc4php/vo-base ^1.3`. No framework.
+vo-base 1.3 serializes a value object as its value alone and validates it again on `unserialize()`; the state
+derived from it (the element string's parsed elements, for instance) is rebuilt, never restored.
 
 ## Usage
 

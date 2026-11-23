@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.1] - unreleased
+
+### Changed
+
+- Requires `msstc4php/vo-base ^1.3` (was `^1.2`). Under 1.2 a forged serialized string restored a value object
+  without validating it, and the state derived from it (the parsed elements of `ElementString`, for instance) as
+  stored. vo-base 1.3 serializes the value alone and runs `parse()` again on `unserialize()`; payloads written under
+  1.2 still load. No change in this package's code.
+
 ## [0.1.0] - 2026-11-20
 
 ### Added
