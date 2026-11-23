@@ -50,7 +50,7 @@ final class MessagesCarryNoInputTest extends TestCase
         yield 'NDC' => [Ndc::class, '12345-1234-1234567'];
         yield 'Russian marking code' => [MarkingCode::class, \str_repeat('1', 263)];
         yield 'Russian marking identifier' => [MarkingIdentifier::class, \str_repeat('1', 263)];
-        yield 'FMD pack code' => [FmdPackCode::class, \str_repeat('1', 521)];
+        yield 'FMD pack code' => [FmdPackCode::class, "[)>\x1E06\x1D9N111234567842\x1D1T1A234B5\x1DD151231\x1DS1234567890123456\x1DZ" . \str_repeat('x', 470)];
         yield 'PPN' => [Ppn::class, '11' . \str_repeat('1', 37)];
         yield 'tobacco UI' => [TobaccoUnitIdentifier::class, \str_repeat('A', 59)];
         yield 'tobacco UI without time stamp' => [TobaccoUnitIdentifierWithoutTimeStamp::class, \str_repeat('A', 51)];

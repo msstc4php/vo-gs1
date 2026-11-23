@@ -153,6 +153,9 @@
   assert the later message, not a parse failure.
 - IFA expiry `DD = 00` → last day of the month (package decision, IFA only says "month and year"); century 2000-2099
   per IFA. Tobacco UI century 2000: package decision.
+- `FmdPackCode::MAX_LENGTH` (512) bounds the canonical form, not the input (ruling B3): an IFA message without
+  trailer gains RS EOT, so 511 input characters gave a 513-character value that its own `from()` refused. Input is
+  only capped at the element-string bound (14178) before parsing. Bridge column: 512.
 - `FmdPackCode::pzn()` reads NTIN-DE `04150` + PZN; productCode equality between the formats = `Ppn::toNtin()`
   equals the GTIN (the types differ, so "same product code" is that comparison plus `pzn()`).
 - EUR-Lex stayed blank on a retry; publication.pravo.gov.ru and legalacts.ru close the socket.

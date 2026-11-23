@@ -10,6 +10,7 @@ use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidMarkingCodeException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
+use MSSTC4PHP\ValueObject\Gs1\Internal\ElementStringSyntax;
 use MSSTC4PHP\ValueObject\Gs1\Internal\IfaPackData;
 use MSSTC4PHP\ValueObject\Gs1\Key\Gtin;
 use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
@@ -32,8 +33,15 @@ use Override;
  */
 final class FmdPackCode extends AbstractStringValueObject
 {
-    /** Package bound; the four mandatory elements need at most 78 characters, the rest leaves room for NHRNs and a URL. */
+    /**
+     * The bound of the stored (canonical) form, so every accepted value reads back; a package bound, neither the
+     * Delegated Regulation nor IFA sets one. The four mandatory elements need at most 78 characters, the rest leaves
+     * room for NHRNs and a URL. An IFA message read without its trailer must fit with RS EOT appended.
+     */
     public const int MAX_LENGTH = 512;
+
+    /** Against oversized input before parsing; any notation of a stored value fits. */
+    private const int MAX_INPUT_LENGTH = ElementStringSyntax::MAX_LENGTH;
 
     private const string TYPE = 'FMD pack code';
 
@@ -125,15 +133,29 @@ final class FmdPackCode extends AbstractStringValueObject
             throw new InvalidMarkingCodeException(self::TYPE . ' is empty.');
         }
 
-        if (\strlen($value) > self::MAX_LENGTH) {
-            throw new InvalidMarkingCodeException(\sprintf('%s must have at most %d characters.', self::TYPE, self::MAX_LENGTH));
+        if (\strlen($value) > self::MAX_INPUT_LENGTH) {
+            throw $this->tooLong();
         }
 
         $unprefixed = \in_array(\substr($value, 0, 3), self::SCANNER_PREFIXES, true) ? \substr($value, 3) : $value;
-        if (\str_starts_with($unprefixed, IfaPackData::HEADER)) {
-            return IfaPackData::parse($unprefixed)->canonical();
+        $canonical = \str_starts_with($unprefixed, IfaPackData::HEADER) ? IfaPackData::parse($unprefixed)->canonical() : $this->gs1($value);
+        if (\strlen($canonical) > self::MAX_LENGTH) {
+            throw $this->tooLong();
         }
 
+        return $canonical;
+    }
+
+    private function tooLong(): InvalidMarkingCodeException
+    {
+        return new InvalidMarkingCodeException(\sprintf('%s must have at most %d characters.', self::TYPE, self::MAX_LENGTH));
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function gs1(string $value): string
+    {
         try {
             $elementString = new ElementString($value);
         } catch (InvalidElementStringException $exception) {

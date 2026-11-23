@@ -401,7 +401,9 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   (Article 21(4)), 3 to 42 alphanumeric characters, no time-stamp accessors. Use it for scanned content unless you
   know the carrier includes the time stamp: trailing digits are never guessed to be one.
   `withTimeStamp($manufacturedAt)` builds the full UI (UTC hour).
-- Size limits before parsing: Russian codes and identifiers 255 characters, FMD pack codes 512.
+- Size limits: Russian codes and identifiers 255 characters before parsing; FMD pack codes 512 characters in the
+  stored form (`FmdPackCode::MAX_LENGTH`; an IFA message read without its trailer must fit with RS EOT appended, so
+  every accepted value reads back), a package bound, not one of the Regulation or IFA.
 
 ## Format only
 

@@ -76,6 +76,46 @@ final class FmdPackCodeTest extends TestCase
         self::assertNull($code->elementString());
     }
 
+    /**
+     * @return iterable<string, array{int, bool}>
+     */
+    public static function ifaMessagesNearTheBound(): iterable
+    {
+        yield '510 characters without trailer' => [510, true];
+        yield '511 characters without trailer' => [511, false];
+        yield '512 characters without trailer' => [512, false];
+    }
+
+    /**
+     * The bound applies to the stored form, which appends RS EOT: every accepted value reads back.
+     */
+    #[DataProvider('ifaMessagesNearTheBound')]
+    public function testTheBoundCoversTheTrailerOfTheStoredForm(int $length, bool $accepted): void
+    {
+        $body = \substr(self::IFA, 0, -2) . self::GS . 'Z';
+        $message = $body . \str_repeat('x', $length - \strlen($body));
+        self::assertSame($length, \strlen($message));
+
+        if (!$accepted) {
+            $this->expectException(InvalidMarkingCodeException::class);
+            $this->expectExceptionMessage('FMD pack code must have at most 512 characters.');
+        }
+
+        $code = FmdPackCode::from($message);
+
+        self::assertSame(FmdPackCode::MAX_LENGTH, \strlen((string) $code));
+        self::assertTrue($code->equals(FmdPackCode::from((string) $code)));
+        self::assertEquals($code, \unserialize(\serialize($code)));
+    }
+
+    public function testAStoredValueAtTheBoundReadsBackAfterAScannerPrefix(): void
+    {
+        $body = \substr(self::IFA, 0, -2) . self::GS . 'Z';
+        $stored = $body . \str_repeat('x', FmdPackCode::MAX_LENGTH - 2 - \strlen($body)) . self::RS . self::EOT;
+
+        self::assertSame($stored, (string) FmdPackCode::from(']d1' . $stored));
+    }
+
     public function testTheGs1FormatOfAppendixC(): void
     {
         $code = FmdPackCode::from(self::GS1);
@@ -172,7 +212,9 @@ final class FmdPackCodeTest extends TestCase
         $head = '[)>' . self::RS . '06' . self::GS;
 
         yield 'empty' => ['', 'FMD pack code is empty.'];
-        yield 'too long' => [\str_repeat('1', 513), 'FMD pack code must have at most 512 characters.'];
+        yield 'GS1 form too long' => [self::GS1 . self::GS . '91' . \str_repeat('A', 90) . self::GS . '92' . \str_repeat('A', 90) . self::GS . '93' . \str_repeat('A', 90) . self::GS . '94' . \str_repeat('A', 90) . self::GS . '95' . \str_repeat('A', 90), 'FMD pack code must have at most 512 characters.'];
+        yield 'input at the element string bound is parsed' => [\str_repeat('1', 14178), 'FMD pack code (GS1) is not a valid element string'];
+        yield 'input above the element string bound' => [\str_repeat('1', 14179), 'FMD pack code must have at most 512 characters.'];
         yield 'GS1 without batch' => ['(01)04150123456782(17)151231(21)1234567890123456', 'FMD pack code (GS1) must carry AI (01), (21), (10) and (17).'];
         yield 'GS1 invalid element string' => ['(01)04150123456783(10)1(17)151231(21)1', 'FMD pack code (GS1) is not a valid element string: Element string AI data fails the GS1 csum check.'];
         yield 'IFA without expiry' => [$head . '9N111234567842' . self::GS . '1T1A234B5' . self::GS . 'S1', 'FMD pack code (IFA) must carry DI 9N, S, 1T and D once each.'];
