@@ -69,7 +69,7 @@ final class StoredValueBoundsTest extends TestCase
         yield 'EpcTagUri' => [EpcTagUri::class, 1024];
         yield 'Gs1Udi' => [Gs1Udi::class, 14178];
         yield 'HibcUdi' => [HibcUdi::class, 113];
-        yield 'IsbtUdi' => [IsbtUdi::class, 3116];
+        yield 'IsbtUdi' => [IsbtUdi::class, 3123];
         yield 'Ndc' => [Ndc::class, 13];
         yield 'Ndc12' => [Ndc12::class, 14];
         yield 'Gs1BasicUdiDi' => [Gs1BasicUdiDi::class, 25];
@@ -78,7 +78,7 @@ final class StoredValueBoundsTest extends TestCase
         yield 'IfaBasicUdiDi' => [IfaBasicUdiDi::class, 25];
         yield 'MarkingCode' => [MarkingCode::class, 255];
         yield 'MarkingIdentifier' => [MarkingIdentifier::class, 74];
-        yield 'FmdPackCode' => [FmdPackCode::class, 512];
+        yield 'FmdPackCode' => [FmdPackCode::class, 514];
         yield 'Ppn' => [Ppn::class, 28];
         yield 'TobaccoUnitIdentifier' => [TobaccoUnitIdentifier::class, 50];
         yield 'TobaccoUnitIdentifierWithoutTimeStamp' => [TobaccoUnitIdentifierWithoutTimeStamp::class, 42];

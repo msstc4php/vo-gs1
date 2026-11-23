@@ -263,7 +263,7 @@ final class ElementStringSyntax
 
             $part = \substr($value, $position, $component->maxLength);
             if (\strlen($part) < $component->minLength) {
-                throw self::lengthFailure($spec);
+                throw self::lengthFailure();
             }
 
             if (!self::inCharset($component->charset, $part)) {
@@ -272,7 +272,7 @@ final class ElementStringSyntax
 
             foreach ($component->linters as $linter) {
                 if (!AiLinters::passes($linter, $part)) {
-                    throw self::fail(\sprintf('Element string AI data fails the GS1 %s check.', $linter));
+                    throw self::fail('Element string AI data fails a GS1 check of its AI.');
                 }
             }
 
@@ -280,22 +280,13 @@ final class ElementStringSyntax
         }
 
         if ($position < $length) {
-            throw self::lengthFailure($spec);
+            throw self::lengthFailure();
         }
     }
 
-    private static function lengthFailure(AiSpec $spec): InvalidElementStringException
+    private static function lengthFailure(): InvalidElementStringException
     {
-        $min = 0;
-        $max = 0;
-        foreach ($spec->components as $component) {
-            $min += $component->optional ? 0 : $component->minLength;
-            $max += $component->maxLength;
-        }
-
-        $expected = $min === $max ? (string) $max : \sprintf('%d to %d', $min, $max);
-
-        return self::fail(\sprintf('Element string AI data must have %s characters.', $expected));
+        return self::fail('Element string AI data has the wrong length for its AI.');
     }
 
     private static function inCharset(AiCharset $charset, string $part): bool

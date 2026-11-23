@@ -161,17 +161,17 @@ final class EpcPureIdentityUriTest extends TestCase
         yield 'SGTIN raw slash' => ['urn:epc:id:sgtin:9521141.012345.a/b', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'SGTIN bad escape' => ['urn:epc:id:sgtin:9521141.012345.a%2', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'SGTIN escape outside CSET 82' => ['urn:epc:id:sgtin:9521141.012345.a%20b', 'EPC pure identity URI does not correspond to a valid GS1 element string: Element string AI data contains a character outside its GS1 character set.'];
-        yield 'SGTIN serial of 21' => ['urn:epc:id:sgtin:9521141.012345.' . \str_repeat('1', 21), 'EPC pure identity URI does not correspond to a valid GS1 element string: Element string AI data must have 1 to 20 characters.'];
+        yield 'SGTIN serial of 21' => ['urn:epc:id:sgtin:9521141.012345.' . \str_repeat('1', 21), 'EPC pure identity URI does not correspond to a valid GS1 element string: Element string AI data has the wrong length for its AI.'];
         yield 'SSCC digits not 17' => ['urn:epc:id:sscc:9521141.123456789', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'SGLN digits not 12' => ['urn:epc:id:sgln:9521141.1234.0', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'GRAI digits not 12' => ['urn:epc:id:grai:9521141.123456.1', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'GSRN digits not 17' => ['urn:epc:id:gsrn:9521141.123456789', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'GDTI digits not 12' => ['urn:epc:id:gdti:9521141.1234.1', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'SGCN alpha serial' => ['urn:epc:id:sgcn:9521141.67890.A', 'EPC pure identity URI does not match the grammar of its scheme.'];
-        yield 'SGCN serial of 13' => ['urn:epc:id:sgcn:9521141.67890.0123456789012', 'EPC pure identity URI does not correspond to a valid GS1 element string: Element string AI data must have 13 to 25 characters.'];
+        yield 'SGCN serial of 13' => ['urn:epc:id:sgcn:9521141.67890.0123456789012', 'EPC pure identity URI does not correspond to a valid GS1 element string: Element string AI data has the wrong length for its AI.'];
         yield 'GSIN digits not 16' => ['urn:epc:id:gsin:9521141.12345678', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'ITIP piece of 1' => ['urn:epc:id:itip:9521141.012345.4.004.1', 'EPC pure identity URI does not match the grammar of its scheme.'];
-        yield 'ITIP piece above total' => ['urn:epc:id:itip:9521141.012345.05.04.1', 'EPC pure identity URI does not correspond to a valid GS1 element string: Element string AI data fails the GS1 pieceoftotal check.'];
+        yield 'ITIP piece above total' => ['urn:epc:id:itip:9521141.012345.05.04.1', 'EPC pure identity URI does not correspond to a valid GS1 element string: Element string AI data fails a GS1 check of its AI.'];
         yield 'PGLN digits not 12' => ['urn:epc:id:pgln:9521141.8901', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'CPI lower case' => ['urn:epc:id:cpi:9521141.abc.1', 'EPC pure identity URI does not match the grammar of its scheme.'];
         yield 'CPI serial leading zero' => ['urn:epc:id:cpi:9521141.ABC.01', 'EPC pure identity URI does not match the grammar of its scheme.'];
@@ -219,10 +219,10 @@ final class EpcPureIdentityUriTest extends TestCase
      */
     public static function unconvertibleElementStrings(): iterable
     {
-        yield 'no serial' => ['(01)09521141123454', EpcScheme::Sgtin, 7, 'EPC needs AI (21) in the element string.'];
-        yield 'GRAI without serial' => ['(8003)09521141123454', EpcScheme::Grai, 7, 'EPC needs a serial number in AI (8003).'];
-        yield 'GDTI without serial' => ['(253)9521141123454', EpcScheme::Gdti, 7, 'EPC needs a serial number in AI (253).'];
-        yield 'GCN without serial' => ['(255)9521141678909', EpcScheme::Sgcn, 7, 'EPC needs a serial number in AI (255).'];
+        yield 'no serial' => ['(01)09521141123454', EpcScheme::Sgtin, 7, 'EPC needs the AIs of its scheme in the element string.'];
+        yield 'GRAI without serial' => ['(8003)09521141123454', EpcScheme::Grai, 7, 'EPC needs a serial number in the key AI of its scheme.'];
+        yield 'GDTI without serial' => ['(253)9521141123454', EpcScheme::Gdti, 7, 'EPC needs a serial number in the key AI of its scheme.'];
+        yield 'GCN without serial' => ['(255)9521141678909', EpcScheme::Sgcn, 7, 'EPC needs a serial number in the key AI of its scheme.'];
         yield 'prefix of 5' => ['(01)09521141123454(21)1', EpcScheme::Sgtin, 5, 'EPC company prefix length must be 6 to 12.'];
         yield 'prefix of 13' => ['(01)09521141123454(21)1', EpcScheme::Sgtin, 13, 'EPC company prefix length must be 6 to 12.'];
         yield 'GIAI prefix not digits' => ['(8004)9521ABC', EpcScheme::Giai, 6, 'EPC pure identity URI does not match the grammar of its scheme.'];

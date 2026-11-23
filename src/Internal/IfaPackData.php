@@ -115,7 +115,7 @@ final readonly class IfaPackData
     {
         match ($identifier) {
             '9N' => self::checkPpn($data),
-            'S', '1T' => self::checkText($identifier, $data),
+            'S', '1T' => self::checkText($data),
             'D' => self::checkDate($data),
             '8P' => self::checkGtin($data),
             default => null,
@@ -134,11 +134,11 @@ final readonly class IfaPackData
     /**
      * Appendix A: 1 to 20 characters; footnote 35: the technically processed characters are GS1's set 82.
      */
-    private static function checkText(string $identifier, string $data): void
+    private static function checkText(string $data): void
     {
         $length = \strlen($data);
         if ($length > self::MAX_TEXT_LENGTH || \strspn($data, Gs1Charsets::CSET_82) !== $length) {
-            throw new InvalidMarkingCodeException(\sprintf('%s DI %s must have 1 to %d characters of GS1 character set 82.', self::TYPE, $identifier, self::MAX_TEXT_LENGTH));
+            throw new InvalidMarkingCodeException(\sprintf('%s DI S and 1T must have 1 to %d characters of GS1 character set 82.', self::TYPE, self::MAX_TEXT_LENGTH));
         }
     }
 

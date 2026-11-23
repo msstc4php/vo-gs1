@@ -31,8 +31,11 @@ are implemented by this package only and may gain methods in minors. Not covered
 - `MarkingIdentifier::from()` throws `AmbiguousValueException` for 25 pack characters that also read as `01` + GTIN +
   `21` + 7, instead of reading them as the pack; such a pack is stored as `]d1` + 25 characters (as `MarkingCode`
   does), also by `MarkingCode::identifier()`.
-- `FmdPackCode::MAX_LENGTH` (512) bounds the stored form: an IFA message read without its trailer must fit with RS EOT
-  appended (it could reach 514 characters and then failed to reload). Input is capped at 14178 characters.
+- `FmdPackCode::MAX_LENGTH` is 514 (was 512) and bounds the stored form: an IFA message of up to 512 characters
+  given without its trailer, which 0.x accepted, is stored with RS EOT appended and now reads back (0.x refused its
+  own 513/514-character values). Input is capped at 14178 characters before parsing.
+- `IsbtUdi::MAX_LENGTH` is 3123 (was 3116): 3116 characters of data structures plus the `=+aabbb` header, so the
+  output of `toCompoundMessage()` always reads back (0.x refused it above 3109 characters of data structures).
 - `IsbtUdi` keeps the compound message header (`=+aabbb`) in its value, so a specified sequence round-trips;
   `equals()` compares the data structures, so both forms of one UDI stay equal.
 - The date accessors of `ElementString`, `Gs1Udi` and `FmdPackCode` throw `UnresolvableDateException` (was
@@ -41,7 +44,8 @@ are implemented by this package only and may gain methods in minors. Not covered
   null/false).
 - `Gtin::asGtin13()` is null for a GTIN-8.
 - Exception messages carry no part of the input: no length, count, segment lengths, AI number, data identifier, data
-  structure, date format or EPC encoding name read from it.
+  structure, date format or EPC encoding name read from it, and no bound or check name of the AI, data identifier,
+  data structure or EPC encoding the input selected (they name the kind of rule broken).
 - The six exception families are `final`; `UdiFactory` and `BasicUdiDiFactory` have a private constructor;
   `UnmetRequirement`'s constructor is `@internal`.
 - Requires `msstc4php/vo-base ^1.4`.
@@ -59,8 +63,16 @@ are implemented by this package only and may gain methods in minors. Not covered
   loads through `from()` (it throws `AmbiguousValueException`). Serialized PHP objects and vo-gs1-doctrine 1.0
   columns still load it as the pack (to the `]d1` form); other stores read such values with
   `MarkingIdentifier::fromTobaccoConsumerPack()` or prepend `]d1` to them.
-- Stored `FmdPackCode` values longer than 512 characters (an IFA message of 511 or 512 characters given without its
-  trailer) could not be read back in 0.x either; the bridge column is now `VARCHAR(512)`.
+- `MarkingIdentifier::tryFrom()` returns null and `isValid()` false for such a 25-character value (they follow
+  `from()`); filter with `fromTobaccoConsumerPack()` where the value is known to be a pack.
+- The string and JSON of such a pack identifier, from `fromTobaccoConsumerPack()` and from `MarkingCode::identifier()`,
+  now start with `]d1` (28 characters). Use `toDocumentForm()` for the operator's documents and for comparisons with
+  25-character strings.
+- Stored `FmdPackCode` values of 513 or 514 characters (an IFA message of 511 or 512 characters given without its
+  trailer) failed to read back in 0.x; they now load. The bridge column stays `VARCHAR(514)`.
+- `new UdiFactory()` and `new BasicUdiDiFactory()` fail: call their static methods.
+- `IsbtUdi::equals()` no longer implies string equality: the compound message and the human-readable form of one UDI
+  are equal but have different strings. Deduplicate (`array_unique`, unique keys) by `equals()`, not by `(string)`.
 - Stored `IsbtUdi` values (the human-readable form) read back unchanged; new compound-message input is now stored
   with its header.
 - Tests that pin exception messages: the messages changed (they are not covered by the BC promise).

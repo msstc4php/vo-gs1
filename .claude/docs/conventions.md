@@ -3,8 +3,13 @@
 - Exception messages name the type, a fixed reason and fixed bounds ("must have 8, 12, 13 or 14 digits"), never
   the input or anything taken from it: no `got N`, no length, count or segment lengths, no AI number, data
   identifier, data structure, date format or EPC scheme/encoding name read from the input; no `excerpt()` (owner
-  rule G2, 1.0). Names the class itself requires are fine ("must carry AI (01)", "DI 9N is not a valid PPN").
-  `tests/Unit/Exception/MessagesCarryNoInputTest` pins it: an over-long input per class, and input fragments.
+  rule G2, 1.0). Nor a bound, check (linter) name or field limit that belongs to the AI, DI, structure or encoding
+  the input selected: a message is the same for every input breaking that kind of rule ("has the wrong length for its
+  AI", "fails a GS1 check of its AI", "filter value is above the limit of its encoding", "DI S and 1T must have 1 to
+  20 characters", "company prefix must have 4 to 12 digits, 2 to 12 for a GTIN-8"). Fixed names of one check are
+  fine ("must carry AI (01), (21), (10) and (17)", "DI 9N is not a valid PPN").
+  `tests/Unit/Exception/MessagesCarryNoInputTest` pins it: an over-long input per class, input fragments, and pairs
+  of inputs breaking the same rule of different parts, which must give the same message.
 - Every value object has a public `MAX_LENGTH` (the longest stored value, frozen for 1.x, ruling G6); the bridge
   reads it, never a private or `Internal\` constant. `tests/Unit/Contract/StoredValueBoundsTest` pins every value.
   `MarkingIdentifier::MAX_LENGTH` is 74 (escaped 20-character serial), not the 255 input cap.
@@ -18,8 +23,8 @@
   a match arm would escape it (Infection mutates a copy, the test reads the file on disk).
 - Check-digit tests use the source's own examples (GenSpecs Table 7-9 and keys quoted in it, Figure 7-15 for the GMN,
   HIBCC Appendix B `+A123BJC5D6E71` → `G`) plus the GS1 linter test vectors.
-- Element-string messages: `Element string AI data …` / `Element string has …`: no AI number (it comes from the
-  input), no data; the AI's fixed length bound and the linter name are fine.
+- Element-string messages: `Element string AI data …` / `Element string has …`: no AI number, no length bound of
+  the AI, no linter name (all selected by the input), no data.
 - A new linter in a dictionary release fails `AiLintersTest` until it is implemented in `AiLinters` or added to
   `NOT_ENFORCED` **and** to the linter table in `docs/sources/GS1.md` (rows `| \`name\` | enforced |` /
   `| \`name\` | not enforced | reason |`; the test matches that shape).

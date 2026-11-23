@@ -82,8 +82,10 @@ final class FmdPackCodeTest extends TestCase
     public static function ifaMessagesNearTheBound(): iterable
     {
         yield '510 characters without trailer' => [510, true];
-        yield '511 characters without trailer' => [511, false];
-        yield '512 characters without trailer' => [512, false];
+        yield '511 characters without trailer' => [511, true];
+        yield '512 characters without trailer (the 0.x input bound)' => [512, true];
+        yield '513 characters without trailer' => [513, false];
+        yield '514 characters without trailer' => [514, false];
     }
 
     /**
@@ -98,14 +100,54 @@ final class FmdPackCodeTest extends TestCase
 
         if (!$accepted) {
             $this->expectException(InvalidMarkingCodeException::class);
-            $this->expectExceptionMessage('FMD pack code must have at most 512 characters.');
+            $this->expectExceptionMessage('FMD pack code must have at most 514 characters.');
         }
 
         $code = FmdPackCode::from($message);
 
-        self::assertSame(FmdPackCode::MAX_LENGTH, \strlen((string) $code));
+        self::assertSame($message . self::RS . self::EOT, (string) $code);
         self::assertTrue($code->equals(FmdPackCode::from((string) $code)));
         self::assertEquals($code, \unserialize(\serialize($code)));
+    }
+
+    /**
+     * @return iterable<string, array{int}>
+     */
+    public static function storedFormsNearTheBound(): iterable
+    {
+        foreach ([510, 511, 512, 513, 514] as $length) {
+            yield $length . ' characters with trailer' => [$length];
+        }
+    }
+
+    #[DataProvider('storedFormsNearTheBound')]
+    public function testAStoredFormUpToTheBoundReadsBack(int $length): void
+    {
+        $body = \substr(self::IFA, 0, -2) . self::GS . 'Z';
+        $stored = $body . \str_repeat('x', $length - 2 - \strlen($body)) . self::RS . self::EOT;
+        self::assertSame($length, \strlen($stored));
+
+        self::assertSame($stored, (string) FmdPackCode::from($stored));
+    }
+
+    public function testA0xPayloadStillLoads(): void
+    {
+        $payload = 'O:48:"MSSTC4PHP\\ValueObject\\Gs1\\Marking\\EU\\FmdPackCode":1:{s:5:"value";s:59:"' . self::IFA . '";}';
+        $code = \unserialize($payload);
+
+        self::assertInstanceOf(FmdPackCode::class, $code);
+        self::assertSame(self::IFA, (string) $code);
+        self::assertSame('1234567890123456', $code->serial());
+    }
+
+    public function testAStoredFormAboveTheBoundIsRefused(): void
+    {
+        $body = \substr(self::IFA, 0, -2) . self::GS . 'Z';
+        $stored = $body . \str_repeat('x', FmdPackCode::MAX_LENGTH - 1 - \strlen($body)) . self::RS . self::EOT;
+
+        $this->expectException(InvalidMarkingCodeException::class);
+        $this->expectExceptionMessage('FMD pack code must have at most 514 characters.');
+        FmdPackCode::from($stored);
     }
 
     public function testAStoredValueAtTheBoundReadsBackAfterAScannerPrefix(): void
@@ -212,19 +254,19 @@ final class FmdPackCodeTest extends TestCase
         $head = '[)>' . self::RS . '06' . self::GS;
 
         yield 'empty' => ['', 'FMD pack code is empty.'];
-        yield 'GS1 form too long' => [self::GS1 . self::GS . '91' . \str_repeat('A', 90) . self::GS . '92' . \str_repeat('A', 90) . self::GS . '93' . \str_repeat('A', 90) . self::GS . '94' . \str_repeat('A', 90) . self::GS . '95' . \str_repeat('A', 90), 'FMD pack code must have at most 512 characters.'];
+        yield 'GS1 form too long' => [self::GS1 . self::GS . '91' . \str_repeat('A', 90) . self::GS . '92' . \str_repeat('A', 90) . self::GS . '93' . \str_repeat('A', 90) . self::GS . '94' . \str_repeat('A', 90) . self::GS . '95' . \str_repeat('A', 90), 'FMD pack code must have at most 514 characters.'];
         yield 'input at the element string bound is parsed' => [\str_repeat('1', 14178), 'FMD pack code (GS1) is not a valid element string'];
-        yield 'input above the element string bound' => [\str_repeat('1', 14179), 'FMD pack code must have at most 512 characters.'];
+        yield 'input above the element string bound' => [\str_repeat('1', 14179), 'FMD pack code must have at most 514 characters.'];
         yield 'GS1 without batch' => ['(01)04150123456782(17)151231(21)1234567890123456', 'FMD pack code (GS1) must carry AI (01), (21), (10) and (17).'];
-        yield 'GS1 invalid element string' => ['(01)04150123456783(10)1(17)151231(21)1', 'FMD pack code (GS1) is not a valid element string: Element string AI data fails the GS1 csum check.'];
+        yield 'GS1 invalid element string' => ['(01)04150123456783(10)1(17)151231(21)1', 'FMD pack code (GS1) is not a valid element string: Element string AI data fails a GS1 check of its AI.'];
         yield 'IFA without expiry' => [$head . '9N111234567842' . self::GS . '1T1A234B5' . self::GS . 'S1', 'FMD pack code (IFA) must carry DI 9N, S, 1T and D once each.'];
         yield 'IFA with two serials' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S1' . self::GS . 'S2', 'FMD pack code (IFA) must carry DI 9N, S, 1T and D once each.'];
-        yield 'IFA serial of 21' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S' . \str_repeat('1', 21), 'FMD pack code (IFA) DI S must have 1 to 20 characters of GS1 character set 82.'];
-        yield 'IFA batch with a hash' => [$head . '9N111234567842' . self::GS . '1T1#' . self::GS . 'D151231' . self::GS . 'S1', 'FMD pack code (IFA) DI 1T must have 1 to 20 characters of GS1 character set 82.'];
+        yield 'IFA serial of 21' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S' . \str_repeat('1', 21), 'FMD pack code (IFA) DI S and 1T must have 1 to 20 characters of GS1 character set 82.'];
+        yield 'IFA batch with a hash' => [$head . '9N111234567842' . self::GS . '1T1#' . self::GS . 'D151231' . self::GS . 'S1', 'FMD pack code (IFA) DI S and 1T must have 1 to 20 characters of GS1 character set 82.'];
         yield 'IFA bad expiry' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151331' . self::GS . 'S1', 'FMD pack code (IFA) DI D must be a date YYMMDD (DD 00 allowed).'];
         yield 'IFA 29 February of a non-leap year' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D230229' . self::GS . 'S1', 'FMD pack code (IFA) DI D must be a date YYMMDD (DD 00 allowed).'];
         yield 'IFA bad PPN' => [$head . '9N111234567843' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S1', 'FMD pack code (IFA) DI 9N is not a valid PPN: PPN has wrong check digits.'];
-        yield 'at the length bound' => [\str_repeat('1', 512), 'FMD pack code (GS1) must carry AI (01), (21), (10) and (17).'];
+        yield 'near the length bound' => [\str_repeat('1', 512), 'FMD pack code (GS1) must carry AI (01), (21), (10) and (17).'];
         yield 'IFA 8P of 13 digits' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S1' . self::GS . '8P4150123456782', 'FMD pack code (IFA) DI 8P must be a GTIN of 14 digits.'];
         yield 'IFA bad 8P' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S1' . self::GS . '8P123', 'FMD pack code (IFA) DI 8P must be a GTIN of 14 digits.'];
         yield 'IFA field without DI' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S1' . self::GS . '123', 'FMD pack code (IFA) has a field without a data identifier.'];

@@ -19,6 +19,7 @@ use Override;
  */
 final class Ginc extends AbstractStringValueObject implements IdentificationKey
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
     public const int MAX_LENGTH = 30;
 
     private const string TYPE = 'GINC';

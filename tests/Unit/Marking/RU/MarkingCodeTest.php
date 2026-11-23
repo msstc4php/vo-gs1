@@ -172,7 +172,7 @@ final class MarkingCodeTest extends TestCase
     {
         yield 'shortened, GS after (21) lost' => ['01' . self::GTIN . '215aB3x_93Ab1+', 'Russian marking code has a last AI that runs into the next AI of a published structure at a published length: a GS separator was lost.'];
         yield 'shortened serial 13, GS after (21) lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J93Ab1+', 'Russian marking code has a last AI that runs into the next AI of a published structure at a published length: a GS separator was lost.'];
-        yield 'standard, both GS lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J91EE1092' . self::CODE_44, 'Russian marking code is not a valid element string: Element string AI data must have 1 to 20 characters.'];
+        yield 'standard, both GS lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J91EE1092' . self::CODE_44, 'Russian marking code is not a valid element string: Element string AI data has the wrong length for its AI.'];
         yield 'standard, GS after (91) lost' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE1092' . self::CODE_44, 'Russian marking code has a last AI that runs into the next AI of a published structure at a published length: a GS separator was lost.'];
         yield 'dairy weight, GS before (3103) lost' => ['01' . self::GTIN . '215aB3x_' . self::GS . '93Ab1+3103000350', 'Russian marking code has a last AI that runs into the next AI of a published structure at a published length: a GS separator was lost.'];
         yield '29 characters, GS lost, 5-character serial' => ['010460620308662721abcde93Ab1+', 'Russian marking code reads as AI (01), (21) and (93) whose GS separator was lost.'];
@@ -194,7 +194,7 @@ final class MarkingCodeTest extends TestCase
     {
         yield 'empty' => ['', 'Russian marking code is empty.'];
         yield 'too long' => [\str_repeat('1', 256), 'Russian marking code must have at most 255 characters.'];
-        yield 'at the length bound' => [\str_repeat('1', 255), 'Russian marking code is not a valid element string: Element string AI data must have 6 characters.'];
+        yield 'at the length bound' => [\str_repeat('1', 255), 'Russian marking code is not a valid element string: Element string AI data has the wrong length for its AI.'];
         yield 'pack-shaped but starting with a letter' => ['X4600439931256' . "5U!Mq'XAbC1Zx9+", 'Russian marking code is not a valid element string: Element string must start with an AI.'];
         yield 'pack with a wrong GTIN check digit' => ['04600439931257' . "5U!Mq'XAbC1Zx9+", 'Russian marking code (tobacco consumer pack) has a wrong GTIN check digit.'];
         yield 'pack with a character outside CSET 82' => [self::GTIN . "5U!Mq'XAbC1Zx9#", 'Russian marking code (tobacco consumer pack) must have characters of GS1 character set 82 after the GTIN.'];
@@ -483,7 +483,7 @@ final class MarkingCodeTest extends TestCase
         yield 'pack with a wrong check digit' => ['04600439931257' . "5U!Mq'XAbC1", 'Russian marking identifier (tobacco consumer pack) has a wrong GTIN check digit.'];
         yield 'document form whose pack reading fails' => ['0104606203086627215aB3x_Y', 'Russian marking identifier (tobacco consumer pack) has a wrong GTIN check digit. 25 characters are read as a pack КИ; read the document form 01…21… with fromDocumentForm().'];
         yield 'pack-shaped after a letter' => ['X4600439931256' . "5U!Mq'XAbC1", 'Russian marking identifier must be the 25 pack characters or the bracketed form (01)…(21)…; read the document form 01…21… with fromDocumentForm().'];
-        yield 'bad bracketed form' => ['(01)04600439931257(21)5aB3x_', 'Russian marking identifier is not a valid element string: Element string AI data fails the GS1 csum check.'];
+        yield 'bad bracketed form' => ['(01)04600439931257(21)5aB3x_', 'Russian marking identifier is not a valid element string: Element string AI data fails a GS1 check of its AI.'];
     }
 
     #[DataProvider('invalidIdentifiers')]

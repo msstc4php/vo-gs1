@@ -34,7 +34,7 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
     public static function fromParts(string $companyPrefix, string $reference): self
     {
         $minPrefix = \strlen($companyPrefix . $reference) === 7 ? 2 : 4;
-        $body = KeyRules::body(self::TYPE, $companyPrefix, $reference, [7, 11, 12], $minPrefix);
+        $body = KeyRules::body(self::TYPE, $companyPrefix, $reference, [7, 11, 12], $minPrefix, '4 to 12 digits, 2 to 12 for a GTIN-8');
 
         return new self($body . Gs1CheckDigit::compute($body));
     }

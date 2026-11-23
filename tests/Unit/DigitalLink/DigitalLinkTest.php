@@ -393,7 +393,7 @@ final class DigitalLinkTest extends TestCase
         yield 'empty attribute' => ['https://example.com/01/09520123456788?17=', 'GS1 Digital Link query has an AI without a value.'];
         yield 'NUL in path' => ['https://example.com/01/0952012345678%008', 'GS1 Digital Link data contains a NUL character.'];
         yield 'NUL in query' => ['https://example.com/01/09520123456788?17=20122%00', 'GS1 Digital Link data contains a NUL character.'];
-        yield 'check digit' => ['https://example.com/01/09520123456789', 'GS1 Digital Link data is not a valid element string: Element string AI data fails the GS1 csum check.'];
+        yield 'check digit' => ['https://example.com/01/09520123456789', 'GS1 Digital Link data is not a valid element string: Element string AI data fails a GS1 check of its AI.'];
         yield 'invalid pair' => ['https://example.com/01/09520123456788?37=1', 'GS1 Digital Link data is not a valid element string: Element string has two AIs that must not appear together.'];
     }
 

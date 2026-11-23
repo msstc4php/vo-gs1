@@ -23,6 +23,7 @@ use Override;
  */
 final class TobaccoUnitIdentifierWithoutTimeStamp extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
     public const int MAX_LENGTH = 42;
 
     private const int MIN_LENGTH = 3;

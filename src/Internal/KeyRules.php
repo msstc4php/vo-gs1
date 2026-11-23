@@ -94,10 +94,11 @@ final class KeyRules
      *
      * @param positive-int|non-empty-list<positive-int> $bodyLengths allowed digit counts of the body
      * @param positive-int $minPrefix shortest prefix: 4 (GS1 Company Prefix), 2 for the GS1-8 Prefix of a GTIN-8
+     * @param non-empty-string $prefixRule the prefix bounds for the message, the same for every input of the class
      */
-    public static function body(string $subject, string $companyPrefix, string $reference, int|array $bodyLengths, int $minPrefix = self::COMPANY_PREFIX_MIN): string
+    public static function body(string $subject, string $companyPrefix, string $reference, int|array $bodyLengths, int $minPrefix = self::COMPANY_PREFIX_MIN, string $prefixRule = '4 to 12 digits'): string
     {
-        self::assertCompanyPrefix($subject, $companyPrefix, $minPrefix);
+        self::assertCompanyPrefix($subject, $companyPrefix, $minPrefix, $prefixRule);
 
         $body = $companyPrefix . $reference;
         $lengths = (array) $bodyLengths;
@@ -117,17 +118,17 @@ final class KeyRules
      */
     public static function textBody(string $subject, string $companyPrefix, string $reference): string
     {
-        self::assertCompanyPrefix($subject, $companyPrefix, self::COMPANY_PREFIX_MIN);
+        self::assertCompanyPrefix($subject, $companyPrefix, self::COMPANY_PREFIX_MIN, '4 to 12 digits');
 
         return $companyPrefix . $reference;
     }
 
-    private static function assertCompanyPrefix(string $subject, string $companyPrefix, int $min): void
+    private static function assertCompanyPrefix(string $subject, string $companyPrefix, int $min, string $rule): void
     {
         $length = \strlen($companyPrefix);
         if ($length < $min || $length > self::COMPANY_PREFIX_MAX
             || \strspn($companyPrefix, Gs1Charsets::DIGITS) !== $length) {
-            throw self::fail($subject, \sprintf('company prefix must have %d to %d digits', $min, self::COMPANY_PREFIX_MAX));
+            throw self::fail($subject, 'company prefix must have ' . $rule);
         }
     }
 }

@@ -32,6 +32,9 @@ final class IsbtSyntax
      */
     public const int MAX_LENGTH = 3116;
 
+    /** A value of {@see MAX_LENGTH} with the `=+aabbb` header {@see \MSSTC4PHP\ValueObject\Gs1\Udi\IsbtUdi::toCompoundMessage()} adds. */
+    public const int MAX_MESSAGE_LENGTH = self::MAX_LENGTH + 7;
+
     /** "aa shall specify the number of ISBT 128 data structures that follow": two digits. */
     private const int MAX_STRUCTURES = 99;
 
@@ -46,22 +49,16 @@ final class IsbtSyntax
         '037' => ['ppic', 'divisions', 'din', 'expiry', 'production'],
     ];
 
-    private const array NAMES = [
-        'ppic' => 'Processor Product Identification Code',
-        'divisions' => 'Product Divisions',
-        'din' => 'Donation Identification Number',
-    ];
-
     public static function parse(string $value): IsbtData
     {
-        if (\strlen($value) > self::MAX_LENGTH) {
-            throw self::fail(\sprintf('must have at most %d characters', self::MAX_LENGTH));
-        }
-
         $header = null;
-        if (\preg_match('/^=\+([0-9]{2})([0-9]{3})/', $value, $match) === 1) {
+        if (\strlen($value) <= self::MAX_MESSAGE_LENGTH && \preg_match('/^=\+([0-9]{2})([0-9]{3})/', $value, $match) === 1) {
             $header = $match;
             $value = \substr($value, 7);
+        }
+
+        if (\strlen($value) > self::MAX_LENGTH) {
+            throw self::fail(\sprintf('must have at most %d characters, %d with a compound message header', self::MAX_LENGTH, self::MAX_MESSAGE_LENGTH));
         }
 
         if (!\str_starts_with($value, '=/')) {
@@ -146,10 +143,8 @@ final class IsbtSyntax
             $found[$kind] = self::content($kind, $structure);
         }
 
-        foreach (['ppic', 'din', 'divisions'] as $required) {
-            if (!isset($found[$required])) {
-                throw self::fail(\sprintf('must carry the %s', self::NAMES[$required]));
-            }
+        if (!isset($found['ppic'], $found['din'], $found['divisions'])) {
+            throw self::fail('must carry the Processor Product Identification Code, the Donation Identification Number and the Product Divisions');
         }
 
         if (\preg_match('/^' . self::PPIC . '$/D', $found['ppic'], $ppic) !== 1) {

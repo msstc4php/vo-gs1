@@ -23,6 +23,7 @@ use Override;
  */
 final class Ndc extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
     public const int MAX_LENGTH = 13;
 
     private const string PATTERN = '/^(\d{4,6})-(\d{3,4})-(\d{1,2})$/D';

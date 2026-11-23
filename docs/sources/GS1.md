@@ -722,7 +722,9 @@ the structure's character set is accepted and `donationIdentificationNumber()` r
 Size bound: ST-017 sets no length for a compound message, so the bound is the largest capacity of a carrier that holds
 one, GS1 General Specifications 26.0, section 5.6.2 (GS1 DataMatrix, "Data characters per symbol (for the maximum
 symbol size)"): "Numeric data: 3116 digits." (The ruling's citation 5.7.4.1 is the QR Code section; the Data Matrix
-figure is in 5.6.2.) Input above 3116 characters is refused; the former unsourced 2048 is gone (CR-018).
+figure is in 5.6.2.) More than 3116 characters of data structures are refused; a compound message header adds 7, so
+the bound of the whole value is 3123 and `toCompoundMessage()` of the longest value reads back. The former unsourced
+2048 is gone (CR-018).
 
 Dates: "These are presented in a YYYJJJ format where the first three characters form a three-digit year … Thus, 019032
 refers to 1 Feb 2019": the year is 2000 + `cyy`. Expiration: "the date at the end of which the item expires".

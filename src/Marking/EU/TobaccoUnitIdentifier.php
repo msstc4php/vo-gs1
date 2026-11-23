@@ -29,6 +29,7 @@ use Override;
  */
 final class TobaccoUnitIdentifier extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
     public const int MAX_LENGTH = 50;
 
     private const string PATTERN = '/^([0-9A-Za-z]{3,42})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$/D';

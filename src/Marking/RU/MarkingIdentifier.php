@@ -32,6 +32,9 @@ final class MarkingIdentifier extends AbstractStringValueObject
     /** Maximum characters of the stored value, frozen for 1.x: (01) + 14 digits, (21) + a 20-character serial whose every `(` is escaped as `\(`, (8005) + 6 digits. */
     public const int MAX_LENGTH = 74;
 
+    /** Set by {@see parse()}; derived from the value, never serialized. */
+    private ?RuMarkingParts $parts = null;
+
     /**
      * Also reads a payload of vo-gs1 0.x, which stored an ambiguous pack КИ as its bare 25 characters and read them as
      * the pack.
@@ -41,16 +44,14 @@ final class MarkingIdentifier extends AbstractStringValueObject
     #[Override]
     public function __unserialize(array $data): void
     {
-        $value = $data['value'] ?? null;
-        if (\is_string($value)) {
-            try {
-                RuMarkingSyntax::identifier($value);
-            } catch (AmbiguousValueException) {
-                $data['value'] = RuMarkingSyntax::tobaccoConsumerPackIdentifier($value)->value;
-            }
+        try {
+            parent::__unserialize($data);
+        } catch (AmbiguousValueException) {
+            $value = $data['value'] ?? null;
+            \assert(\is_string($value));
+            // The failed parse left the value unset, so the parent's fresh-instance guard lets the pack reading in.
+            parent::__unserialize(['value' => RuMarkingSyntax::tobaccoConsumerPackIdentifier($value)->value]);
         }
-
-        parent::__unserialize($data);
     }
 
     /**
@@ -102,11 +103,13 @@ final class MarkingIdentifier extends AbstractStringValueObject
     #[Override]
     protected function parse(string $value): string
     {
-        return RuMarkingSyntax::identifier($value)->value;
+        $this->parts = RuMarkingSyntax::identifier($value);
+
+        return $this->parts->value;
     }
 
     private function parts(): RuMarkingParts
     {
-        return RuMarkingSyntax::identifier($this->value);
+        return $this->parts ??= RuMarkingSyntax::identifier($this->value);
     }
 }

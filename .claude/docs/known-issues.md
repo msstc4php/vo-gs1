@@ -43,7 +43,14 @@
   readonly property assigned outside the constructor, and the parent's constructor is final). Values are still
   parsed against the installed table when constructed. BC rule (1.0, G1): a dictionary release ships in a minor and
   must not refuse a value an earlier 1.x table accepted; when GS1 removes or tightens an AI, the generator/table must
-  keep the old spec as legacy (not implemented yet: no such release so far; design it with the first one). Other composite VOs (DigitalLink, HibcUdi, MarkingCode, …) still re-parse per accessor.
+  keep the old spec as legacy (not implemented yet: no such release so far; design it with the first one).
+  `AiTableKeepsThe1Dot0AisTest` is the tripwire: every data line of `tests/Fixtures/ai-dictionary-1.0.txt` (the 1.0
+  edition, titles stripped, whitespace collapsed) must still be in the vendored dictionary, so a new edition that
+  removes or changes an AI fails until legacy specs exist. Never edit the fixture to make it pass. `MarkingCode` and
+  `MarkingIdentifier` cache their parsed parts like `ElementString` (ruling CR-009; `parse()` sets the cache, so the
+  `??=` → `=` mutant of `parts()` is equivalent); `MarkingIdentifier::__unserialize()` parses once and retries with
+  the pack reading only on `AmbiguousValueException` (the failed parse leaves `value` unset, so vo-base's
+  fresh-instance guard allows the retry). Other composite VOs (DigitalLink, HibcUdi, …) still re-parse per accessor.
 - `iso4217`: vo-base `CurrencyCode` lacks the ISO non-currency codes 955-965, 994, 999 that GS1's linter accepts; they
   are listed in `AiLinters::ISO_4217_NON_CURRENCY`. vo-base also accepts withdrawn codes the linter refuses (lenient).
 - GS1 Syntax Engine clone used for quotes: `main` at `58c1dc8` (its newest tags are 2023); cite the commit.
@@ -88,8 +95,10 @@
   CAGE/DoDAAC keeps the grammar's I/O exclusion (no contradicting prose).
 - EPC parse validates GS1 schemes by building the element string, so GenSpecs limits (serial ≤ 20, piece ≤ total,
   CSET 82) apply to EPC URIs too.
-- `EpcTagUri::filter()`/`partition()` are `int<0, 63>|null` / `int<0, 6>|null` through no-op `max/min` clamps
-  (ruling N2); their five mutants (bounds ±1, `$filter[0]`) are equivalent: the values are already in range.
+- `EpcTagUri::filter()`/`partition()` are `int<0, 63>|null` / `int<0, 6>|null` through `assert()` (ruling CR-008
+  replaced the no-op `max/min` clamps): PHPStan derives the upper filter bound from the `>= $limit` check, so only
+  `$value >= 0` is asserted; the partition asserts `0..6`. Infection: `>= 0` → `>= -1` in that assert is
+  equivalent (a run of digits never casts below 0).
 - Infection: ~11 escaped mutants in Digital Link/EPC code are equivalent (regex capture positions of unused components,
   `(int)` of the whole filter match, sort keys of control fields, stem-path slice offsets used only in identity).
 
@@ -116,7 +125,7 @@
 - `PP1234500000007005` is a valid ICCBBA and IFA Basic UDI-DI at once (test fixture for the ambiguity path).
 - Infection: 21 escaped mutants in UDI code are equivalent — `substr` length overshoots in HIBC date offsets,
   no-op `max/min` clamps that give PHPStan `int<0, 9>` / `int<0, 99999>`, unreachable `LogicException` guards,
-  `ppic` in the required list (always first), `(int)` before string arithmetic, `calendar(…, 2)` before "last day of".
+  `(int)` before string arithmetic, `calendar(…, 2)` before "last day of".
 - Rulings: ISBT messages no longer echo `aa`/`bbb` (input); `UdiFactory` strips `]xx` and routes `+`/`=`/`&` on the
   rest (GS1 gets the original); legacy HIBC quantity `$$8`/`$$9` accepted (Appendix H), layout quoted from ANSI/HIBC
   2.3-2009 via an Internet Archive copy (quantity-only `+$$848GQ` has no date flag); `/S` beside a serial secondary
@@ -161,9 +170,13 @@
   assert the later message, not a parse failure.
 - IFA expiry `DD = 00` → last day of the month (package decision, IFA only says "month and year"); century 2000-2099
   per IFA. Tobacco UI century 2000: package decision.
-- `FmdPackCode::MAX_LENGTH` (512) bounds the canonical form, not the input (ruling B3): an IFA message without
-  trailer gains RS EOT, so 511 input characters gave a 513-character value that its own `from()` refused. Input is
-  only capped at the element-string bound (14178) before parsing. Bridge column: 512.
+- `FmdPackCode::MAX_LENGTH` (514) bounds the canonical form, not the input (ruling CR-004, overriding B3's 512):
+  0.x took 512 input characters, and an IFA message of that length without its trailer gains RS EOT, so 514 keeps
+  every 0.x value valid ("never refuse a still-valid value"); 0.x itself refused its 513/514-character values on
+  reload (input bound 512), a bug fixed by capping input only at the element-string bound (14178). Bridge column 514.
+- `IsbtUdi::MAX_LENGTH` (3123) = 3116 characters of data structures + the 7-character `=+aabbb` header (ruling
+  CR-011): a human-readable value of more than 3109 characters gave a `toCompoundMessage()` its `from()` refused.
+  `IsbtSyntax` caps the data structures at 3116 and the whole value at 3123 (header only recognised within that).
 - `FmdPackCode::pzn()` reads NTIN-DE `04150` + PZN; productCode equality between the formats = `Ppn::toNtin()`
   equals the GTIN (the types differ, so "same product code" is that comparison plus `pzn()`).
 - EUR-Lex stayed blank on a retry; publication.pravo.gov.ru and legalacts.ru close the socket.

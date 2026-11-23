@@ -140,9 +140,9 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
 - **AI order is kept as given.** The same AIs in another order give another canonical string, so they are not
   `equals()`. Normalise the order yourself if you compare element strings from different sources.
 - **Accessors:** `get($ai)`, `has($ai)` (an argument that is no AI of the table, `'31nn'` or `'(17)'` say, throws
-  `\InvalidArgumentException`: a caller's error, not data), `ais()` (each AI once, in order), `unmetRequirements()`, `gtin()` (AI 01),
-  `sscc()` (AI 00), `batch()` (10), `serial()` (21), `expiryDate()` (17), `productionDate()` (11), `toBarcodeData()`
-  (GS after every AI not of predefined length, except the last).
+  `\InvalidArgumentException`: a caller's error, not data), `ais()` (each AI once, in order), `unmetRequirements()`,
+  `gtin()` (AI 01), `sscc()` (AI 00), `batch()` (10), `serial()` (21), `expiryDate()` (17), `productionDate()` (11),
+  `toBarcodeData()` (GS after every AI not of predefined length, except the last).
 - **Stored values and dictionary updates:** the accessors re-read the stored canonical value against the AI table of
   the installed version. A table update ships as a minor release and never refuses a value an earlier 1.x release
   accepted: an AI that GS1 removes or tightens stays accepted as legacy (see
@@ -198,11 +198,11 @@ DigitalLink::fromElementString(ElementString::from('(01)09520123456788(17)201225
   else.
 - **`toElementString()`** lists the path AIs, then the query AIs in query order (a repeated attribute at its last
   place). `primaryKey()` returns the key class of the path AI (an ITIP, AI 8006, gives its GTIN).
-- **`fromElementString($elementString, $domain = DigitalLink::CANONICAL_DOMAIN)`** (`https://id.gs1.org`) needs a primary key AI: the first one is
-  the path key, with the longest qualifier sequence the data carries (on a tie, one whose leftover AIs can all be data
-  attributes); every other AI must be a data attribute and goes to the query in the order given. Every element string
-  of a link this class accepts converts back. The domain may carry a path stem but no query or fragment. Percent-encoding
-  can make the link longer than its element string: an element string near the 14178-character bound whose data needs
+- **`fromElementString($elementString, $domain = DigitalLink::CANONICAL_DOMAIN)`** (`https://id.gs1.org`) needs a
+  primary key AI: the first one is the path key, with the longest qualifier sequence the data carries (on a tie, one
+  whose leftover AIs can all be data attributes); every other AI must be a data attribute and goes to the query in the
+  order given. Every element string of a link this class accepts converts back. The domain may carry a path stem but
+  no query or fragment. Percent-encoding can make the link longer than its element string: an element string near the 14178-character bound whose data needs
   many escapes gives a link above the bound, and `fromElementString()` refuses it (the bound is the link's).
 - **Refused:** compressed links (`/ARHKVAdpQgTSoTF0`, `/eh…`, `/ex…`): URI Syntax 1.7.0 no longer defines
   compression, the legacy algorithm is "not approved for use in open supply chain standards" and its successor is a
@@ -332,8 +332,9 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
 - **`Ndc12`:** the 6-4-2 format of the FDA final rule of 2026-03-05 (effective 2033-03-07), hyphenated or 12 bare
   digits (one configuration), stored hyphenated.
 - **Format only:** see [Format only](#format-only) (ISBT 128 sequences and non-UDI structures, the alternatively formatted NDC).
-- Size limits before parsing: HIBC 113 characters, ISBT 128 3116 characters (the largest Data Matrix,
-  GenSpecs 5.6.2) and 99 data structures, NDC 13.
+- Size limits before parsing: HIBC 113 characters, ISBT 128 3116 characters of data structures (the largest Data
+  Matrix, GenSpecs 5.6.2; 3123 with the compound message header, so `toCompoundMessage()` always reads back) and 99
+  data structures, NDC 13.
 
 ## Marking codes: Russia («Честный знак») and the EU
 
@@ -419,9 +420,10 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   (Article 21(4)), 3 to 42 alphanumeric characters, no time-stamp accessors. Use it for scanned content unless you
   know the carrier includes the time stamp: trailing digits are never guessed to be one.
   `withTimeStamp($manufacturedAt)` builds the full UI (UTC hour).
-- Size limits: Russian codes and identifiers 255 characters before parsing; FMD pack codes 512 characters in the
-  stored form (`FmdPackCode::MAX_LENGTH`; an IFA message read without its trailer must fit with RS EOT appended, so
-  every accepted value reads back), a package bound, not one of the Regulation or IFA.
+- Size limits: Russian codes and identifiers 255 characters before parsing; FMD pack codes 514 characters in the
+  stored form (`FmdPackCode::MAX_LENGTH`: an IFA message of up to 512 characters given without its trailer, the 0.x
+  input bound, fits with RS EOT appended, so every accepted value reads back), a package bound, not one of the
+  Regulation or IFA.
 
 ## Format only
 
@@ -460,8 +462,8 @@ Every class is a string value object, so `ValueObjectMapper` (vo-base) and the f
 the stored value is the canonical string, at most the class's public `MAX_LENGTH` characters (frozen for 1.x;
 bridges size their columns by it). Marking and FMD codes carry control characters (GS, RS, EOT) that must be
 stored as they are; an element string is stored in its bracketed form, which has none. For Doctrine use
-[`msstc4php/vo-gs1-doctrine`](https://github.com/msstc4php/vo-gs1-doctrine) (31 ORM and ODM types, `gs1_<snake_name>`). `Udi` and `BasicUdiDi` are
-interfaces, which vo-base does not map: a column for "any UDI" is not offered in 1.0 and will come as a separate,
+[`msstc4php/vo-gs1-doctrine`](https://github.com/msstc4php/vo-gs1-doctrine) (31 ORM and ODM types, `gs1_<snake_name>`).
+`Udi` and `BasicUdiDi` are interfaces, which vo-base does not map: a column for "any UDI" is not offered in 1.0 and will come as a separate,
 additive type.
 
 ## GS1 Application Identifier table

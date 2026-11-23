@@ -90,7 +90,7 @@ final class Gs1UdiTest extends TestCase
             Gs1Udi::from('(01)09506000134353');
             self::fail('A wrong GTIN check digit must be refused.');
         } catch (InvalidUdiException $exception) {
-            self::assertStringStartsWith('GS1 UDI is not a valid element string: Element string AI data fails the GS1 csum check.', $exception->getMessage());
+            self::assertStringStartsWith('GS1 UDI is not a valid element string: Element string AI data fails a GS1 check of its AI.', $exception->getMessage());
             self::assertInstanceOf(InvalidElementStringException::class, $exception->getPrevious());
         }
     }

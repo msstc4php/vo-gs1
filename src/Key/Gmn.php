@@ -21,6 +21,7 @@ use Override;
  */
 final class Gmn extends AbstractStringValueObject implements IdentificationKey
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
     public const int MAX_LENGTH = 25;
 
     private const string TYPE = 'GMN';

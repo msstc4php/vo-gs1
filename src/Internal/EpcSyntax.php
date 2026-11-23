@@ -145,11 +145,11 @@ final class EpcSyntax
         }
 
         $l = $companyPrefixLength;
-        $need = static fn (string $ai): string => $elementString->get($ai) ?? throw self::fail(\sprintf('EPC needs AI (%s) in the element string.', $ai));
+        $need = static fn (string $ai): string => $elementString->get($ai) ?? throw self::fail('EPC needs the AIs of its scheme in the element string.');
         $serialised = static function (string $ai, int $keyLength) use ($need): string {
             $value = $need($ai);
             if (\strlen($value) <= $keyLength) {
-                throw self::fail(\sprintf('EPC needs a serial number in AI (%s).', $ai));
+                throw self::fail('EPC needs a serial number in the key AI of its scheme.');
             }
 
             return $value;
@@ -208,11 +208,11 @@ final class EpcSyntax
         $limit = 1 << (int) $encoding->filterBits();
         // Every filter field is at most 6 bits wide, so two digits; a longer run must not reach the int cast.
         if (\strlen($filter[1]) > 2 || (int) $filter[1] >= $limit) {
-            throw $reject(\sprintf('EPC Tag URI filter value must be below %d.', $limit));
+            throw $reject('EPC Tag URI filter value is above the limit of its encoding.');
         }
 
-        // The clamp only narrows the type: the value is already below the field limit of at most 64.
-        $value = \max(0, \min(63, (int) $filter[1]));
+        $value = (int) $filter[1];
+        \assert($value >= 0, 'A run of digits casts to a non-negative int.');
 
         return [$encoding, $value, $filter[2]];
     }
@@ -360,7 +360,7 @@ final class EpcSyntax
     private static function maxCharacters(string $value, int $characters): true
     {
         if (\strlen((string) \preg_replace('/%[0-9A-F]{2}/', '_', $value)) > $characters) {
-            throw self::fail(\sprintf('EPC Tag URI field must have at most %d characters.', $characters));
+            throw self::fail('EPC Tag URI field has more characters than its encoding allows.');
         }
 
         return true;

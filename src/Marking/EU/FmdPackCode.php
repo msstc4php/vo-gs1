@@ -34,11 +34,11 @@ use Override;
 final class FmdPackCode extends AbstractStringValueObject
 {
     /**
-     * The bound of the stored (canonical) form, so every accepted value reads back; a package bound, neither the
-     * Delegated Regulation nor IFA sets one. The four mandatory elements need at most 78 characters, the rest leaves
-     * room for NHRNs and a URL. An IFA message read without its trailer must fit with RS EOT appended.
+     * The bound of the stored (canonical) form, frozen for 1.x; a package bound, neither the Delegated Regulation nor
+     * IFA sets one. The four mandatory elements need at most 78 characters, the rest leaves room for NHRNs and a URL.
+     * 0.x took 512 input characters; an IFA message of that length without its trailer is stored with RS EOT, as 514.
      */
-    public const int MAX_LENGTH = 512;
+    public const int MAX_LENGTH = 514;
 
     /** Against oversized input before parsing; any notation of a stored value fits. */
     private const int MAX_INPUT_LENGTH = ElementStringSyntax::MAX_LENGTH;

@@ -43,6 +43,9 @@ final class MarkingCode extends AbstractStringValueObject
     /** Maximum characters of the stored value, frozen for 1.x: a package bound; the stored form is never longer than the input. */
     public const int MAX_LENGTH = RuMarkingSyntax::MAX_LENGTH;
 
+    /** Set by {@see parse()}; derived from the value, never serialized. */
+    private ?RuMarkingParts $parts = null;
+
     /**
      * The tobacco consumer-pack reading of 29 characters (optionally after `]d1`, `]d2` or a GS), never the GS1 one.
      */
@@ -108,11 +111,13 @@ final class MarkingCode extends AbstractStringValueObject
     #[Override]
     protected function parse(string $value): string
     {
-        return RuMarkingSyntax::code($value)->value;
+        $this->parts = RuMarkingSyntax::code($value);
+
+        return $this->parts->value;
     }
 
     private function parts(): RuMarkingParts
     {
-        return RuMarkingSyntax::code($this->value);
+        return $this->parts ??= RuMarkingSyntax::code($this->value);
     }
 }

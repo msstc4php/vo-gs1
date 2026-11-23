@@ -75,8 +75,10 @@ final class EpcTagUri extends AbstractStringValueObject
             return null;
         }
 
-        // The clamp only narrows the type: the company prefix has 6 to 12 digits.
-        return \max(0, \min(6, 12 - \strlen(EpcSyntax::components($encoding->scheme(), $body)[0])));
+        $partition = 12 - \strlen(EpcSyntax::components($encoding->scheme(), $body)[0]);
+        \assert($partition >= 0 && $partition <= 6, 'The company prefix has 6 to 12 digits.');
+
+        return $partition;
     }
 
     /**

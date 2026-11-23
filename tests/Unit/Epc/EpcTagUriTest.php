@@ -150,8 +150,8 @@ final class EpcTagUriTest extends TestCase
         yield 'encoding without tag form' => ['urn:epc:tag:ginc-96:3.9521141.1', 'EPC Tag URI names an unknown encoding.'];
         yield 'company prefix of 5' => ['urn:epc:tag:sgtin-96:3.95211.41012345.4711', 'EPC pure identity URI company prefix must have 6 to 12 digits.'];
         yield 'company prefix of 13' => ['urn:epc:tag:giai-202:3.9521141123456.1', 'EPC pure identity URI company prefix must have 6 to 12 digits.'];
-        yield 'filter of 8' => ['urn:epc:tag:sgtin-96:8.9521141.012345.4711', 'EPC Tag URI filter value must be below 8.'];
-        yield 'filter of 64' => ['urn:epc:tag:adi-var:64.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI filter value must be below 64.'];
+        yield 'filter of 8' => ['urn:epc:tag:sgtin-96:8.9521141.012345.4711', 'EPC Tag URI filter value is above the limit of its encoding.'];
+        yield 'filter of 64' => ['urn:epc:tag:adi-var:64.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI filter value is above the limit of its encoding.'];
         yield 'filter with leading zero' => ['urn:epc:tag:sgtin-96:03.9521141.012345.4711', 'EPC Tag URI filter value must be a number without leading zeros.'];
         yield 'filter missing' => ['urn:epc:tag:sgtin-96:9521141.012345.4711', 'EPC Tag URI has no filter value.'];
         yield 'usdod filter missing' => ['urn:epc:tag:usdod-96:CAGEY.5678', 'EPC Tag URI has no filter value.'];
@@ -159,10 +159,10 @@ final class EpcTagUriTest extends TestCase
         yield 'sgcn filter missing with digits' => ['urn:epc:tag:sgcn-96:952114123456..1', 'EPC Tag URI has no filter value.'];
         yield 'filter not a number' => ['urn:epc:tag:adi-var:A.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI must have a filter value before the EPC.'];
         yield 'filter on gid' => ['urn:epc:tag:gid-96:3.952056.2718.1414', 'EPC pure identity URI does not match the grammar of its scheme.'];
-        yield 'usdod filter of 16 (4-bit field)' => ['urn:epc:tag:usdod-96:16.CAGEY.5678', 'EPC Tag URI filter value must be below 16.'];
-        yield 'usdod filter of 99' => ['urn:epc:tag:usdod-96:99.2S194.1', 'EPC Tag URI filter value must be below 16.'];
-        yield 'filter of 19 digits never reaches the int cast' => ['urn:epc:tag:usdod-96:1234567890123456789.CAGEY.5678', 'EPC Tag URI filter value must be below 16.'];
-        yield 'three-digit filter on adi-var' => ['urn:epc:tag:adi-var:100.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI filter value must be below 64.'];
+        yield 'usdod filter of 16 (4-bit field)' => ['urn:epc:tag:usdod-96:16.CAGEY.5678', 'EPC Tag URI filter value is above the limit of its encoding.'];
+        yield 'usdod filter of 99' => ['urn:epc:tag:usdod-96:99.2S194.1', 'EPC Tag URI filter value is above the limit of its encoding.'];
+        yield 'filter of 19 digits never reaches the int cast' => ['urn:epc:tag:usdod-96:1234567890123456789.CAGEY.5678', 'EPC Tag URI filter value is above the limit of its encoding.'];
+        yield 'three-digit filter on adi-var' => ['urn:epc:tag:adi-var:100.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI filter value is above the limit of its encoding.'];
         yield 'usdod serial 2^36' => ['urn:epc:tag:usdod-96:3.2S194.68719476736', 'EPC Tag URI field is above the limit of its encoding.'];
         yield 'controls out of order' => ['urn:epc:tag:[xpc=x0004][att=x01]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'control repeated' => ['urn:epc:tag:[att=x01][att=x01]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
@@ -189,8 +189,8 @@ final class EpcTagUriTest extends TestCase
         yield 'gid-96 manager 2^28' => ['urn:epc:tag:gid-96:268435456.1.1', 'EPC Tag URI field is above the limit of its encoding.'];
         yield 'gid-96 class 2^24' => ['urn:epc:tag:gid-96:1.16777216.1', 'EPC Tag URI field is above the limit of its encoding.'];
         yield 'gid-96 serial 2^36' => ['urn:epc:tag:gid-96:1.1.68719476736', 'EPC Tag URI field is above the limit of its encoding.'];
-        yield 'adi-var part of 33' => ['urn:epc:tag:adi-var:3.35962.' . \str_repeat('A', 33) . '.1', 'EPC Tag URI field must have at most 32 characters.'];
-        yield 'adi-var serial of 31' => ['urn:epc:tag:adi-var:3.35962..' . \str_repeat('1', 31), 'EPC Tag URI field must have at most 30 characters.'];
+        yield 'adi-var part of 33' => ['urn:epc:tag:adi-var:3.35962.' . \str_repeat('A', 33) . '.1', 'EPC Tag URI field has more characters than its encoding allows.'];
+        yield 'adi-var serial of 31' => ['urn:epc:tag:adi-var:3.35962..' . \str_repeat('1', 31), 'EPC Tag URI field has more characters than its encoding allows.'];
     }
 
     #[DataProvider('invalidUris')]

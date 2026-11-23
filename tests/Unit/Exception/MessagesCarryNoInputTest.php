@@ -91,6 +91,35 @@ final class MessagesCarryNoInputTest extends TestCase
     }
 
     /**
+     * Inputs that break the same kind of rule of a different AI, DI, encoding or structure.
+     *
+     * @return iterable<string, array{Closure(): mixed, Closure(): mixed}>
+     */
+    public static function sameRuleOfAnotherPart(): iterable
+    {
+        yield 'AI data length' => [static fn (): ElementString => ElementString::from('(01)0950600013435'), static fn (): ElementString => ElementString::from('(10)' . \str_repeat('A', 21))];
+        yield 'AI linter' => [static fn (): ElementString => ElementString::from('(01)09506000134353'), static fn (): ElementString => ElementString::from('(422)999')];
+        yield 'EPC filter limit' => [static fn (): EpcTagUri => EpcTagUri::from('urn:epc:tag:sgtin-96:8.9521141.012345.4711'), static fn (): EpcTagUri => EpcTagUri::from('urn:epc:tag:adi-var:64.35962.PQ7VZ4.M37GXB92')];
+        yield 'EPC field characters' => [static fn (): EpcTagUri => EpcTagUri::from('urn:epc:tag:adi-var:3.35962.' . \str_repeat('A', 33) . '.1'), static fn (): EpcTagUri => EpcTagUri::from('urn:epc:tag:adi-var:3.35962..' . \str_repeat('1', 31))];
+        yield 'ISBT required structure' => [static fn (): IsbtUdi => IsbtUdi::from('=/A9997XYZ100T0479=,000012=>019031'), static fn (): IsbtUdi => IsbtUdi::from('=/A9997XYZ100T0479=A99991712345600')];
+        yield 'GTIN company prefix' => [static fn (): Gtin => Gtin::fromParts('9', '638507'), static fn (): Gtin => Gtin::fromParts('400', '638133393')];
+        yield 'IFA text DI' => [
+            static fn (): FmdPackCode => FmdPackCode::from("[)>\x1E06\x1D9N111234567842\x1D1T1A234B5\x1DD151231\x1DS" . \str_repeat('1', 21) . "\x1E\x04"),
+            static fn (): FmdPackCode => FmdPackCode::from("[)>\x1E06\x1D9N111234567842\x1D1T" . \str_repeat('1', 21) . "\x1DD151231\x1DS1234567890123456\x1E\x04"),
+        ];
+    }
+
+    /**
+     * @param Closure(): mixed $one
+     * @param Closure(): mixed $other
+     */
+    #[DataProvider('sameRuleOfAnotherPart')]
+    public function testTheMessageDoesNotTellWhichPartBrokeTheRule(Closure $one, Closure $other): void
+    {
+        self::assertSame($this->messageOf($one), $this->messageOf($other));
+    }
+
+    /**
      * @param Closure(): mixed $build
      */
     private function messageOf(Closure $build): string

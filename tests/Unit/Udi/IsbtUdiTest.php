@@ -90,6 +90,34 @@ final class IsbtUdiTest extends TestCase
         self::assertSame('=+99000' . $most, IsbtUdi::from($most)->toCompoundMessage());
     }
 
+    public function testA0xPayloadStillLoads(): void
+    {
+        // vo-gs1 0.1 stored the data structures alone, also for compound-message input.
+        $payload = 'O:37:"MSSTC4PHP\\ValueObject\\Gs1\\Udi\\IsbtUdi":1:{s:5:"value";s:50:"=/A9997XYZ100T0479=A99991712345600=,000012=>019031";}';
+        $udi = \unserialize($payload);
+
+        self::assertInstanceOf(IsbtUdi::class, $udi);
+        self::assertSame(self::HRI, (string) $udi);
+        self::assertTrue($udi->equals(IsbtUdi::from('=+04000' . self::HRI)));
+    }
+
+    public function testTheCompoundMessageOfTheLongestValueReadsBack(): void
+    {
+        $longest = IsbtUdi::from(self::HRI . '=%' . \str_repeat('9', 3116 - \strlen(self::HRI) - 2));
+        $message = $longest->toCompoundMessage();
+
+        self::assertSame(IsbtUdi::MAX_LENGTH, \strlen($message));
+        self::assertSame($message, (string) IsbtUdi::from($message));
+        self::assertTrue($longest->equals(IsbtUdi::from($message)));
+    }
+
+    public function testAHeaderDoesNotLengthenTheDataStructures(): void
+    {
+        $this->expectException(InvalidUdiException::class);
+        $this->expectExceptionMessage('must have at most 3116 characters, 3123 with a compound message header');
+        IsbtUdi::from('=+04000' . self::HRI . '=%' . \str_repeat('9', 3117 - \strlen(self::HRI) - 2));
+    }
+
     public function testSpecifiedSequencesOfTable3(): void
     {
         $base = '=/A9997XYZ100T0479=,000012=A99991712345600';
@@ -113,7 +141,8 @@ final class IsbtUdiTest extends TestCase
     {
         $hri = self::HRI;
 
-        yield 'too long' => [$hri . '=%' . \str_repeat('9', 3068), 'must have at most 3116 characters'];
+        yield 'too long' => [$hri . '=%' . \str_repeat('9', 3068), 'must have at most 3116 characters, 3123 with a compound message header'];
+        yield 'too long with a header' => ['=+04000' . $hri . '=%' . \str_repeat('9', 3068), 'must have at most 3116 characters, 3123 with a compound message header'];
         yield 'too many structures' => [$hri . \str_repeat('=%1', 96), 'must have at most 99 data structures'];
         yield 'no DI first' => ['=A99991712345600=/A9997XYZ100T0479=,000012', 'must begin with the Processor Product Identification Code "=/"'];
         yield 'compound without DI first' => ['=+03000=,000012=/A9997XYZ100T0479=A99991712345600', 'must begin with the Processor Product Identification Code "=/"'];
@@ -124,8 +153,8 @@ final class IsbtUdiTest extends TestCase
         yield 'specified sequence out of order' => ['=+04035' . $hri, 'data structures are not in the order of the specified sequence'];
         yield 'specified sequence 034 with an extra' => ['=+04034=/A9997XYZ100T0479=,000012=A99991712345600=>019031', 'data structures are not in the order of the specified sequence'];
         yield 'header inside' => [$hri . '=+01000', 'has a compound message header after its start'];
-        yield 'no DIN' => ['=/A9997XYZ100T0479=,000012=>019031', 'must carry the Donation Identification Number'];
-        yield 'no divisions' => ['=/A9997XYZ100T0479=A99991712345600', 'must carry the Product Divisions'];
+        yield 'no DIN' => ['=/A9997XYZ100T0479=,000012=>019031', 'must carry the Processor Product Identification Code, the Donation Identification Number and the Product Divisions'];
+        yield 'no divisions' => ['=/A9997XYZ100T0479=A99991712345600', 'must carry the Processor Product Identification Code, the Donation Identification Number and the Product Divisions'];
         yield 'repeated divisions' => [$hri . '=,000013', 'repeats a data structure'];
         yield 'repeated DI' => [$hri . '=/A9997XYZ100T0479', 'repeats a data structure'];
         yield 'UDI after non-UDI' => [$hri . '=%5100&,1LOT', 'has a UDI data structure after a non-UDI one'];
