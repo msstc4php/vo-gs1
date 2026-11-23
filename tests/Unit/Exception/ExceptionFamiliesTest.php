@@ -39,6 +39,6 @@ final class ExceptionFamiliesTest extends TestCase
     public function testEveryFamilyIsAnInvalidValueObjectException(string $class): void
     {
         self::assertTrue(\is_a($class, InvalidValueObjectException::class, true));
-        self::assertFalse(new ReflectionClass($class)->isFinal());
+        self::assertTrue(new ReflectionClass($class)->isFinal());
     }
 }

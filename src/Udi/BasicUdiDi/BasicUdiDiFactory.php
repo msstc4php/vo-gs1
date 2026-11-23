@@ -17,6 +17,10 @@ final class BasicUdiDiFactory
     /** @var list<class-string<Gs1BasicUdiDi|HibccBasicUdiDi|IccbbaBasicUdiDi|IfaBasicUdiDi>> */
     private const array TYPES = [Gs1BasicUdiDi::class, HibccBasicUdiDi::class, IccbbaBasicUdiDi::class, IfaBasicUdiDi::class];
 
+    private function __construct()
+    {
+    }
+
     public static function fromString(string $value): BasicUdiDi
     {
         $matches = \array_values(\array_filter(self::TYPES, static fn (string $type): bool => $type::isValid($value)));

@@ -6,6 +6,6 @@ namespace MSSTC4PHP\ValueObject\Gs1\Exception;
 
 use MSSTC4PHP\ValueObject\Exception\InvalidValueObjectException;
 
-class InvalidMarkingCodeException extends InvalidValueObjectException
+final class InvalidMarkingCodeException extends InvalidValueObjectException
 {
 }

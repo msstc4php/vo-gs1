@@ -6,6 +6,6 @@ namespace MSSTC4PHP\ValueObject\Gs1\Exception;
 
 use MSSTC4PHP\ValueObject\Exception\InvalidValueObjectException;
 
-class InvalidUdiException extends InvalidValueObjectException
+final class InvalidUdiException extends InvalidValueObjectException
 {
 }

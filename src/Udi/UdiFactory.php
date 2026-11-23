@@ -14,6 +14,10 @@ use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidUdiException;
  */
 final class UdiFactory
 {
+    private function __construct()
+    {
+    }
+
     public static function fromString(string $value): Udi
     {
         $data = \str_starts_with($value, ']') ? \substr($value, 3) : $value;
