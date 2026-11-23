@@ -785,6 +785,12 @@ source itself, 65 FR 50312, was not fetched):
 Table 1: `10010-001-01` → `10010-0001-01` → `10010000101`; for a 6-digit labeler code ("Native 11-digit (6-3-2)")
 the rule notes the HIPAA update is "outside the scope of FDA authority", so `toBillingFormat()` returns null for it.
 
+Reading the 11-digit billing form back into an NDC (audit 1.0, N5) is **not implemented**: the quote above gives only
+the 10 → 11 direction ("a leading zero is added to the appropriate segment"), and the HHS rule itself (65 FR 50312) was
+not fetched. Which segment carries the added zero cannot be told from the 11 digits when a segment of the original
+starts with a genuine zero, and no fetched source states a rule for it, so no reverse route is offered. It can be
+added in a minor once the HHS text is read (additive).
+
 `Ndc::toNdc12()`, Response 14: existing NDCs "would be converted to the uniform, 12-digit format by the addition of
 leading zeros to the labeler code, the product code, and/or the package code segments as needed to produce the 6-4-2
 format"; footnote 1: "FDA considers such an NDC in its original 10-digit format and in its converted 12-digit format

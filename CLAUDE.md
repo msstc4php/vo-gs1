@@ -17,7 +17,7 @@ Local install against the sibling `../vo-base`: `COMPOSER=composer-local.json co
 
 `composer-local.json` is gitignored. Create it from `composer-ci.json`: copy the file and replace the VCS repository
 with `{"type": "path", "url": "../vo-base", "options": {"symlink": true}}`, and require `msstc4php/vo-base` as
-`dev-main as 1.2.0`.
+`dev-main as 1.4.0`.
 
 - `COMPOSER=composer-local.json make check`, `make test`, `make infection`, `make fix`.
 - `php tools/generate-ai-table.php` regenerates `src/Internal/AiTable.php` from `resources/gs1-syntax-dictionary.txt`.
@@ -31,4 +31,11 @@ Tool configuration is byte-identical to the `php84` templates of `msstc4symfony/
 enforces it. Do not edit `.php-cs-fixer.dist.php`, `rector.php`, `phpstan*.neon`, `phpunit.xml.dist`,
 `infection.json5`, `Makefile` or `.gitignore` here. The hex layout of that standard does not apply.
 
-Exception messages never contain the input or any part of it; never call `InvalidValueObjectException::excerpt()`.
+Exception messages never contain the input or any part of it, not even its length; never call
+`InvalidValueObjectException::excerpt()`.
+
+Released as 1.x: README "Backward compatibility" is binding (no new refusals in a minor, frozen stored forms and
+`MAX_LENGTH`s, factory candidate sets frozen per major).
+
+Infection: parallel runs in other checkouts share the system temp directory; give it its own (`TMPDIR=… make
+infection`) or `junit.xml` gets clobbered.

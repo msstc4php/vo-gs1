@@ -41,9 +41,9 @@
   after (package bound, ruling CR-017; the former 7089 single-QR-Code data cap refused multi-carrier data and is gone).
 - `ElementString` caches its parsed elements in a private nullable property set by `parse()` (S-6; PHPStan refuses a
   readonly property assigned outside the constructor, and the parent's constructor is final). Values are still
-  parsed against the installed table when constructed, so a value stored under an older dictionary can throw
-  `InvalidElementStringException` on load after a dictionary release (a minor release) removes or tightens one of its
-  AIs. Stated in the README. Other composite VOs (DigitalLink, HibcUdi, MarkingCode, …) still re-parse per accessor.
+  parsed against the installed table when constructed. BC rule (1.0, G1): a dictionary release ships in a minor and
+  must not refuse a value an earlier 1.x table accepted; when GS1 removes or tightens an AI, the generator/table must
+  keep the old spec as legacy (not implemented yet: no such release so far; design it with the first one). Other composite VOs (DigitalLink, HibcUdi, MarkingCode, …) still re-parse per accessor.
 - `iso4217`: vo-base `CurrencyCode` lacks the ISO non-currency codes 955-965, 994, 999 that GS1's linter accepts; they
   are listed in `AiLinters::ISO_4217_NON_CURRENCY`. vo-base also accepts withdrawn codes the linter refuses (lenient).
 - GS1 Syntax Engine clone used for quotes: `main` at `58c1dc8` (its newest tags are 2023); cite the commit.
@@ -96,8 +96,8 @@
 ## UDI, Basic UDI-DI, NDC
 
 - vo-base `AmbiguousValueException` is **final**: no subclass can carry the NDC configurations. The NDC throws it with
-  candidates `[Ndc::class]` and the configurations in the type string; callers recover them via `Ndc::candidates()`
-  and build with `Ndc::fromDigits()`. The exception is not an `InvalidUdiException` (both are
+  candidates `[Ndc::class]` and a fixed type string (no configurations, no digit count: they reveal the input length,
+  ruling S3/G2); `Ndc::candidates()` is the documented recovery path, then `Ndc::fromDigits()`. The exception is not an `InvalidUdiException` (both are
   `InvalidValueObjectException`).
 - `Ndc::toBillingFormat()` is `?string` (not `string`): HIPAA's 5-4-2 has no conversion for 6-digit labeler
   codes (FDA: "outside the scope of FDA authority"), so it returns null for 6-3-2 / 6-4-1.

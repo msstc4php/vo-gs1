@@ -1,8 +1,9 @@
 # Integrations
 
-- `msstc4php/vo-base ^1.2`: `InvalidValueObjectException`, `AmbiguousValueException`, `Contract\Maskable`,
-  `AbstractStringValueObject`. Locally through the `../vo-base` path repository as `dev-main as 1.2.0`; CI needs the
-  `v1.2.0` tag.
+- `msstc4php/vo-base ^1.4`: `InvalidValueObjectException`, `AmbiguousValueException`, `Contract\Maskable`,
+  `AbstractStringValueObject`. Locally through the `../vo-base` path repository as `dev-main as 1.4.0`; CI resolves
+  the `v1.4.0` tag through the VCS repository.
+- `vo-gs1-doctrine` sizes its columns by each class's public `MAX_LENGTH` (G6); a change of a bound is a BC break.
 - `vo-gs1-doctrine`: one ORM and one ODM type per value object, `gs1_<snake_name>`.
 - GS1 Barcode Syntax Dictionary: vendored unmodified at `resources/gs1-syntax-dictionary.txt` (release 2026-01-27,
   commit `8ad003f`), Apache-2.0 licence next to it, attribution in `NOTICE`. The generator refuses another release

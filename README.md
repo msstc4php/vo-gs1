@@ -8,9 +8,11 @@ Every check digit and structural rule cites its official source; the notes, with
 [`docs/sources/GS1.md`](docs/sources/GS1.md). What a class cannot check from a published source is checked for
 format only and listed under "Format only" below.
 
+Status: stable, 1.0.0. From here on a breaking change needs 2.0 (see [Backward compatibility](#backward-compatibility)).
+
 ## Install
 
-Not on Packagist yet; register the GitHub repositories:
+Register the GitHub repositories (until the packages are on Packagist):
 
 ```json
 {
@@ -19,13 +21,13 @@ Not on Packagist yet; register the GitHub repositories:
         { "type": "vcs", "url": "https://github.com/msstc4php/vo-gs1" }
     ],
     "require": {
-        "msstc4php/vo-gs1": "^0.1"
+        "msstc4php/vo-gs1": "^1.0"
     }
 }
 ```
 
-Runtime requirement: `msstc4php/vo-base ^1.3`. No framework.
-vo-base 1.3 serializes a value object as its value alone and validates it again on `unserialize()`; the state
+Runtime requirement: `msstc4php/vo-base ^1.4`. No framework.
+vo-base 1.3+ serializes a value object as its value alone and validates it again on `unserialize()`; the state
 derived from it (the element string's parsed elements, for instance) is rebuilt, never restored.
 
 ## Usage
@@ -142,8 +144,9 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
   `sscc()` (AI 00), `batch()` (10), `serial()` (21), `expiryDate()` (17), `productionDate()` (11), `toBarcodeData()`
   (GS after every AI not of predefined length, except the last).
 - **Stored values and dictionary updates:** the accessors re-read the stored canonical value against the AI table of
-  the installed version. A table update ships as a minor release; if it removes an AI or tightens its format, a value
-  stored under the older table can throw `InvalidElementStringException` from an accessor (and from `from()`).
+  the installed version. A table update ships as a minor release and never refuses a value an earlier 1.x release
+  accepted: an AI that GS1 removes or tightens stays accepted as legacy (see
+  [Backward compatibility](#backward-compatibility)).
 - **Dates:** the century follows GS1's sliding window around the UTC year of `$today` (an argument, default now, so a
   stored value keeps its meaning when you pass the day it was read); `DD = 00` is the last day of the month; the result
   is 00:00:00 UTC. An impossible month or day is refused where the AI's linter says so (`yymmd0`, `yymmdd`); that
@@ -321,7 +324,8 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
 - **`Ndc`** (21 CFR 207.33(b)): the hyphenated form in any of the five configurations of `NdcConfiguration` (4-4-2,
   5-3-2, 5-4-1, 6-3-2, 6-4-1). Bare digits are ambiguous ("there is no reliable way to know where the hyphens were",
   FDA): `Ndc::from('9999912345')` throws `AmbiguousValueException` whose `candidates()` is `[Ndc::class]` (the
-  configurations are not classes); recover them with `Ndc::candidates('9999912345')` (4-4-2, 5-3-2, 5-4-1) and build
+  configurations are not classes, and the message names none of them, nor the digit count); the recovery path is
+  `Ndc::candidates('9999912345')` (4-4-2, 5-3-2, 5-4-1); build
   the right one with `Ndc::fromDigits($digits, $configuration)` once you know it. `labelerCode()`, `productCode()`,
   `packageCode()`, `configuration()`, `toBillingFormat()` (HIPAA 11-digit 5-4-2, unhyphenated; null for a 6-digit
   labeler code, for which HIPAA defines no conversion), `toNdc12()`.
@@ -387,6 +391,11 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   characters that read both ways throw `AmbiguousValueException` there as well. A value stored by 0.x as the bare 25
   characters of such a pack still unserializes (to the `]d1` form); a database row needs the `]d1` prefix added (see
   the CHANGELOG).
+- **Stored forms of the Russian code and identifier (frozen for 1.x):** they differ on purpose. `MarkingCode` stores
+  what the operator issues, barcode data with GS (the pack as is, `]d1` + pack when ambiguous), because the crypto
+  tail is only meaningful byte for byte; `MarkingIdentifier` stores the bracketed `(01)…(21)…[(8005)…]` (25 pack
+  characters, `]d1` + 25 when ambiguous), because a bare 25-character КИ can read two ways. `toDocumentForm()` gives
+  the operator's unbracketed form of either.
 - **Russian product groups covered** (structure read on the operator's pages, decree cited there): tobacco and
   nicotine products, light industry, footwear, tyres, perfume, cameras, dairy, packaged water, beer, non-alcoholic beer, non-alcoholic
   beverages, BAD, antiseptics, medical devices, medicines (MDLP), veterinary medicines, canned food, sweets, grocery,
@@ -421,10 +430,10 @@ One list for the whole package: where no published source gives a rule, the clas
 | What | Why |
 |---|---|
 | `mediatype`, `packagetype` | code lists that grow; GS1 itself checks the format |
-| `iban` | the per-country structure belongs to a later wave |
+| `iban` | the per-country structure is not checked; a later minor may report it (`hasValid…()`), refusing waits for 2.0 |
 | `couponcode`, `couponposoffer` | coupons are out of scope |
 | Registry half of `gcppos1`/`gcppos2` | whether a prefix is a real GS1 Company Prefix is a registry fact; decoding never refuses |
-| BIC check digit (ISO 6346) and IMO number check digit in EPC schemes `bic`, `imovn` | not in the EPC TDS; ISO 6346 and IMO checks arrive in wave 3 (`vo-identifiers`) |
+| BIC check digit (ISO 6346) and IMO number check digit in EPC schemes `bic`, `imovn` | not in the EPC TDS; a later minor may report them (`hasValid…()`), refusing waits for 2.0 (`vo-identifiers` has both checks) |
 | TDS 7.3.3/7.3.4 (no SGTIN from RCN-8 or internal numbering) | not enforced |
 | ISBT 128 compound sequences other than 034-037; non-UDI ISBT 128 data structures | the order is in ICCBBA's RT017, not public |
 | Alternatively formatted NDC (21 CFR 207.33(b)(4)) | no published format; not accepted |
@@ -464,9 +473,45 @@ unmodified under `resources/` (Apache License 2.0, see [`NOTICE`](NOTICE)). Upda
   other release until its constants are updated.
 - A new release is picked up with `php tools/generate-ai-table.php` and ships as a minor release.
 - Stored values are parsed against the installed table (on loading, and again by the accessors of the composite
-  codes), so a value stored under an older release can be refused after an update (see Element strings).
+  codes). An update never refuses a value an earlier 1.x table accepted: an AI removed or tightened upstream stays
+  accepted as legacy. `ElementString::AI_TABLE_RELEASE` names the installed edition.
 - Regenerating needs a development checkout with the dev dependencies installed: the generator lives in `tests/Support/` and the script in `tools/`, both
   export-ignored (`.gitattributes`), so the Composer package ships neither.
+
+## Backward compatibility
+
+From 1.0.0 on, a breaking change needs 2.0. The 1.x promise covers:
+
+- public classes, methods and their parameter names (named arguments), and return types;
+- the canonical (stored) string of every value object, which is also its `__toString()`, JSON and `__serialize()`
+  value;
+- enum backed values and case names;
+- the `MAX_LENGTH` constants (the stored-value bounds) and, in `vo-gs1-doctrine`, the type names and column lengths;
+- exception classes and their parents.
+
+Rules for minor releases:
+
+- **A minor never refuses a value an earlier 1.x release accepted.** A check that gets an official source later (the
+  BIC and IMO check digits of EPC `bic`/`imovn`, the per-country `iban` structure) is reported only, by a new
+  `hasValid…(): bool` method; refusing waits for 2.0.
+- **GS1 table editions** (the AI table from the Barcode Syntax Dictionary) ship in minors and never make an accepted
+  value refused: an AI that GS1 removes or tightens stays accepted as legacy. `ElementString::AI_TABLE_RELEASE` names
+  the edition installed.
+- A minor may accept more (relax a rule), but only values that fit the frozen `MAX_LENGTH`.
+- **Factory candidate sets are frozen per major.** A new class is usable directly in a minor and joins `UdiFactory`
+  or `BasicUdiDiFactory` in the next major, so a value that resolves to one class in 1.x keeps resolving to it.
+- Enum cases may be added in a minor; give every `match` over a package enum a default arm.
+- `IdentificationKey`, `Udi` and `BasicUdiDi` are implemented by this package only; methods may be added to them in
+  minor releases. Implementing them outside the package is outside the promise.
+
+Not covered: the wording of exception messages; everything in `Internal\` or marked `@internal` (for example the
+`UnmetRequirement` constructor).
+
+Refusals frozen for 1.x (each documented in its section; relaxing one would be a minor, tightening a major):
+compressed GS1 Digital Links; Russian codes whose lost GS separator is detectable (`RuMarkingSyntax`'s published
+next-AI rule, which also refuses the rare `GenericGs1` code with such a sequence at such an offset); bare NDC digits
+(ambiguous); the alternatively formatted NDC; a 25-character pack КИ that also reads as `01…21…` given to
+`MarkingIdentifier::from()` (ambiguous, see Marking codes).
 
 ## License
 

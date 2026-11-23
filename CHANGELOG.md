@@ -1,5 +1,71 @@
 # Changelog
 
+## [1.0.0] - unreleased
+
+First stable release: from here on a breaking change needs 2.0.
+
+**Backward compatibility (full text in the README, "Backward compatibility"):** 1.x covers public classes, methods,
+parameter names and return types; the canonical (stored, `__toString()`, JSON, `__serialize()`) form of every value
+object; enum backed values and case names; the public `MAX_LENGTH` bounds and the bridge's type names and column
+lengths; exception classes and their parents. A minor never refuses a value an earlier 1.x release accepted (a check
+that gets a source later is reported by `hasValid…()`, refusing waits for 2.0); a GS1 AI table edition keeps an AI
+removed or tightened upstream accepted as legacy; a minor may accept more only within `MAX_LENGTH`; factory candidate
+sets are frozen per major; enum cases may be added (keep a default arm); `IdentificationKey`, `Udi` and `BasicUdiDi`
+are implemented by this package only and may gain methods in minors. Not covered: exception message wording,
+`Internal\` and `@internal`.
+
+### Added
+
+- `MarkingIdentifier::fromTobaccoConsumerPack()`.
+- `Udi::lot()`, `serial()`, `expiryDate()`, `productionDate()` (every UDI class already had them).
+- `Exception\UnresolvableDateException` (final, extends `\DomainException`).
+- A public `MAX_LENGTH` on every value object: the longest stored value, frozen for 1.x.
+- `ElementString::AI_TABLE_RELEASE` (the installed GS1 Barcode Syntax Dictionary release) and
+  `DigitalLink::CANONICAL_DOMAIN`.
+- README sections "Backward compatibility" and the frozen stored forms of the Russian code and identifier.
+
+### Changed
+
+- `IdentificationKey` extends `StringConvertible` and `ValueObject`: `DigitalLink::primaryKey()` can be cast, compared
+  and JSON-encoded.
+- `MarkingIdentifier::from()` throws `AmbiguousValueException` for 25 pack characters that also read as `01` + GTIN +
+  `21` + 7, instead of reading them as the pack; such a pack is stored as `]d1` + 25 characters (as `MarkingCode`
+  does), also by `MarkingCode::identifier()`.
+- `FmdPackCode::MAX_LENGTH` (512) bounds the stored form: an IFA message read without its trailer must fit with RS EOT
+  appended (it could reach 514 characters and then failed to reload). Input is capped at 14178 characters.
+- `IsbtUdi` keeps the compound message header (`=+aabbb`) in its value, so a specified sequence round-trips;
+  `equals()` compares the data structures, so both forms of one UDI stay equal.
+- The date accessors of `ElementString`, `Gs1Udi` and `FmdPackCode` throw `UnresolvableDateException` (was
+  `InvalidElementStringException`) when the chosen century lacks the day.
+- `ElementString::get()`/`has()` throw `\InvalidArgumentException` for an argument that is no AI of the table (was
+  null/false).
+- `Gtin::asGtin13()` is null for a GTIN-8.
+- Exception messages carry no part of the input: no length, count, segment lengths, AI number, data identifier, data
+  structure, date format or EPC encoding name read from it.
+- The six exception families are `final`; `UdiFactory` and `BasicUdiDiFactory` have a private constructor;
+  `UnmetRequirement`'s constructor is `@internal`.
+- Requires `msstc4php/vo-base ^1.4`.
+
+### Upgrading from 0.x
+
+- `HibcUdi::manufactureDate()` is now `productionDate()`.
+- `BasicUdiDi::issuingEntity()` is now `issuingAgency()` (on `BasicUdiDi` and the four Basic UDI-DI classes).
+- Catch `UnresolvableDateException` instead of `InvalidElementStringException` around `expiryDate()`/`productionDate()`.
+- Code that called `ElementString::get()`/`has()` with something that is no AI (to probe) must check first.
+- Subclasses of the exception families are no longer possible; catch the family instead.
+- Implementations of `IdentificationKey`, `Udi` or `BasicUdiDi` outside this package are outside the BC promise; the
+  interfaces gained parents and methods.
+- Stored `MarkingIdentifier` values: a 0.x value that is 25 pack characters which also read as `01…21…` + 7 no longer
+  loads through `from()` (it throws `AmbiguousValueException`). Serialized PHP objects still load (to the `]d1`
+  form); a database row needs `]d1` prepended, for example
+  `UPDATE t SET ki = CONCAT(']d1', ki) WHERE …` for the rows `MarkingIdentifier::from()` refuses as ambiguous, or
+  read them with `MarkingIdentifier::fromTobaccoConsumerPack()`.
+- Stored `FmdPackCode` values longer than 512 characters (an IFA message of 511 or 512 characters given without its
+  trailer) could not be read back in 0.x either; the bridge column is now `VARCHAR(512)`.
+- Stored `IsbtUdi` values (the human-readable form) read back unchanged; new compound-message input is now stored
+  with its header.
+- Tests that pin exception messages: the messages changed (they are not covered by the BC promise).
+
 ## [0.1.1] - 2026-11-23
 
 ### Changed
