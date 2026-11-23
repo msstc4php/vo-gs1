@@ -50,15 +50,12 @@ final class IsbtSyntax
         'ppic' => 'Processor Product Identification Code',
         'divisions' => 'Product Divisions',
         'din' => 'Donation Identification Number',
-        'expiry' => 'Expiration Date',
-        'production' => 'Production Date',
-        'lot' => 'MPHO Lot Number',
     ];
 
     public static function parse(string $value): IsbtData
     {
         if (\strlen($value) > self::MAX_LENGTH) {
-            throw self::fail(\sprintf('must have at most %d characters, got %d', self::MAX_LENGTH, \strlen($value)));
+            throw self::fail(\sprintf('must have at most %d characters', self::MAX_LENGTH));
         }
 
         $header = null;
@@ -94,7 +91,7 @@ final class IsbtSyntax
     private static function checkHeader(int $count, string $sequence, array $kinds): void
     {
         if ($count !== \count($kinds)) {
-            throw self::fail(\sprintf('compound message data structure count does not match, got %d', \count($kinds)));
+            throw self::fail('compound message data structure count does not match');
         }
 
         if (isset(self::SEQUENCES[$sequence]) && self::SEQUENCES[$sequence] !== $kinds) {
@@ -143,7 +140,7 @@ final class IsbtSyntax
             }
 
             if (isset($found[$kind])) {
-                throw self::fail(\sprintf('repeats the %s data structure', self::NAMES[$kind]));
+                throw self::fail('repeats a data structure');
             }
 
             $found[$kind] = self::content($kind, $structure);
@@ -167,8 +164,8 @@ final class IsbtSyntax
             $ppic[3],
             \substr($found['din'], 0, 13),
             $found['divisions'],
-            isset($found['expiry']) ? self::date($found['expiry'], 'expiration date') : null,
-            isset($found['production']) ? self::date($found['production'], 'production date') : null,
+            isset($found['expiry']) ? self::date($found['expiry']) : null,
+            isset($found['production']) ? self::date($found['production']) : null,
             $found['lot'] ?? null,
         );
     }
@@ -192,7 +189,7 @@ final class IsbtSyntax
         };
 
         if (\preg_match($pattern, $structure, $match) !== 1) {
-            throw self::fail(\sprintf('%s data structure has a wrong length or character', self::NAMES[$kind]));
+            throw self::fail('has a data structure with a wrong length or character');
         }
 
         return $match[1];
@@ -201,10 +198,10 @@ final class IsbtSyntax
     /**
      * `cyyjjj`: "019032 refers to 1 Feb 2019", so the year is 2000 + cyy.
      */
-    private static function date(string $cyyjjj, string $name): DateTimeImmutable
+    private static function date(string $cyyjjj): DateTimeImmutable
     {
         return UdiDates::ordinal(2000 + (int) \substr($cyyjjj, 0, 3), (int) \substr($cyyjjj, 3))
-            ?? throw self::fail(\sprintf('%s is not a day of its year', $name));
+            ?? throw self::fail('has a date that is not a day of its year');
     }
 
     private static function fail(string $reason): InvalidUdiException

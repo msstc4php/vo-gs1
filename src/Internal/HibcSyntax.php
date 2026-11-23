@@ -57,9 +57,8 @@ final class HibcSyntax
 
     public static function parse(string $value): HibcData
     {
-        $length = \strlen($value);
-        if ($length > self::MAX_LENGTH) {
-            throw self::fail(\sprintf('must have at most %d characters, got %d', self::MAX_LENGTH, $length));
+        if (\strlen($value) > self::MAX_LENGTH) {
+            throw self::fail(\sprintf('must have at most %d characters', self::MAX_LENGTH));
         }
 
         if (!\str_starts_with($value, '+')) {
@@ -254,7 +253,7 @@ final class HibcSyntax
             HibcDateFormat::Yyyymmdd => UdiDates::calendar($number(0, 4), $number(4, 2), $number(6, 2)),
         };
 
-        return $date ?? throw self::fail(\sprintf('date in the %s format does not exist', $format->value));
+        return $date ?? throw self::fail('has a date that does not exist');
     }
 
     /**
@@ -278,7 +277,7 @@ final class HibcSyntax
             }
 
             if (isset($values[$identifier])) {
-                throw self::fail(\sprintf('repeats the supplemental data identifier %s', $identifier));
+                throw self::fail('repeats a supplemental data identifier');
             }
 
             $values[$identifier] = $content;

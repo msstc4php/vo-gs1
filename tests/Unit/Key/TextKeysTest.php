@@ -53,17 +53,17 @@ final class TextKeysTest extends TestCase
      */
     public static function badTexts(): iterable
     {
-        yield 'GIAI empty' => [Giai::class, '', 'GIAI must have 1 to 30 characters, got 0.'];
-        yield 'GIAI 31' => [Giai::class, '0614141' . \str_repeat('A', 24), 'GIAI must have 1 to 30 characters, got 31.'];
+        yield 'GIAI empty' => [Giai::class, '', 'GIAI must have 1 to 30 characters.'];
+        yield 'GIAI 31' => [Giai::class, '0614141' . \str_repeat('A', 24), 'GIAI must have 1 to 30 characters.'];
         yield 'GIAI no prefix' => [Giai::class, '06A4141', 'GIAI must start with the digits of a GS1 Company Prefix.'];
         yield 'GIAI two digits' => [Giai::class, '06', 'GIAI must start with the digits of a GS1 Company Prefix.'];
         yield 'GINC no prefix' => [Ginc::class, 'AB12345', 'GINC must start with the digits of a GS1 Company Prefix.'];
         yield 'CPID no prefix' => [Cpid::class, 'AB12345', 'CPID must start with the digits of a GS1 Company Prefix.'];
-        yield 'GINC 31' => [Ginc::class, '0614141' . \str_repeat('A', 24), 'GINC must have 1 to 30 characters, got 31.'];
+        yield 'GINC 31' => [Ginc::class, '0614141' . \str_repeat('A', 24), 'GINC must have 1 to 30 characters.'];
         yield 'GINC non-ASCII' => [Ginc::class, "0614141\xC3\xA9", 'GINC contains a character outside its GS1 character set.'];
         yield 'CPID lowercase' => [Cpid::class, '0614141abc', 'CPID contains a character outside its GS1 character set.'];
         yield 'CPID outside CSET 39' => [Cpid::class, '0614141AB!', 'CPID contains a character outside its GS1 character set.'];
-        yield 'CPID 31' => [Cpid::class, '0614141' . \str_repeat('A', 24), 'CPID must have 1 to 30 characters, got 31.'];
+        yield 'CPID 31' => [Cpid::class, '0614141' . \str_repeat('A', 24), 'CPID must have 1 to 30 characters.'];
     }
 
     /**
@@ -136,7 +136,7 @@ final class TextKeysTest extends TestCase
         self::assertSame(25, \strlen((string) Gmn::fromParts('0614141', \str_repeat('A', 16))));
 
         $this->expectException(InvalidIdentificationKeyException::class);
-        $this->expectExceptionMessage('GMN company prefix and model reference must have 1 to 23 characters, got 24.');
+        $this->expectExceptionMessage('GMN company prefix and model reference must have 1 to 23 characters.');
 
         Gmn::fromParts('0614141', \str_repeat('A', 17));
     }
@@ -150,7 +150,7 @@ final class TextKeysTest extends TestCase
         yield 'outside CSET 82' => ['1987654 d4X4bL5ttr2310c2K', 'GMN contains a character outside its GS1 character set.'];
         yield 'three prefix digits' => ['061AB78', 'GMN must start with the digits of a GS1 Company Prefix.'];
         yield 'no prefix digits' => ['AB87654', 'GMN must start with the digits of a GS1 Company Prefix.'];
-        yield 'over 25' => [\str_repeat('1', 26), 'GMN must have 1 to 25 characters, got 26.'];
+        yield 'over 25' => [\str_repeat('1', 26), 'GMN must have 1 to 25 characters.'];
     }
 
     #[DataProvider('badGmns')]

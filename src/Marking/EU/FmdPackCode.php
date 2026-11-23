@@ -125,7 +125,7 @@ final class FmdPackCode extends AbstractStringValueObject
         }
 
         if (\strlen($value) > self::MAX_LENGTH) {
-            throw new InvalidMarkingCodeException(\sprintf('%s must have at most %d characters, got %d.', self::TYPE, self::MAX_LENGTH, \strlen($value)));
+            throw new InvalidMarkingCodeException(\sprintf('%s must have at most %d characters.', self::TYPE, self::MAX_LENGTH));
         }
 
         $unprefixed = \in_array(\substr($value, 0, 3), self::SCANNER_PREFIXES, true) ? \substr($value, 3) : $value;

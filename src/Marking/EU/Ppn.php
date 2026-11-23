@@ -85,7 +85,7 @@ final class Ppn extends AbstractStringValueObject
     protected function parse(string $value): string
     {
         if (\preg_match(self::PATTERN, $value, $match) !== 1) {
-            throw new InvalidMarkingCodeException(\sprintf('PPN must be a 2-character PRA Code, a 7 to 24 character product number of 0-9 and A-Z and two check digits, got %d characters.', \strlen($value)));
+            throw new InvalidMarkingCodeException('PPN must be a 2-character PRA Code, a 7 to 24 character product number of 0-9 and A-Z and two check digits.');
         }
 
         if (IfaMod97::compute($match[1] . $match[2]) !== $match[3]) {

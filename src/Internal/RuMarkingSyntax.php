@@ -169,7 +169,7 @@ final class RuMarkingSyntax
         }
 
         if (\strlen($input) > self::MAX_LENGTH) {
-            throw new InvalidMarkingCodeException(\sprintf('%s must have at most %d characters, got %d.', $type, self::MAX_LENGTH, \strlen($input)));
+            throw new InvalidMarkingCodeException(\sprintf('%s must have at most %d characters.', $type, self::MAX_LENGTH));
         }
     }
 
@@ -354,7 +354,7 @@ final class RuMarkingSyntax
             $rest = \substr($last->value, $length);
             foreach ($next as $ai) {
                 if (\str_starts_with($rest, $ai) && self::startsWithValidAi($rest, $ai)) {
-                    throw new InvalidMarkingCodeException(\sprintf('%s AI (%s) runs into AI (%s) at a published length: a GS separator was lost.', $type, $last->spec->ai, $ai));
+                    throw new InvalidMarkingCodeException($type . ' has a last AI that runs into the next AI of a published structure at a published length: a GS separator was lost.');
                 }
             }
         }

@@ -9,7 +9,7 @@ use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidIdentificationKeyException;
 /**
  * @internal
  *
- * Shared checks of the identification keys. Messages name the key and the length or the reason, never the input.
+ * Shared checks of the identification keys. Messages name the key, the reason and fixed bounds, never the input or its length.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 1.2.3.3 (GS1 Company Prefix)
  * @see https://github.com/gs1/gs1-syntax-dictionary `src/lint_gcppos1.c`, `GCP_MIN_LENGTH` (tag 2026-01-27)
@@ -32,7 +32,7 @@ final class KeyRules
     public static function digits(string $value, string $subject, int $length): void
     {
         if (\strlen($value) !== $length) {
-            throw self::fail($subject, \sprintf('must have %d digits, got %d characters', $length, \strlen($value)));
+            throw self::fail($subject, \sprintf('must have %d digits', $length));
         }
 
         if (\strspn($value, Gs1Charsets::DIGITS) !== $length) {
@@ -63,7 +63,7 @@ final class KeyRules
     {
         $length = \strlen($value);
         if ($length < 1 || $length > $max) {
-            throw self::fail($subject, \sprintf('must have 1 to %d characters, got %d', $max, $length));
+            throw self::fail($subject, \sprintf('must have 1 to %d characters', $max));
         }
 
         if (\strspn($value, $charset) !== $length) {
@@ -102,7 +102,7 @@ final class KeyRules
         $body = $companyPrefix . $reference;
         $lengths = (array) $bodyLengths;
         if (!\in_array(\strlen($body), $lengths, true)) {
-            throw self::fail($subject, \sprintf('company prefix and reference must have %s digits in total, got %d', \implode(' or ', $lengths), \strlen($body)));
+            throw self::fail($subject, \sprintf('company prefix and reference must have %s digits in total', \implode(' or ', $lengths)));
         }
 
         if (\strspn($body, Gs1Charsets::DIGITS) !== \strlen($body)) {

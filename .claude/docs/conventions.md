@@ -1,6 +1,10 @@
 # Conventions
 
-- Exception messages name the type and the length or reason, never the input; no `excerpt()`.
+- Exception messages name the type, a fixed reason and fixed bounds ("must have 8, 12, 13 or 14 digits"), never
+  the input or anything taken from it: no `got N`, no length, count or segment lengths, no AI number, data
+  identifier, data structure, date format or EPC scheme/encoding name read from the input; no `excerpt()` (owner
+  rule G2, 1.0). Names the class itself requires are fine ("must carry AI (01)", "DI 9N is not a valid PPN").
+  `tests/Unit/Exception/MessagesCarryNoInputTest` pins it: an over-long input per class, and input fragments.
 - Tool configuration is byte-identical to the bundle-standard `php84` templates.
 - php-cs-fixer rewrites `@link` to `@see`: cite sources with `@see <url> <document, section>`.
 - Tests: `tests/Unit` (what Infection runs); generator code lives in `tests/Support` (autoload-dev), the `tools/` script
@@ -11,8 +15,8 @@
   a match arm would escape it (Infection mutates a copy, the test reads the file on disk).
 - Check-digit tests use the source's own examples (GenSpecs Table 7-9 and keys quoted in it, Figure 7-15 for the GMN,
   HIBCC Appendix B `+A123BJC5D6E71` → `G`) plus the GS1 linter test vectors.
-- Element-string messages: `Element string AI (NN) …` — the AI number of a known AI is fine; an unknown AI is never
-  echoed ("contains an unknown AI"), nor is any data.
+- Element-string messages: `Element string AI data …` / `Element string has …`: no AI number (it comes from the
+  input), no data; the AI's fixed length bound and the linter name are fine.
 - A new linter in a dictionary release fails `AiLintersTest` until it is implemented in `AiLinters` or added to
   `NOT_ENFORCED` **and** to the linter table in `docs/sources/GS1.md` (rows `| \`name\` | enforced |` /
   `| \`name\` | not enforced | reason |`; the test matches that shape).
@@ -28,6 +32,6 @@
   so PHPStan infers `numeric-string` / `non-empty-string` groups; the unreachable "lost its parts" `LogicException`
   is the accepted cost.
 - Marking messages: `Russian marking code …`, `Russian marking identifier …`, `FMD pack code (GS1|IFA) …`, `PPN …`,
-  `Tobacco unit level UI …`; AI numbers and DI names are fine, data never. All throw `InvalidMarkingCodeException`.
+  `Tobacco unit level UI …`; only the AIs/DIs the structure itself requires are named, data never. All throw `InvalidMarkingCodeException`.
 - Marking canonical forms carry control characters (GS; RS/EOT for the IFA format): tests assert round trips and the
   GS count, and the Doctrine bridge must store them byte for byte.

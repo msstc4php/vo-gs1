@@ -58,7 +58,7 @@ final class DigitalLink extends AbstractStringValueObject
         [$path, $attributes] = DigitalLinkSyntax::arrange($elements);
         foreach ($attributes as $attribute) {
             if (!$attribute->spec->digitalLinkAttribute) {
-                throw new InvalidDigitalLinkException(\sprintf('GS1 Digital Link cannot carry AI (%s) of the element string: it is neither a key qualifier of AI (%s) nor a data attribute.', $attribute->spec->ai, $path[0]->spec->ai));
+                throw new InvalidDigitalLinkException('GS1 Digital Link cannot carry an AI of the element string: it is neither a key qualifier of the primary key nor a data attribute.');
             }
         }
 

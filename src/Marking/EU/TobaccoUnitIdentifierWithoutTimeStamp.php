@@ -51,7 +51,7 @@ final class TobaccoUnitIdentifierWithoutTimeStamp extends AbstractStringValueObj
     {
         $length = \strlen($value);
         if ($length < self::MIN_LENGTH || $length > self::MAX_LENGTH || \preg_match('/^[0-9A-Za-z]+$/D', $value) !== 1) {
-            throw new InvalidMarkingCodeException(\sprintf('Tobacco unit level UI without time stamp must have %d to %d alphanumeric characters, got %d.', self::MIN_LENGTH, self::MAX_LENGTH, $length));
+            throw new InvalidMarkingCodeException(\sprintf('Tobacco unit level UI without time stamp must have %d to %d alphanumeric characters.', self::MIN_LENGTH, self::MAX_LENGTH));
         }
 
         return $value;

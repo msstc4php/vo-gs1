@@ -303,25 +303,25 @@ final class ElementStringTest extends TestCase
         yield 'text after a separator' => ["0109506000134352\x1DX", 'Element string must start with an AI.'];
         yield 'double separator' => ["0109506000134352\x1D\x1D10A", 'Element string must start with an AI.'];
         yield 'text before the first AI' => ['x(01)09506000134352', 'Element string must start with an AI.'];
-        yield 'empty value bracketed' => ['(10)(01)09506000134352', 'Element string AI (10) has no data.'];
-        yield 'empty value unbracketed' => ["0109506000134352\x1D10\x1D", 'Element string AI (10) has no data.'];
-        yield 'GTIN check digit' => ['(01)09506000134353', 'Element string AI (01) data fails the GS1 csum check.'];
-        yield 'GTIN too short' => ['(01)0950600013435', 'Element string AI (01) data must have 14 characters, got 13.'];
-        yield 'GTIN too long' => ['(01)095060001343521', 'Element string AI (01) data must have 14 characters, got 15.'];
-        yield 'predefined AI cut short unbracketed' => ['010950600013435', 'Element string AI (01) data must have 14 characters, got 13.'];
-        yield 'non-digit in a numeric AI' => ['(01)0950600013435A', 'Element string AI (01) data contains a character outside its GS1 character set.'];
-        yield 'batch too long' => ['(01)09506000134352(10)' . \str_repeat('A', 21), 'Element string AI (10) data must have 1 to 20 characters, got 21.'];
-        yield 'character outside CSET 82' => ['(01)09506000134352(10)A#B', 'Element string AI (10) data contains a character outside its GS1 character set.'];
-        yield 'raw GS in bracketed data' => ["(01)09506000134352(10)A\x1DB", 'Element string AI (10) data contains a character outside its GS1 character set.'];
-        yield 'month 13' => ['(01)09506000134352(17)251301', 'Element string AI (17) data fails the GS1 yymmd0 check.'];
-        yield 'unknown country' => ['(01)09506000134352(422)999', 'Element string AI (422) data fails the GS1 iso3166 check.'];
-        yield 'unknown currency' => ['(01)09506000134352(3102)000100(3932)000100', 'Element string AI (3932) data fails the GS1 iso4217 check.'];
-        yield 'GIAI without company prefix digits' => ['(8004)095X', 'Element string AI (8004) data fails the GS1 gcppos1 check.'];
-        yield 'base64url padding in the middle' => ['(00)095212340005678903(8030)Ab=C', 'Element string AI (8030) data contains a character outside its GS1 character set.'];
-        yield 'base64url three padding characters' => ['(00)095212340005678903(8030)A===', 'Element string AI (8030) data contains a character outside its GS1 character set.'];
-        yield 'excluded pair 01 and 02' => ['(01)09506000134352(02)04006381333931', 'Element string AI (02) must not appear with AI (01).'];
-        yield 'excluded pair by pattern' => ['(01)09506000134352(3100)000100(3101)000100', 'Element string AI (3100) must not appear with AI (3101).'];
-        yield 'repeated AI with another value' => ['(01)09506000134352(10)A(10)B', 'Element string repeats AI (10) with a different value.'];
+        yield 'empty value bracketed' => ['(10)(01)09506000134352', 'Element string has an AI without data.'];
+        yield 'empty value unbracketed' => ["0109506000134352\x1D10\x1D", 'Element string has an AI without data.'];
+        yield 'GTIN check digit' => ['(01)09506000134353', 'Element string AI data fails the GS1 csum check.'];
+        yield 'GTIN too short' => ['(01)0950600013435', 'Element string AI data must have 14 characters.'];
+        yield 'GTIN too long' => ['(01)095060001343521', 'Element string AI data must have 14 characters.'];
+        yield 'predefined AI cut short unbracketed' => ['010950600013435', 'Element string AI data must have 14 characters.'];
+        yield 'non-digit in a numeric AI' => ['(01)0950600013435A', 'Element string AI data contains a character outside its GS1 character set.'];
+        yield 'batch too long' => ['(01)09506000134352(10)' . \str_repeat('A', 21), 'Element string AI data must have 1 to 20 characters.'];
+        yield 'character outside CSET 82' => ['(01)09506000134352(10)A#B', 'Element string AI data contains a character outside its GS1 character set.'];
+        yield 'raw GS in bracketed data' => ["(01)09506000134352(10)A\x1DB", 'Element string AI data contains a character outside its GS1 character set.'];
+        yield 'month 13' => ['(01)09506000134352(17)251301', 'Element string AI data fails the GS1 yymmd0 check.'];
+        yield 'unknown country' => ['(01)09506000134352(422)999', 'Element string AI data fails the GS1 iso3166 check.'];
+        yield 'unknown currency' => ['(01)09506000134352(3102)000100(3932)000100', 'Element string AI data fails the GS1 iso4217 check.'];
+        yield 'GIAI without company prefix digits' => ['(8004)095X', 'Element string AI data fails the GS1 gcppos1 check.'];
+        yield 'base64url padding in the middle' => ['(00)095212340005678903(8030)Ab=C', 'Element string AI data contains a character outside its GS1 character set.'];
+        yield 'base64url three padding characters' => ['(00)095212340005678903(8030)A===', 'Element string AI data contains a character outside its GS1 character set.'];
+        yield 'excluded pair 01 and 02' => ['(01)09506000134352(02)04006381333931', 'Element string has two AIs that must not appear together.'];
+        yield 'excluded pair by pattern' => ['(01)09506000134352(3100)000100(3101)000100', 'Element string has two AIs that must not appear together.'];
+        yield 'repeated AI with another value' => ['(01)09506000134352(10)A(10)B', 'Element string repeats an AI with a different value.'];
     }
 
     #[DataProvider('refusedStrings')]
@@ -340,7 +340,7 @@ final class ElementStringTest extends TestCase
         self::assertSame(['01', '21', '91', '92'], ElementString::from($withSeparators)->ais());
 
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string AI (21) data must have 1 to 20 characters, got');
+        $this->expectExceptionMessage('Element string AI data must have 1 to 20 characters.');
         ElementString::from(\str_replace("\x1D", '', $withSeparators));
     }
 
@@ -355,7 +355,7 @@ final class ElementStringTest extends TestCase
     {
         // (422) is N3 but not of predefined length: its data runs to the next separator.
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string AI (422) data must have 3 characters, got 5.');
+        $this->expectExceptionMessage('Element string AI data must have 3 characters.');
         ElementString::from('010950600013435242264310');
     }
 
@@ -374,14 +374,14 @@ final class ElementStringTest extends TestCase
         self::assertSame(12768, \strlen($input));
 
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string must have at most 14178 characters in its bracketed form, got 14188.');
+        $this->expectExceptionMessage('Element string must have at most 14178 characters in its bracketed form.');
         ElementString::from($input);
     }
 
     public function testOverlongInputIsRefusedBeforeParsing(): void
     {
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string must have at most 14178 characters, got 14179.');
+        $this->expectExceptionMessage('Element string must have at most 14178 characters.');
         ElementString::from(\str_repeat('9', 14179));
     }
 
@@ -396,7 +396,7 @@ final class ElementStringTest extends TestCase
             ElementString::from($bracketed . 'A');
             self::fail('Expected an exception.');
         } catch (InvalidElementStringException $exception) {
-            self::assertSame('Element string must have at most 14178 characters, got 14179.', $exception->getMessage());
+            self::assertSame('Element string must have at most 14178 characters.', $exception->getMessage());
         }
 
         try {

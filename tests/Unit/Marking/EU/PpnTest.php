@@ -59,9 +59,9 @@ final class PpnTest extends TestCase
     public static function invalid(): iterable
     {
         yield 'wrong check digits' => ['110375286415', 'PPN has wrong check digits.'];
-        yield 'too short' => ['1103752864', 'PPN must be a 2-character PRA Code, a 7 to 24 character product number of 0-9 and A-Z and two check digits, got 10 characters.'];
-        yield 'too long' => [\str_repeat('1', 29), 'PPN must be a 2-character PRA Code, a 7 to 24 character product number of 0-9 and A-Z and two check digits, got 29 characters.'];
-        yield 'lower case' => ['11abcdefgh00', 'PPN must be a 2-character PRA Code, a 7 to 24 character product number of 0-9 and A-Z and two check digits, got 12 characters.'];
+        yield 'too short' => ['1103752864', 'PPN must be a 2-character PRA Code, a 7 to 24 character product number of 0-9 and A-Z and two check digits.'];
+        yield 'too long' => [\str_repeat('1', 29), 'PPN must be a 2-character PRA Code, a 7 to 24 character product number of 0-9 and A-Z and two check digits.'];
+        yield 'lower case' => ['11abcdefgh00', 'PPN must be a 2-character PRA Code, a 7 to 24 character product number of 0-9 and A-Z and two check digits.'];
         yield 'German PPN that is not a PZN' => ['11ABCDEFGH' . IfaMod97::compute('11ABCDEFGH'), 'PPN with PRA Code 11 must carry an 8-digit PZN with a valid check digit.'];
         yield 'PZN with a wrong check digit' => ['1103752865' . IfaMod97::compute('1103752865'), 'PPN with PRA Code 11 must carry an 8-digit PZN with a valid check digit.'];
         yield 'PZN whose remainder is 10' => ['1100000030' . IfaMod97::compute('1100000030'), 'PPN with PRA Code 11 must carry an 8-digit PZN with a valid check digit.'];

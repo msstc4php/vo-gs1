@@ -93,7 +93,7 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
     protected function parse(string $value): string
     {
         if (!\in_array(\strlen($value), [8, 12, 13, 14], true)) {
-            throw KeyRules::fail(self::TYPE, \sprintf('must have 8, 12, 13 or 14 digits, got %d characters', \strlen($value)));
+            throw KeyRules::fail(self::TYPE, 'must have 8, 12, 13 or 14 digits');
         }
 
         KeyRules::checkedDigits($value, self::TYPE, \strlen($value));

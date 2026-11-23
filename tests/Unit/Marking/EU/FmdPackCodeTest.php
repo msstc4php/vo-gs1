@@ -172,13 +172,13 @@ final class FmdPackCodeTest extends TestCase
         $head = '[)>' . self::RS . '06' . self::GS;
 
         yield 'empty' => ['', 'FMD pack code is empty.'];
-        yield 'too long' => [\str_repeat('1', 513), 'FMD pack code must have at most 512 characters, got 513.'];
+        yield 'too long' => [\str_repeat('1', 513), 'FMD pack code must have at most 512 characters.'];
         yield 'GS1 without batch' => ['(01)04150123456782(17)151231(21)1234567890123456', 'FMD pack code (GS1) must carry AI (01), (21), (10) and (17).'];
-        yield 'GS1 invalid element string' => ['(01)04150123456783(10)1(17)151231(21)1', 'FMD pack code (GS1) is not a valid element string: Element string AI (01) data fails the GS1 csum check.'];
+        yield 'GS1 invalid element string' => ['(01)04150123456783(10)1(17)151231(21)1', 'FMD pack code (GS1) is not a valid element string: Element string AI data fails the GS1 csum check.'];
         yield 'IFA without expiry' => [$head . '9N111234567842' . self::GS . '1T1A234B5' . self::GS . 'S1', 'FMD pack code (IFA) must carry DI 9N, S, 1T and D once each.'];
         yield 'IFA with two serials' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S1' . self::GS . 'S2', 'FMD pack code (IFA) must carry DI 9N, S, 1T and D once each.'];
-        yield 'IFA serial of 21' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S' . \str_repeat('1', 21), 'FMD pack code (IFA) DI S must have 1 to 20 characters of GS1 character set 82, got 21 characters.'];
-        yield 'IFA batch with a hash' => [$head . '9N111234567842' . self::GS . '1T1#' . self::GS . 'D151231' . self::GS . 'S1', 'FMD pack code (IFA) DI 1T must have 1 to 20 characters of GS1 character set 82, got 2 characters.'];
+        yield 'IFA serial of 21' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S' . \str_repeat('1', 21), 'FMD pack code (IFA) DI S must have 1 to 20 characters of GS1 character set 82.'];
+        yield 'IFA batch with a hash' => [$head . '9N111234567842' . self::GS . '1T1#' . self::GS . 'D151231' . self::GS . 'S1', 'FMD pack code (IFA) DI 1T must have 1 to 20 characters of GS1 character set 82.'];
         yield 'IFA bad expiry' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D151331' . self::GS . 'S1', 'FMD pack code (IFA) DI D must be a date YYMMDD (DD 00 allowed).'];
         yield 'IFA 29 February of a non-leap year' => [$head . '9N111234567842' . self::GS . '1T1' . self::GS . 'D230229' . self::GS . 'S1', 'FMD pack code (IFA) DI D must be a date YYMMDD (DD 00 allowed).'];
         yield 'IFA bad PPN' => [$head . '9N111234567843' . self::GS . '1T1' . self::GS . 'D151231' . self::GS . 'S1', 'FMD pack code (IFA) DI 9N is not a valid PPN: PPN has wrong check digits.'];

@@ -29,11 +29,11 @@ final class EpcTagUri extends AbstractStringValueObject
     {
         $scheme = $uri->scheme();
         if ($encoding->scheme() !== $scheme) {
-            throw EpcSyntax::fail(\sprintf('EPC Tag URI encoding %s is not one of scheme %s.', $encoding->value, $scheme->value));
+            throw EpcSyntax::fail('EPC Tag URI encoding is not one of the scheme of the pure identity URI.');
         }
 
         if ($encoding->hasFilter() !== ($filter !== null)) {
-            throw EpcSyntax::fail(\sprintf($filter === null ? 'EPC Tag URI encoding %s needs a filter value.' : 'EPC Tag URI encoding %s has no filter value.', $encoding->value));
+            throw EpcSyntax::fail($filter === null ? 'EPC Tag URI encoding needs a filter value.' : 'EPC Tag URI encoding has no filter value.');
         }
 
         return new self('urn:epc:tag:' . $encoding->value . ':' . ($filter === null ? '' : $filter . '.') . EpcSyntax::pure($uri->value)[1]);

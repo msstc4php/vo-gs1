@@ -155,7 +155,7 @@ final class DigitalLinkTest extends TestCase
         self::assertSame('A+B', DigitalLink::from('https://example.com/00/195201234567891232?10=A%2BB')->toElementString()->get('10'));
 
         $this->expectException(InvalidDigitalLinkException::class);
-        $this->expectExceptionMessage('GS1 Digital Link data is not a valid element string: Element string AI (10) data contains a character outside its GS1 character set.');
+        $this->expectExceptionMessage('GS1 Digital Link data is not a valid element string: Element string AI data contains a character outside its GS1 character set.');
 
         DigitalLink::from('https://example.com/00/195201234567891232?10=A+B');
     }
@@ -373,28 +373,28 @@ final class DigitalLinkTest extends TestCase
         yield 'eh inside a segment' => ['https://example.com/a/xeh', 'GS1 Digital Link has no GS1 primary key in its path.'];
         yield 'eh before other characters' => ['https://example.com/a/eh-', 'GS1 Digital Link has no GS1 primary key in its path.'];
         yield 'unknown alpha' => ['https://example.com/cps/09520123456788', 'GS1 Digital Link has no GS1 primary key in its path.'];
-        yield 'bare AI key' => ['https://example.com/01/09520123456788?17', 'GS1 Digital Link query has AI (17) without a value.'];
+        yield 'bare AI key' => ['https://example.com/01/09520123456788?17', 'GS1 Digital Link query has an AI without a value.'];
         yield 'bare numeric key' => ['https://example.com/01/09520123456788?236', 'GS1 Digital Link query has an all-numeric key that is no AI.'];
         yield 'compressed' => ['https://id.gs1.org/ARHKVAdpQgTSoTF0', 'GS1 Digital Link is compressed; GS1 Digital Link URI Syntax 1.7.0 defines no compression.'];
         yield 'compressed EPC' => ['https://id.gs1.org/eh0123abcd', 'GS1 Digital Link is compressed; GS1 Digital Link URI Syntax 1.7.0 defines no compression.'];
         yield 'empty value' => ['https://example.com/01//10/A', 'GS1 Digital Link path has an empty value.'];
         yield 'empty qualifier' => ['https://example.com/01/09520123456788/10/', 'GS1 Digital Link has no GS1 primary key in its path.'];
-        yield 'qualifier order' => ['https://example.com/01/09520123456788/21/12345XYZ/10/ABC123', 'GS1 Digital Link path has key qualifiers that AI (01) does not take in this order.'];
-        yield 'foreign qualifier' => ['https://example.com/00/195201234567891232/10/ABC', 'GS1 Digital Link path has key qualifiers that AI (00) does not take in this order.'];
-        yield 'repeated qualifier' => ['https://example.com/01/09520123456788/10/A/10/A', 'GS1 Digital Link path has key qualifiers that AI (01) does not take in this order.'];
+        yield 'qualifier order' => ['https://example.com/01/09520123456788/21/12345XYZ/10/ABC123', 'GS1 Digital Link path has key qualifiers that its primary key does not take in this order.'];
+        yield 'foreign qualifier' => ['https://example.com/00/195201234567891232/10/ABC', 'GS1 Digital Link path has key qualifiers that its primary key does not take in this order.'];
+        yield 'repeated qualifier' => ['https://example.com/01/09520123456788/10/A/10/A', 'GS1 Digital Link path has key qualifiers that its primary key does not take in this order.'];
         yield 'two "@" in the authority' => ['https://u@ser@example.com/01/09520123456788', 'GS1 Digital Link authority has more than one "@".'];
         yield 'broken escape in a value' => ['https://example.com/01/09520123456788/10/ABC%2', 'GS1 Digital Link contains a "%" that is not followed by two hex digits.'];
         yield 'escape with a non-hex digit' => ['https://example.com/01/09520123456788?x=%G1', 'GS1 Digital Link contains a "%" that is not followed by two hex digits.'];
         yield 'escaped numeric key that is no AI' => ['https://example.com/01/09520123456788?%39%39%39%39=1', 'GS1 Digital Link query has an all-numeric key that is no AI.'];
-        yield 'not an attribute' => ['https://example.com/00/195201234567891232?21=1', 'GS1 Digital Link query has AI (21), which is not a GS1 Digital Link data attribute.'];
+        yield 'not an attribute' => ['https://example.com/00/195201234567891232?21=1', 'GS1 Digital Link query has an AI that is not a GS1 Digital Link data attribute.'];
         yield 'unknown numeric key' => ['https://example.com/01/09520123456788?236=12098', 'GS1 Digital Link query has an all-numeric key that is no AI.'];
-        yield 'key repeated in query' => ['https://example.com/01/09520123456788?01=09520123456788', 'GS1 Digital Link has AI (01) in the path and in the query.'];
-        yield 'qualifier repeated in query' => ['https://example.com/01/09520123456788/10/A?10=B', 'GS1 Digital Link has AI (10) in the path and in the query.'];
-        yield 'empty attribute' => ['https://example.com/01/09520123456788?17=', 'GS1 Digital Link query has AI (17) without a value.'];
+        yield 'key repeated in query' => ['https://example.com/01/09520123456788?01=09520123456788', 'GS1 Digital Link has an AI in the path and in the query.'];
+        yield 'qualifier repeated in query' => ['https://example.com/01/09520123456788/10/A?10=B', 'GS1 Digital Link has an AI in the path and in the query.'];
+        yield 'empty attribute' => ['https://example.com/01/09520123456788?17=', 'GS1 Digital Link query has an AI without a value.'];
         yield 'NUL in path' => ['https://example.com/01/0952012345678%008', 'GS1 Digital Link data contains a NUL character.'];
         yield 'NUL in query' => ['https://example.com/01/09520123456788?17=20122%00', 'GS1 Digital Link data contains a NUL character.'];
-        yield 'check digit' => ['https://example.com/01/09520123456789', 'GS1 Digital Link data is not a valid element string: Element string AI (01) data fails the GS1 csum check.'];
-        yield 'invalid pair' => ['https://example.com/01/09520123456788?37=1', 'GS1 Digital Link data is not a valid element string: Element string AI (01) must not appear with AI (37).'];
+        yield 'check digit' => ['https://example.com/01/09520123456789', 'GS1 Digital Link data is not a valid element string: Element string AI data fails the GS1 csum check.'];
+        yield 'invalid pair' => ['https://example.com/01/09520123456788?37=1', 'GS1 Digital Link data is not a valid element string: Element string has two AIs that must not appear together.'];
     }
 
     #[DataProvider('invalidUris')]
@@ -425,8 +425,8 @@ final class DigitalLinkTest extends TestCase
     public static function unconvertibleElementStrings(): iterable
     {
         yield 'no primary key' => ['(10)ABC', 'https://id.gs1.org', 'GS1 Digital Link needs a primary key AI in the element string.'];
-        yield 'not an attribute' => ['(414)9520123456788(7040)1A2B(91)X(8019)1', 'https://id.gs1.org', 'GS1 Digital Link cannot carry AI (8019) of the element string: it is neither a key qualifier of AI (414) nor a data attribute.'];
-        yield 'qualifier of another key' => ['(01)09520123456788(7040)1A2B', 'https://id.gs1.org', 'GS1 Digital Link cannot carry AI (7040) of the element string: it is neither a key qualifier of AI (01) nor a data attribute.'];
+        yield 'not an attribute' => ['(414)9520123456788(7040)1A2B(91)X(8019)1', 'https://id.gs1.org', 'GS1 Digital Link cannot carry an AI of the element string: it is neither a key qualifier of the primary key nor a data attribute.'];
+        yield 'qualifier of another key' => ['(01)09520123456788(7040)1A2B', 'https://id.gs1.org', 'GS1 Digital Link cannot carry an AI of the element string: it is neither a key qualifier of the primary key nor a data attribute.'];
         yield 'domain with query' => ['(01)09520123456788', 'https://example.com/?a=1', 'GS1 Digital Link domain must be an http or https URL without query or fragment.'];
         yield 'domain with fragment' => ['(01)09520123456788', 'https://example.com#a', 'GS1 Digital Link domain must be an http or https URL without query or fragment.'];
         yield 'domain not a URL' => ['(01)09520123456788', 'example.com', 'GS1 Digital Link domain must be an http or https URL without query or fragment.'];

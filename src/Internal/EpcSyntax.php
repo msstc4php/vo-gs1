@@ -47,7 +47,7 @@ final class EpcSyntax
     public static function canonical(string $value): string
     {
         if (\strlen($value) > self::MAX_LENGTH) {
-            throw self::fail(\sprintf('EPC URI must have at most %d characters, got %d.', self::MAX_LENGTH, \strlen($value)));
+            throw self::fail(\sprintf('EPC URI must have at most %d characters.', self::MAX_LENGTH));
         }
 
         return (string) \preg_replace_callback('/%[0-9A-Fa-f]{2}/', static fn (array $match): string => \strtoupper($match[0]), $value);
@@ -82,7 +82,7 @@ final class EpcSyntax
 
         $prefix = \strlen($components[0]);
         if ($scheme->hasElementString() && ($prefix < self::COMPANY_PREFIX_MIN || $prefix > self::COMPANY_PREFIX_MAX)) {
-            throw self::fail(\sprintf('EPC pure identity URI company prefix must have 6 to 12 digits, got %d.', $prefix));
+            throw self::fail('EPC pure identity URI company prefix must have 6 to 12 digits.');
         }
 
         return $components;
@@ -141,7 +141,7 @@ final class EpcSyntax
         }
 
         if ($companyPrefixLength < self::COMPANY_PREFIX_MIN || $companyPrefixLength > self::COMPANY_PREFIX_MAX) {
-            throw self::fail(\sprintf('EPC company prefix length must be 6 to 12, got %d.', $companyPrefixLength));
+            throw self::fail('EPC company prefix length must be 6 to 12.');
         }
 
         $l = $companyPrefixLength;
@@ -225,16 +225,16 @@ final class EpcSyntax
     {
         $partition = self::COMPANY_PREFIX_MAX - \strlen($c[0]);
         match ($encoding) {
-            EpcTagEncoding::Sgtin96, EpcTagEncoding::Grai96 => self::below($c[2], 38, $encoding),
-            EpcTagEncoding::Sgln96, EpcTagEncoding::Gdti96 => self::below($c[2], 41, $encoding),
-            EpcTagEncoding::Itip110 => self::below($c[4], 38, $encoding),
-            EpcTagEncoding::Gdti113 => self::digits($c[2], $encoding),
-            EpcTagEncoding::Giai96 => [self::maxDigits($c[1], 13 + $partition, $encoding), self::below($c[1], self::GIAI_96_BITS[$partition], $encoding)],
+            EpcTagEncoding::Sgtin96, EpcTagEncoding::Grai96 => self::below($c[2], 38),
+            EpcTagEncoding::Sgln96, EpcTagEncoding::Gdti96 => self::below($c[2], 41),
+            EpcTagEncoding::Itip110 => self::below($c[4], 38),
+            EpcTagEncoding::Gdti113 => self::digits($c[2]),
+            EpcTagEncoding::Giai96 => [self::maxDigits($c[1], 13 + $partition), self::below($c[1], self::GIAI_96_BITS[$partition])],
             // Within 3 + P digits the reference is always below its 11 to 31 bits.
-            EpcTagEncoding::Cpi96 => [self::maxDigits($c[1], 3 + $partition, $encoding), self::below($c[2], 31, $encoding)],
-            EpcTagEncoding::Gid96 => [self::below($c[0], 28, $encoding), self::below($c[1], 24, $encoding), self::below($c[2], 36, $encoding)],
-            EpcTagEncoding::Usdod96 => self::below($c[1], 36, $encoding),
-            EpcTagEncoding::AdiVar => [self::maxCharacters($c[1], 32, $encoding), self::maxCharacters($c[2], 30, $encoding)],
+            EpcTagEncoding::Cpi96 => [self::maxDigits($c[1], 3 + $partition), self::below($c[2], 31)],
+            EpcTagEncoding::Gid96 => [self::below($c[0], 28), self::below($c[1], 24), self::below($c[2], 36)],
+            EpcTagEncoding::Usdod96 => self::below($c[1], 36),
+            EpcTagEncoding::AdiVar => [self::maxCharacters($c[1], 32), self::maxCharacters($c[2], 30)],
             default => null,
         };
     }
@@ -319,47 +319,47 @@ final class EpcSyntax
         }
     }
 
-    private static function numeric(string $value, EpcTagEncoding $encoding): void
+    private static function numeric(string $value): void
     {
         if (\preg_match('/\A' . self::NUMERIC . '\z/', $value) !== 1) {
-            throw self::fail(\sprintf('EPC Tag URI field must be a number without leading zeros for %s.', $encoding->value));
+            throw self::fail('EPC Tag URI field must be a number without leading zeros.');
         }
     }
 
-    private static function digits(string $value, EpcTagEncoding $encoding): true
+    private static function digits(string $value): true
     {
         if (\strspn($value, Gs1Charsets::DIGITS) !== \strlen($value)) {
-            throw self::fail(\sprintf('EPC Tag URI field must be digits for %s.', $encoding->value));
+            throw self::fail('EPC Tag URI field must be digits.');
         }
 
         return true;
     }
 
-    private static function below(string $value, int $bits, EpcTagEncoding $encoding): true
+    private static function below(string $value, int $bits): true
     {
-        self::numeric($value, $encoding);
+        self::numeric($value);
         $limit = (string) (1 << $bits);
         if (\strlen($value) > \strlen($limit) || (\strlen($value) === \strlen($limit) && \strcmp($value, $limit) >= 0)) {
-            throw self::fail(\sprintf('EPC Tag URI field must be below 2^%d for %s.', $bits, $encoding->value));
+            throw self::fail('EPC Tag URI field is above the limit of its encoding.');
         }
 
         return true;
     }
 
-    private static function maxDigits(string $value, int $digits, EpcTagEncoding $encoding): true
+    private static function maxDigits(string $value, int $digits): true
     {
-        self::numeric($value, $encoding);
+        self::numeric($value);
         if (\strlen($value) > $digits) {
-            throw self::fail(\sprintf('EPC Tag URI field must have at most %d digits for %s.', $digits, $encoding->value));
+            throw self::fail('EPC Tag URI field has more digits than its encoding and partition allow.');
         }
 
         return true;
     }
 
-    private static function maxCharacters(string $value, int $characters, EpcTagEncoding $encoding): true
+    private static function maxCharacters(string $value, int $characters): true
     {
         if (\strlen((string) \preg_replace('/%[0-9A-F]{2}/', '_', $value)) > $characters) {
-            throw self::fail(\sprintf('EPC Tag URI field must have at most %d characters for %s.', $characters, $encoding->value));
+            throw self::fail(\sprintf('EPC Tag URI field must have at most %d characters.', $characters));
         }
 
         return true;

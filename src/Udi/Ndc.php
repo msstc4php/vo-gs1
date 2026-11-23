@@ -47,7 +47,7 @@ final class Ndc extends AbstractStringValueObject
     public static function fromDigits(string $digits, NdcConfiguration $configuration): self
     {
         if (!\in_array($configuration, self::candidates($digits), true)) {
-            throw new InvalidUdiException(\sprintf('NDC digits do not fit the %s configuration.', $configuration->value));
+            throw new InvalidUdiException('NDC digits do not fit the given configuration.');
         }
 
         $product = \substr($digits, $configuration->labelerLength(), $configuration->productLength());
@@ -120,20 +120,19 @@ final class Ndc extends AbstractStringValueObject
     protected function parse(string $value): string
     {
         if (\strlen($value) > self::MAX_LENGTH) {
-            throw new InvalidUdiException(\sprintf('NDC must have at most %d characters, got %d.', self::MAX_LENGTH, \strlen($value)));
+            throw new InvalidUdiException(\sprintf('NDC must have at most %d characters.', self::MAX_LENGTH));
         }
 
         if (self::candidates($value) !== []) {
-            throw new AmbiguousValueException(\sprintf('NDC configuration (%d digits fit %s)', \strlen($value), \implode(', ', \array_map(static fn (NdcConfiguration $configuration): string => $configuration->value, self::candidates($value)))), [self::class]);
+            throw new AmbiguousValueException('NDC configuration (bare digits; Ndc::candidates() lists the configurations they fit)', [self::class]);
         }
 
         if (\preg_match(self::PATTERN, $value, $match) !== 1) {
             throw new InvalidUdiException('NDC must be three hyphenated digit segments.');
         }
 
-        $lengths = \sprintf('%d-%d-%d', \strlen($match[1]), \strlen($match[2]), \strlen($match[3]));
-        if (NdcConfiguration::tryFrom($lengths) === null) {
-            throw new InvalidUdiException(\sprintf('NDC segment lengths %s are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).', $lengths));
+        if (NdcConfiguration::tryFrom(\sprintf('%d-%d-%d', \strlen($match[1]), \strlen($match[2]), \strlen($match[3]))) === null) {
+            throw new InvalidUdiException('NDC segment lengths are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).');
         }
 
         return $value;

@@ -82,14 +82,14 @@ final class ElementStringBuilderTest extends TestCase
         $builder = new ElementStringBuilder()->with('01', '09506000134352')->with('10', 'A#B');
 
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string AI (10) data contains a character outside its GS1 character set.');
+        $this->expectExceptionMessage('Element string AI data contains a character outside its GS1 character set.');
         $builder->build();
     }
 
     public function testValueCannotSmuggleAnotherAi(): void
     {
         $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string AI (21) data contains a character outside its GS1 character set.');
+        $this->expectExceptionMessage('Element string AI data contains a character outside its GS1 character set.');
 
         new ElementStringBuilder()->with('01', '09506000134352')->with('21', 'X\\')->with('10', 'Y');
     }

@@ -270,7 +270,7 @@ final class DigitalLinkSyntax
         }
 
         if (!self::isKeySequence($specs[$key], $qualifiers)) {
-            throw self::fail(\sprintf('path has key qualifiers that AI (%s) does not take in this order', $specs[$key]->ai));
+            throw self::fail('path has key qualifiers that its primary key does not take in this order');
         }
 
         return [\implode('/', \array_slice($segments, 0, $key)), $elements];
@@ -301,7 +301,7 @@ final class DigitalLinkSyntax
 
             $spec = AiTable::spec($name) ?? throw self::fail('query has an all-numeric key that is no AI');
             if (\in_array($spec->ai, $pathAis, true)) {
-                throw self::fail(\sprintf('has AI (%s) in the path and in the query', $spec->ai));
+                throw self::fail('has an AI in the path and in the query');
             }
 
             // A repeated attribute "should not" appear; if it does, "the last defined value … takes precedence".
@@ -322,7 +322,7 @@ final class DigitalLinkSyntax
                 $qualifiers = $order;
                 unset($attributes[$name]);
             } elseif (!$attribute->spec->digitalLinkAttribute) {
-                throw self::fail(\sprintf('query has AI (%s), which is not a GS1 Digital Link data attribute', $attribute->spec->ai));
+                throw self::fail('query has an AI that is not a GS1 Digital Link data attribute');
             }
         }
 
@@ -333,7 +333,7 @@ final class DigitalLinkSyntax
     {
         $value = \rawurldecode($inQuery ? \str_replace('+', ' ', $raw) : $raw);
         if ($value === '') {
-            throw $inQuery ? self::fail(\sprintf('query has AI (%s) without a value', $spec->ai)) : self::fail('path has an empty value');
+            throw $inQuery ? self::fail('query has an AI without a value') : self::fail('path has an empty value');
         }
 
         if (\str_contains($value, "\0")) {

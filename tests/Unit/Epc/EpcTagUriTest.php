@@ -125,6 +125,8 @@ final class EpcTagUriTest extends TestCase
     public function testNumericLimitsAtTheirEdges(): void
     {
         self::assertSame('urn:epc:tag:sgtin-96:3.9521141.012345.274877906943', (string) EpcTagUri::from('urn:epc:tag:sgtin-96:3.9521141.012345.274877906943'));
+        self::assertSame(5, EpcTagUri::from('urn:epc:tag:sgln-96:3.9521141.12345.2199023255551')->partition());
+        self::assertSame(5, EpcTagUri::from('urn:epc:tag:itip-110:3.9521141.012345.01.02.274877906943')->partition());
         self::assertSame(0, EpcTagUri::from('urn:epc:tag:giai-96:0.952656789012.4398046511103')->partition());
         self::assertSame(6, EpcTagUri::from('urn:epc:tag:giai-96:0.952114.4611686018427387903')->partition());
         self::assertSame(6, EpcTagUri::from('urn:epc:tag:cpi-96:0.952114.999999999.2147483647')->partition());
@@ -143,11 +145,11 @@ final class EpcTagUriTest extends TestCase
     {
         yield 'pure identity' => ['urn:epc:id:sgtin:9521141.012345.4711', 'EPC Tag URI must start with urn:epc:tag: and name an encoding.'];
         yield 'raw URI' => ['urn:epc:raw:96.x0123456890ABCDEF01234567', 'EPC Tag URI must start with urn:epc:tag: and name an encoding.'];
-        yield 'too long' => ['urn:epc:tag:giai-202:3.9521141.' . \str_repeat('1', 1100), 'EPC URI must have at most 1024 characters, got 1131.'];
+        yield 'too long' => ['urn:epc:tag:giai-202:3.9521141.' . \str_repeat('1', 1100), 'EPC URI must have at most 1024 characters.'];
         yield 'unknown encoding' => ['urn:epc:tag:sgtin-64:3.9521141.012345.4711', 'EPC Tag URI names an unknown encoding.'];
         yield 'encoding without tag form' => ['urn:epc:tag:ginc-96:3.9521141.1', 'EPC Tag URI names an unknown encoding.'];
-        yield 'company prefix of 5' => ['urn:epc:tag:sgtin-96:3.95211.41012345.4711', 'EPC pure identity URI company prefix must have 6 to 12 digits, got 5.'];
-        yield 'company prefix of 13' => ['urn:epc:tag:giai-202:3.9521141123456.1', 'EPC pure identity URI company prefix must have 6 to 12 digits, got 13.'];
+        yield 'company prefix of 5' => ['urn:epc:tag:sgtin-96:3.95211.41012345.4711', 'EPC pure identity URI company prefix must have 6 to 12 digits.'];
+        yield 'company prefix of 13' => ['urn:epc:tag:giai-202:3.9521141123456.1', 'EPC pure identity URI company prefix must have 6 to 12 digits.'];
         yield 'filter of 8' => ['urn:epc:tag:sgtin-96:8.9521141.012345.4711', 'EPC Tag URI filter value must be below 8.'];
         yield 'filter of 64' => ['urn:epc:tag:adi-var:64.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI filter value must be below 64.'];
         yield 'filter with leading zero' => ['urn:epc:tag:sgtin-96:03.9521141.012345.4711', 'EPC Tag URI filter value must be a number without leading zeros.'];
@@ -161,34 +163,34 @@ final class EpcTagUriTest extends TestCase
         yield 'usdod filter of 99' => ['urn:epc:tag:usdod-96:99.2S194.1', 'EPC Tag URI filter value must be below 16.'];
         yield 'filter of 19 digits never reaches the int cast' => ['urn:epc:tag:usdod-96:1234567890123456789.CAGEY.5678', 'EPC Tag URI filter value must be below 16.'];
         yield 'three-digit filter on adi-var' => ['urn:epc:tag:adi-var:100.35962.PQ7VZ4.M37GXB92', 'EPC Tag URI filter value must be below 64.'];
-        yield 'usdod serial 2^36' => ['urn:epc:tag:usdod-96:3.2S194.68719476736', 'EPC Tag URI field must be below 2^36 for usdod-96.'];
+        yield 'usdod serial 2^36' => ['urn:epc:tag:usdod-96:3.2S194.68719476736', 'EPC Tag URI field is above the limit of its encoding.'];
         yield 'controls out of order' => ['urn:epc:tag:[xpc=x0004][att=x01]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'control repeated' => ['urn:epc:tag:[att=x01][att=x01]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'control unknown' => ['urn:epc:tag:[foo=1]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'control lower hex' => ['urn:epc:tag:[att=x0a]:sgtin-96:3.9521141.012345.4711', 'EPC Tag URI control fields must be att, umi, xpc, each at most once and in that order.'];
         yield 'controls without colon' => ['urn:epc:tag:[att=x01]sgtin-96:3.9521141.012345.4711', 'EPC Tag URI must start with urn:epc:tag: and name an encoding.'];
-        yield 'sgtin-96 alpha serial' => ['urn:epc:tag:sgtin-96:3.9521141.012345.A1', 'EPC Tag URI field must be a number without leading zeros for sgtin-96.'];
-        yield 'sgtin-96 leading zero' => ['urn:epc:tag:sgtin-96:3.9521141.012345.01', 'EPC Tag URI field must be a number without leading zeros for sgtin-96.'];
-        yield 'sgtin-96 serial 2^38' => ['urn:epc:tag:sgtin-96:3.9521141.012345.274877906944', 'EPC Tag URI field must be below 2^38 for sgtin-96.'];
-        yield 'sgtin-96 long serial' => ['urn:epc:tag:sgtin-96:3.9521141.012345.1000000000000', 'EPC Tag URI field must be below 2^38 for sgtin-96.'];
-        yield 'sgln-96 extension 2^41' => ['urn:epc:tag:sgln-96:3.9521141.12345.2199023255552', 'EPC Tag URI field must be below 2^41 for sgln-96.'];
-        yield 'grai-96 serial 2^38' => ['urn:epc:tag:grai-96:3.9521141.12345.274877906944', 'EPC Tag URI field must be below 2^38 for grai-96.'];
-        yield 'gdti-96 serial 2^41' => ['urn:epc:tag:gdti-96:3.9521141.12345.2199023255552', 'EPC Tag URI field must be below 2^41 for gdti-96.'];
-        yield 'gdti-113 alpha serial' => ['urn:epc:tag:gdti-113:3.9521141.12345.A1', 'EPC Tag URI field must be digits for gdti-113.'];
-        yield 'itip-110 serial 2^38' => ['urn:epc:tag:itip-110:3.9521141.012345.01.02.274877906944', 'EPC Tag URI field must be below 2^38 for itip-110.'];
-        yield 'giai-96 too many digits' => ['urn:epc:tag:giai-96:3.952656789012.10000000000000', 'EPC Tag URI field must have at most 13 digits for giai-96.'];
-        yield 'giai-96 2^62' => ['urn:epc:tag:giai-96:3.952114.4611686018427387904', 'EPC Tag URI field must be below 2^62 for giai-96.'];
-        yield 'giai-96 alpha' => ['urn:epc:tag:giai-96:3.9521141.A', 'EPC Tag URI field must be a number without leading zeros for giai-96.'];
-        yield 'cpi-96 alpha reference' => ['urn:epc:tag:cpi-96:3.9521141.123ABC.1', 'EPC Tag URI field must be a number without leading zeros for cpi-96.'];
-        yield 'cpi-96 long reference' => ['urn:epc:tag:cpi-96:3.952114123456.1000.1', 'EPC Tag URI field must have at most 3 digits for cpi-96.'];
-        yield 'cpi-96 reference of 10 digits' => ['urn:epc:tag:cpi-96:3.952114.2147483648.1', 'EPC Tag URI field must have at most 9 digits for cpi-96.'];
-        yield 'cpi-96 reference of 4 digits at partition 0' => ['urn:epc:tag:cpi-96:3.952114123456.2048.1', 'EPC Tag URI field must have at most 3 digits for cpi-96.'];
-        yield 'cpi-96 serial 2^31' => ['urn:epc:tag:cpi-96:3.9521141.98765.2147483648', 'EPC Tag URI field must be below 2^31 for cpi-96.'];
-        yield 'gid-96 manager 2^28' => ['urn:epc:tag:gid-96:268435456.1.1', 'EPC Tag URI field must be below 2^28 for gid-96.'];
-        yield 'gid-96 class 2^24' => ['urn:epc:tag:gid-96:1.16777216.1', 'EPC Tag URI field must be below 2^24 for gid-96.'];
-        yield 'gid-96 serial 2^36' => ['urn:epc:tag:gid-96:1.1.68719476736', 'EPC Tag URI field must be below 2^36 for gid-96.'];
-        yield 'adi-var part of 33' => ['urn:epc:tag:adi-var:3.35962.' . \str_repeat('A', 33) . '.1', 'EPC Tag URI field must have at most 32 characters for adi-var.'];
-        yield 'adi-var serial of 31' => ['urn:epc:tag:adi-var:3.35962..' . \str_repeat('1', 31), 'EPC Tag URI field must have at most 30 characters for adi-var.'];
+        yield 'sgtin-96 alpha serial' => ['urn:epc:tag:sgtin-96:3.9521141.012345.A1', 'EPC Tag URI field must be a number without leading zeros.'];
+        yield 'sgtin-96 leading zero' => ['urn:epc:tag:sgtin-96:3.9521141.012345.01', 'EPC Tag URI field must be a number without leading zeros.'];
+        yield 'sgtin-96 serial 2^38' => ['urn:epc:tag:sgtin-96:3.9521141.012345.274877906944', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'sgtin-96 long serial' => ['urn:epc:tag:sgtin-96:3.9521141.012345.1000000000000', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'sgln-96 extension 2^41' => ['urn:epc:tag:sgln-96:3.9521141.12345.2199023255552', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'grai-96 serial 2^38' => ['urn:epc:tag:grai-96:3.9521141.12345.274877906944', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'gdti-96 serial 2^41' => ['urn:epc:tag:gdti-96:3.9521141.12345.2199023255552', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'gdti-113 alpha serial' => ['urn:epc:tag:gdti-113:3.9521141.12345.A1', 'EPC Tag URI field must be digits.'];
+        yield 'itip-110 serial 2^38' => ['urn:epc:tag:itip-110:3.9521141.012345.01.02.274877906944', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'giai-96 too many digits' => ['urn:epc:tag:giai-96:3.952656789012.10000000000000', 'EPC Tag URI field has more digits than its encoding and partition allow.'];
+        yield 'giai-96 2^62' => ['urn:epc:tag:giai-96:3.952114.4611686018427387904', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'giai-96 alpha' => ['urn:epc:tag:giai-96:3.9521141.A', 'EPC Tag URI field must be a number without leading zeros.'];
+        yield 'cpi-96 alpha reference' => ['urn:epc:tag:cpi-96:3.9521141.123ABC.1', 'EPC Tag URI field must be a number without leading zeros.'];
+        yield 'cpi-96 long reference' => ['urn:epc:tag:cpi-96:3.952114123456.1000.1', 'EPC Tag URI field has more digits than its encoding and partition allow.'];
+        yield 'cpi-96 reference of 10 digits' => ['urn:epc:tag:cpi-96:3.952114.2147483648.1', 'EPC Tag URI field has more digits than its encoding and partition allow.'];
+        yield 'cpi-96 reference of 4 digits at partition 0' => ['urn:epc:tag:cpi-96:3.952114123456.2048.1', 'EPC Tag URI field has more digits than its encoding and partition allow.'];
+        yield 'cpi-96 serial 2^31' => ['urn:epc:tag:cpi-96:3.9521141.98765.2147483648', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'gid-96 manager 2^28' => ['urn:epc:tag:gid-96:268435456.1.1', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'gid-96 class 2^24' => ['urn:epc:tag:gid-96:1.16777216.1', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'gid-96 serial 2^36' => ['urn:epc:tag:gid-96:1.1.68719476736', 'EPC Tag URI field is above the limit of its encoding.'];
+        yield 'adi-var part of 33' => ['urn:epc:tag:adi-var:3.35962.' . \str_repeat('A', 33) . '.1', 'EPC Tag URI field must have at most 32 characters.'];
+        yield 'adi-var serial of 31' => ['urn:epc:tag:adi-var:3.35962..' . \str_repeat('1', 31), 'EPC Tag URI field must have at most 30 characters.'];
     }
 
     #[DataProvider('invalidUris')]
@@ -206,7 +208,7 @@ final class EpcTagUriTest extends TestCase
 
         self::assertSame('urn:epc:tag:sgtin-198:0.9521141.012345.A1', (string) EpcTagUri::fromPureIdentityUri($pure, EpcTagEncoding::Sgtin198, 0));
 
-        foreach ([[EpcTagEncoding::Sscc96, 3, 'EPC Tag URI encoding sscc-96 is not one of scheme sgtin.'], [EpcTagEncoding::Sgtin198, null, 'EPC Tag URI encoding sgtin-198 needs a filter value.'], [EpcTagEncoding::Sgtin96, 3, 'EPC Tag URI field must be a number without leading zeros for sgtin-96.']] as [$encoding, $filter, $message]) {
+        foreach ([[EpcTagEncoding::Sscc96, 3, 'EPC Tag URI encoding is not one of the scheme of the pure identity URI.'], [EpcTagEncoding::Sgtin198, null, 'EPC Tag URI encoding needs a filter value.'], [EpcTagEncoding::Sgtin96, 3, 'EPC Tag URI field must be a number without leading zeros.']] as [$encoding, $filter, $message]) {
             try {
                 EpcTagUri::fromPureIdentityUri($pure, $encoding, $filter);
                 self::fail('Expected InvalidEpcUriException.');
@@ -216,7 +218,7 @@ final class EpcTagUriTest extends TestCase
         }
 
         $this->expectException(InvalidEpcUriException::class);
-        $this->expectExceptionMessage('EPC Tag URI encoding gid-96 has no filter value.');
+        $this->expectExceptionMessage('EPC Tag URI encoding has no filter value.');
 
         EpcTagUri::fromPureIdentityUri(EpcPureIdentityUri::from('urn:epc:id:gid:952056.2718.1414'), EpcTagEncoding::Gid96, 0);
     }

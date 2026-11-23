@@ -47,10 +47,10 @@ final class TobaccoUnitIdentifierTest extends TestCase
      */
     public static function invalid(): iterable
     {
-        yield 'too long' => [\str_repeat('A', 43) . '26111923', 'Tobacco unit level UI must have 11 to 50 alphanumeric characters, got 51.'];
-        yield 'too short' => ['AB19052014', 'Tobacco unit level UI must have 11 to 50 alphanumeric characters, got 10.'];
-        yield 'not alphanumeric' => ['AB-1234519052014', 'Tobacco unit level UI must have 11 to 50 alphanumeric characters, got 16.'];
-        yield 'trailing newline' => ["ABC19052014\n", 'Tobacco unit level UI must have 11 to 50 alphanumeric characters, got 12.'];
+        yield 'too long' => [\str_repeat('A', 43) . '26111923', 'Tobacco unit level UI must have 11 to 50 alphanumeric characters.'];
+        yield 'too short' => ['AB19052014', 'Tobacco unit level UI must have 11 to 50 alphanumeric characters.'];
+        yield 'not alphanumeric' => ['AB-1234519052014', 'Tobacco unit level UI must have 11 to 50 alphanumeric characters.'];
+        yield 'trailing newline' => ["ABC19052014\n", 'Tobacco unit level UI must have 11 to 50 alphanumeric characters.'];
         yield 'hour 24' => ['ABC19052024', 'Tobacco unit level UI must end with the time stamp YYMMDDhh.'];
         yield 'month 13' => ['ABC19132014', 'Tobacco unit level UI must end with the time stamp YYMMDDhh.'];
         yield 'day 00' => ['ABC19050014', 'Tobacco unit level UI must end with the time stamp YYMMDDhh.'];
@@ -93,10 +93,10 @@ final class TobaccoUnitIdentifierTest extends TestCase
      */
     public static function invalidWithoutTimeStamp(): iterable
     {
-        yield 'too short' => ['AB', 'Tobacco unit level UI without time stamp must have 3 to 42 alphanumeric characters, got 2.'];
-        yield 'too long' => [\str_repeat('A', 43), 'Tobacco unit level UI without time stamp must have 3 to 42 alphanumeric characters, got 43.'];
-        yield 'not alphanumeric' => ['AB-C', 'Tobacco unit level UI without time stamp must have 3 to 42 alphanumeric characters, got 4.'];
-        yield 'trailing newline' => ["ABC\n", 'Tobacco unit level UI without time stamp must have 3 to 42 alphanumeric characters, got 4.'];
+        yield 'too short' => ['AB', 'Tobacco unit level UI without time stamp must have 3 to 42 alphanumeric characters.'];
+        yield 'too long' => [\str_repeat('A', 43), 'Tobacco unit level UI without time stamp must have 3 to 42 alphanumeric characters.'];
+        yield 'not alphanumeric' => ['AB-C', 'Tobacco unit level UI without time stamp must have 3 to 42 alphanumeric characters.'];
+        yield 'trailing newline' => ["ABC\n", 'Tobacco unit level UI without time stamp must have 3 to 42 alphanumeric characters.'];
     }
 
     #[DataProvider('invalidWithoutTimeStamp')]

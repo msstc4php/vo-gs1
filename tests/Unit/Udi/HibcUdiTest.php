@@ -180,7 +180,7 @@ final class HibcUdiTest extends TestCase
         $secondary = 'secondary data must follow a format of Appendix F';
         $supplemental = 'supplemental data must be S, 16D, 14D or Q with its data';
 
-        yield 'too long' => [\str_repeat('A', 114), 'must have at most 113 characters, got 114'];
+        yield 'too long' => [\str_repeat('A', 114), 'must have at most 113 characters'];
         yield 'longest' => ['+' . \str_repeat('A', 112), 'has a wrong Mod 43 check character'];
         yield 'flag and check character only' => ['++', $primary];
         yield 'no flag' => ['A123BJC5D6E71G', 'must start with the flag character "+"'];
@@ -201,14 +201,14 @@ final class HibcUdiTest extends TestCase
         yield 'quantity flag 8 with one digit' => [self::concatenated('$$8'), $secondary];
         yield 'flag letter' => [self::concatenated('$$A'), $secondary];
         yield 'MMYY of 3 digits' => [self::concatenated('$$095'), $secondary];
-        yield 'month 13' => [self::concatenated('$$3051301'), 'date in the YYMMDD format does not exist'];
-        yield 'day 31 June' => [self::concatenated('$$2063105'), 'date in the MMDDYY format does not exist'];
-        yield '29 February 2005' => [self::concatenated('$$3050229'), 'date in the YYMMDD format does not exist'];
-        yield 'hour 24' => [self::concatenated('$$40509282400'), 'date in the YYMMDDHH format does not exist'];
-        yield 'Julian day 366 of 2005' => [self::concatenated('$$505366'), 'date in the YYJJJ format does not exist'];
-        yield 'Julian day 0' => [self::concatenated('05000'), 'date in the YYJJJ format does not exist'];
-        yield 'Julian hour 24' => [self::concatenated('$$60527124'), 'date in the YYJJJHH format does not exist'];
-        yield 'MMYY month 00' => [self::concatenated('$$0005'), 'date in the MMYY format does not exist'];
+        yield 'month 13' => [self::concatenated('$$3051301'), 'has a date that does not exist'];
+        yield 'day 31 June' => [self::concatenated('$$2063105'), 'has a date that does not exist'];
+        yield '29 February 2005' => [self::concatenated('$$3050229'), 'has a date that does not exist'];
+        yield 'hour 24' => [self::concatenated('$$40509282400'), 'has a date that does not exist'];
+        yield 'Julian day 366 of 2005' => [self::concatenated('$$505366'), 'has a date that does not exist'];
+        yield 'Julian day 0' => [self::concatenated('05000'), 'has a date that does not exist'];
+        yield 'Julian hour 24' => [self::concatenated('$$60527124'), 'has a date that does not exist'];
+        yield 'MMYY month 00' => [self::concatenated('$$0005'), 'has a date that does not exist'];
         yield 'legacy lot of 14' => [self::concatenated('05271' . \str_repeat('L', 14)), $secondary];
         yield 'lot of 19' => [self::concatenated('$$7' . \str_repeat('L', 19)), $secondary];
         yield 'lot only flag without lot' => [self::concatenated('$'), $secondary];
@@ -220,10 +220,10 @@ final class HibcUdiTest extends TestCase
         yield '16D of 7 digits' => [self::concatenated('$$7A/16D2011121'), $supplemental];
         yield 'Q of 6 digits' => [self::concatenated('$$7A/Q123456'), $supplemental];
         yield 'Q not last' => [self::concatenated('$$7A/Q5/S1'), 'quantity must be the last supplemental data field'];
-        yield 'repeated S' => [self::concatenated('$$7A/S1/S2'), 'repeats the supplemental data identifier S'];
-        yield 'repeated 16D' => [self::concatenated('$$7A/16D20111212/16D20111213'), 'repeats the supplemental data identifier 16D'];
-        yield 'bad 14D date' => [self::concatenated('$$7A/14D20201301'), 'date in the YYYYMMDD format does not exist'];
-        yield 'bad 16D date' => [self::concatenated('$$7A/16D20210229'), 'date in the YYYYMMDD format does not exist'];
+        yield 'repeated S' => [self::concatenated('$$7A/S1/S2'), 'repeats a supplemental data identifier'];
+        yield 'repeated 16D' => [self::concatenated('$$7A/16D20111212/16D20111213'), 'repeats a supplemental data identifier'];
+        yield 'bad 14D date' => [self::concatenated('$$7A/14D20201301'), 'has a date that does not exist'];
+        yield 'bad 16D date' => [self::concatenated('$$7A/16D20210229'), 'has a date that does not exist'];
     }
 
     #[DataProvider('badUdis')]
@@ -309,7 +309,7 @@ final class HibcUdiTest extends TestCase
     public function testDay367OfALeapYearIsRefused(): void
     {
         $this->expectException(InvalidUdiException::class);
-        $this->expectExceptionMessage('HIBC UDI date in the YYJJJ format does not exist.');
+        $this->expectExceptionMessage('HIBC UDI has a date that does not exist.');
 
         HibcUdi::from(self::concatenated('$$524367'));
     }
@@ -451,7 +451,7 @@ final class HibcUdiTest extends TestCase
     public function testInvalidSecondaryContentFromSymbolsIsRefused(): void
     {
         $this->expectException(InvalidUdiException::class);
-        $this->expectExceptionMessage('HIBC UDI date in the YYMMDD format does not exist.');
+        $this->expectExceptionMessage('HIBC UDI has a date that does not exist.');
 
         HibcUdi::fromSymbols(self::PRIMARY, '+$$3051301G' . Mod43::compute('+$$3051301G'));
     }

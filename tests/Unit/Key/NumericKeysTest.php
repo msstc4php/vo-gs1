@@ -67,7 +67,7 @@ final class NumericKeysTest extends TestCase
     public function testSsccRefusesAnExtensionDigitThatIsNotOneDigit(): void
     {
         $this->expectException(InvalidIdentificationKeyException::class);
-        $this->expectExceptionMessage('SSCC extension digit must have 1 digits, got 2 characters.');
+        $this->expectExceptionMessage('SSCC extension digit must have 1 digits.');
 
         Sscc::fromParts('7610425', '002123456', '33');
     }
@@ -113,7 +113,7 @@ final class NumericKeysTest extends TestCase
         self::assertSame('aZ!"%&\'()*+,-./0', Grai::from('00614141123452aZ!"%&\'()*+,-./0')->serial());
 
         $this->expectException(InvalidIdentificationKeyException::class);
-        $this->expectExceptionMessage('GRAI serial must have 1 to 16 characters, got 17.');
+        $this->expectExceptionMessage('GRAI serial must have 1 to 16 characters.');
 
         Grai::from('00614141123452aZ!"%&\'()*+,-./09');
     }
@@ -150,7 +150,7 @@ final class NumericKeysTest extends TestCase
         self::assertSame('12345678901234567', Gdti::from('061414112345212345678901234567')->serial());
 
         $this->expectException(InvalidIdentificationKeyException::class);
-        $this->expectExceptionMessage('GDTI serial must have 1 to 17 characters, got 18.');
+        $this->expectExceptionMessage('GDTI serial must have 1 to 17 characters.');
 
         Gdti::from('0614141123452123456789012345678');
     }
@@ -169,7 +169,7 @@ final class NumericKeysTest extends TestCase
     public function testGcnSerialIsAtMostTwelveDigits(): void
     {
         $this->expectException(InvalidIdentificationKeyException::class);
-        $this->expectExceptionMessage('GCN serial must have 1 to 12 digits, got 13.');
+        $this->expectExceptionMessage('GCN serial must have 1 to 12 digits.');
 
         Gcn::from('06141411234521234567890123');
     }
@@ -195,14 +195,14 @@ final class NumericKeysTest extends TestCase
         yield 'GRAI check digit' => [Grai::class, '00614141123453400', 'GRAI has a wrong check digit.'];
         yield 'GDTI check digit' => [Gdti::class, '0614141123453400', 'GDTI has a wrong check digit.'];
         yield 'GCN check digit' => [Gcn::class, '06141411234531234', 'GCN has a wrong check digit.'];
-        yield 'GLN length' => [Gln::class, '061414112345', 'GLN must have 13 digits, got 12 characters.'];
-        yield 'SSCC length' => [Sscc::class, '3761042500212345', 'SSCC must have 18 digits, got 16 characters.'];
-        yield 'GSRN length' => [Gsrn::class, '0614141123456789', 'GSRN must have 18 digits, got 16 characters.'];
-        yield 'GSIN length' => [Gsin::class, '0614141123456789', 'GSIN must have 17 digits, got 16 characters.'];
+        yield 'GLN length' => [Gln::class, '061414112345', 'GLN must have 13 digits.'];
+        yield 'SSCC length' => [Sscc::class, '3761042500212345', 'SSCC must have 18 digits.'];
+        yield 'GSRN length' => [Gsrn::class, '0614141123456789', 'GSRN must have 18 digits.'];
+        yield 'GSIN length' => [Gsin::class, '0614141123456789', 'GSIN must have 17 digits.'];
         yield 'GLN letters' => [Gln::class, '061414112345A', 'GLN must contain digits only.'];
-        yield 'GDTI short' => [Gdti::class, '061414112345', 'GDTI must have 13 digits, got 12 characters.'];
-        yield 'GCN empty' => [Gcn::class, '', 'GCN must have 13 digits, got 0 characters.'];
-        yield 'GRAI short' => [Grai::class, '0061414112345', 'GRAI must have 14 digits, got 13 characters.'];
+        yield 'GDTI short' => [Gdti::class, '061414112345', 'GDTI must have 13 digits.'];
+        yield 'GCN empty' => [Gcn::class, '', 'GCN must have 13 digits.'];
+        yield 'GRAI short' => [Grai::class, '0061414112345', 'GRAI must have 14 digits.'];
     }
 
     /**
@@ -240,7 +240,7 @@ final class NumericKeysTest extends TestCase
     public function testFromPartsRefusesAWrongTotalLength(string $class, string $expected): void
     {
         $this->expectException(InvalidIdentificationKeyException::class);
-        $this->expectExceptionMessage(\sprintf('company prefix and reference must have %s digits in total, got 11.', $expected));
+        $this->expectExceptionMessage(\sprintf('company prefix and reference must have %s digits in total.', $expected));
 
         $class::fromParts('0614141', '1234');
     }

@@ -20,7 +20,7 @@ final class ElementStringBuilder
         $spec = ElementStringSyntax::spec($ai);
         // A backslash is in no GS1 character set; refused here, it would turn the next "(" into data.
         if (\str_contains($value, '\\')) {
-            throw ElementStringSyntax::fail(\sprintf('Element string AI (%s) data contains a character outside its GS1 character set.', $spec->ai));
+            throw ElementStringSyntax::fail('Element string AI data contains a character outside its GS1 character set.');
         }
 
         $builder = clone $this;

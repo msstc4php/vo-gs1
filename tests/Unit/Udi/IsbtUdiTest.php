@@ -98,38 +98,38 @@ final class IsbtUdiTest extends TestCase
     {
         $hri = self::HRI;
 
-        yield 'too long' => [$hri . '=%' . \str_repeat('9', 3068), 'must have at most 3116 characters, got 3120'];
+        yield 'too long' => [$hri . '=%' . \str_repeat('9', 3068), 'must have at most 3116 characters'];
         yield 'too many structures' => [$hri . \str_repeat('=%1', 96), 'must have at most 99 data structures'];
         yield 'no DI first' => ['=A99991712345600=/A9997XYZ100T0479=,000012', 'must begin with the Processor Product Identification Code "=/"'];
         yield 'compound without DI first' => ['=+03000=,000012=/A9997XYZ100T0479=A99991712345600', 'must begin with the Processor Product Identification Code "=/"'];
         yield 'empty' => ['', 'must begin with the Processor Product Identification Code "=/"'];
         yield 'header only' => ['=+00000', 'must begin with the Processor Product Identification Code "=/"'];
-        yield 'count too high' => ['=+05000' . $hri, 'compound message data structure count does not match, got 4'];
-        yield 'count too low' => ['=+03000' . $hri, 'compound message data structure count does not match, got 4'];
+        yield 'count too high' => ['=+05000' . $hri, 'compound message data structure count does not match'];
+        yield 'count too low' => ['=+03000' . $hri, 'compound message data structure count does not match'];
         yield 'specified sequence out of order' => ['=+04035' . $hri, 'data structures are not in the order of the specified sequence'];
         yield 'specified sequence 034 with an extra' => ['=+04034=/A9997XYZ100T0479=,000012=A99991712345600=>019031', 'data structures are not in the order of the specified sequence'];
         yield 'header inside' => [$hri . '=+01000', 'has a compound message header after its start'];
         yield 'no DIN' => ['=/A9997XYZ100T0479=,000012=>019031', 'must carry the Donation Identification Number'];
         yield 'no divisions' => ['=/A9997XYZ100T0479=A99991712345600', 'must carry the Product Divisions'];
-        yield 'repeated divisions' => [$hri . '=,000013', 'repeats the Product Divisions data structure'];
-        yield 'repeated DI' => [$hri . '=/A9997XYZ100T0479', 'repeats the Processor Product Identification Code data structure'];
+        yield 'repeated divisions' => [$hri . '=,000013', 'repeats a data structure'];
+        yield 'repeated DI' => [$hri . '=/A9997XYZ100T0479', 'repeats a data structure'];
         yield 'UDI after non-UDI' => [$hri . '=%5100&,1LOT', 'has a UDI data structure after a non-UDI one'];
         yield 'non-UDI with a space' => [$hri . '=% 51', 'has a non-UDI data structure without data or with a character that is not printable ASCII'];
         yield 'bare data identifier' => [$hri . '&', 'has a non-UDI data structure without data or with a character that is not printable ASCII'];
         yield 'non-UDI without data' => [$hri . '=%', 'has a non-UDI data structure without data or with a character that is not printable ASCII'];
         yield 'non-UDI with a trailing newline' => [$hri . "=%5\n", 'has a non-UDI data structure without data or with a character that is not printable ASCII'];
-        yield 'DI with O in the FIN' => ['=/O9997XYZ100T0479=A99991712345600=,000012', 'Processor Product Identification Code data structure has a wrong length or character'];
-        yield 'DI of 15' => ['=/A9997XYZ100T047=A99991712345600=,000012', 'Processor Product Identification Code data structure has a wrong length or character'];
-        yield 'DI lower case' => ['=/a9997XYZ100T0479=A99991712345600=,000012', 'Processor Product Identification Code data structure has a wrong length or character'];
-        yield 'DIN of 14' => ['=/A9997XYZ100T0479=A999917123456=,000012', 'Donation Identification Number data structure has a wrong length or character'];
-        yield 'DIN flag I' => ['=/A9997XYZ100T0479=A999917123456I0=,000012', 'Donation Identification Number data structure has a wrong length or character'];
-        yield 'DIN letter in the year' => ['=/A9997XYZ100T0479=A9999A712345600=,000012', 'Donation Identification Number data structure has a wrong length or character'];
-        yield 'divisions of 5' => ['=/A9997XYZ100T0479=A99991712345600=,00012', 'Product Divisions data structure has a wrong length or character'];
-        yield 'expiry letters' => [$hri . '=}01903A', 'Production Date data structure has a wrong length or character'];
-        yield 'expiry day 0' => ['=/A9997XYZ100T0479=A99991712345600=,000012=>019000', 'expiration date is not a day of its year'];
-        yield 'production day 366 of 2019' => [$hri . '=}019366', 'production date is not a day of its year'];
-        yield 'lot of 19' => [$hri . '&,1' . \str_repeat('L', 19), 'MPHO Lot Number data structure has a wrong length or character'];
-        yield 'lot empty' => [$hri . '&,1', 'MPHO Lot Number data structure has a wrong length or character'];
+        yield 'DI with O in the FIN' => ['=/O9997XYZ100T0479=A99991712345600=,000012', 'has a data structure with a wrong length or character'];
+        yield 'DI of 15' => ['=/A9997XYZ100T047=A99991712345600=,000012', 'has a data structure with a wrong length or character'];
+        yield 'DI lower case' => ['=/a9997XYZ100T0479=A99991712345600=,000012', 'has a data structure with a wrong length or character'];
+        yield 'DIN of 14' => ['=/A9997XYZ100T0479=A999917123456=,000012', 'has a data structure with a wrong length or character'];
+        yield 'DIN flag I' => ['=/A9997XYZ100T0479=A999917123456I0=,000012', 'has a data structure with a wrong length or character'];
+        yield 'DIN letter in the year' => ['=/A9997XYZ100T0479=A9999A712345600=,000012', 'has a data structure with a wrong length or character'];
+        yield 'divisions of 5' => ['=/A9997XYZ100T0479=A99991712345600=,00012', 'has a data structure with a wrong length or character'];
+        yield 'expiry letters' => [$hri . '=}01903A', 'has a data structure with a wrong length or character'];
+        yield 'expiry day 0' => ['=/A9997XYZ100T0479=A99991712345600=,000012=>019000', 'has a date that is not a day of its year'];
+        yield 'production day 366 of 2019' => [$hri . '=}019366', 'has a date that is not a day of its year'];
+        yield 'lot of 19' => [$hri . '&,1' . \str_repeat('L', 19), 'has a data structure with a wrong length or character'];
+        yield 'lot empty' => [$hri . '&,1', 'has a data structure with a wrong length or character'];
     }
 
     #[DataProvider('badUdis')]

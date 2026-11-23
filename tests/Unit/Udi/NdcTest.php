@@ -54,7 +54,7 @@ final class NdcTest extends TestCase
             self::fail('A bare 10-digit NDC must be ambiguous.');
         } catch (AmbiguousValueException $exception) {
             self::assertSame([Ndc::class], $exception->candidates());
-            self::assertSame('Ambiguous NDC configuration (10 digits fit 4-4-2, 5-3-2, 5-4-1): the value fits Ndc.', $exception->getMessage());
+            self::assertSame('Ambiguous NDC configuration (bare digits; Ndc::candidates() lists the configurations they fit): the value fits Ndc.', $exception->getMessage());
         }
 
         self::assertSame(
@@ -72,7 +72,7 @@ final class NdcTest extends TestCase
         self::assertSame([NdcConfiguration::SixThreeTwo, NdcConfiguration::SixFourOne], Ndc::candidates('10010000101'));
 
         $this->expectException(AmbiguousValueException::class);
-        $this->expectExceptionMessage('Ambiguous NDC configuration (11 digits fit 6-3-2, 6-4-1): the value fits Ndc.');
+        $this->expectExceptionMessage('Ambiguous NDC configuration (bare digits; Ndc::candidates() lists the configurations they fit): the value fits Ndc.');
 
         Ndc::from('10010000101');
     }
@@ -88,7 +88,7 @@ final class NdcTest extends TestCase
     public function testFromDigitsRefusesAConfigurationThatDoesNotFit(): void
     {
         $this->expectException(InvalidUdiException::class);
-        $this->expectExceptionMessage('NDC digits do not fit the 6-4-1 configuration.');
+        $this->expectExceptionMessage('NDC digits do not fit the given configuration.');
 
         Ndc::fromDigits('9999912345', NdcConfiguration::SixFourOne);
     }
@@ -98,10 +98,10 @@ final class NdcTest extends TestCase
      */
     public static function badNdcs(): iterable
     {
-        yield 'too long' => ['12345-1234-123', 'NDC must have at most 13 characters, got 14.'];
-        yield '4-3-2' => ['1234-123-12', 'NDC segment lengths 4-3-2 are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
-        yield '4-4-1' => ['1234-1234-1', 'NDC segment lengths 4-4-1 are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
-        yield '5-4-2 billing form' => ['12345-1234-12', 'NDC segment lengths 5-4-2 are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
+        yield 'too long' => ['12345-1234-123', 'NDC must have at most 13 characters.'];
+        yield '4-3-2' => ['1234-123-12', 'NDC segment lengths are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
+        yield '4-4-1' => ['1234-1234-1', 'NDC segment lengths are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
+        yield '5-4-2 billing form' => ['12345-1234-12', 'NDC segment lengths are not a configuration of 21 CFR 207.33(b)(1)(i) and (ii).'];
         yield 'letters' => ['1234A-123-12', 'NDC must be three hyphenated digit segments.'];
         yield 'nine digits' => ['123456789', 'NDC must be three hyphenated digit segments.'];
         yield 'two segments' => ['12345-12345', 'NDC must be three hyphenated digit segments.'];

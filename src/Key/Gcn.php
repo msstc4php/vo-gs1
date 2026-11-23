@@ -52,7 +52,7 @@ final class Gcn extends AbstractStringValueObject implements IdentificationKey
         $serial = \substr($value, 13);
         if ($serial !== '') {
             if (\strlen($serial) > self::SERIAL_MAX) {
-                throw KeyRules::fail('GCN serial', \sprintf('must have 1 to %d digits, got %d', self::SERIAL_MAX, \strlen($serial)));
+                throw KeyRules::fail('GCN serial', \sprintf('must have 1 to %d digits', self::SERIAL_MAX));
             }
 
             KeyRules::digits($serial, 'GCN serial', \strlen($serial));

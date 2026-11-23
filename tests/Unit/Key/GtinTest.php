@@ -130,7 +130,7 @@ final class GtinTest extends TestCase
         yield 'GTIN-8 with a 1-digit prefix' => ['9', '638507', 'GTIN company prefix must have 2 to 12 digits.'];
         yield 'prefix too long' => ['4006381333931', '', 'GTIN company prefix must have 4 to 12 digits.'];
         yield 'prefix not digits' => ['40A1', '6381333', 'GTIN company prefix must have 4 to 12 digits.'];
-        yield 'body of 10' => ['4006381', '333', 'GTIN company prefix and reference must have 7 or 11 or 12 digits in total, got 10.'];
+        yield 'body of 10' => ['4006381', '333', 'GTIN company prefix and reference must have 7 or 11 or 12 digits in total.'];
         yield 'reference not digits' => ['4006381', '3339A', 'GTIN company prefix and reference must contain digits only.'];
     }
 
@@ -149,9 +149,9 @@ final class GtinTest extends TestCase
     public static function invalid(): iterable
     {
         yield 'wrong check digit' => ['4006381333932', 'GTIN has a wrong check digit.'];
-        yield 'length 9' => ['400638133', 'GTIN must have 8, 12, 13 or 14 digits, got 9 characters.'];
-        yield 'length 15' => ['400638133393100', 'GTIN must have 8, 12, 13 or 14 digits, got 15 characters.'];
-        yield 'empty' => ['', 'GTIN must have 8, 12, 13 or 14 digits, got 0 characters.'];
+        yield 'length 9' => ['400638133', 'GTIN must have 8, 12, 13 or 14 digits.'];
+        yield 'length 15' => ['400638133393100', 'GTIN must have 8, 12, 13 or 14 digits.'];
+        yield 'empty' => ['', 'GTIN must have 8, 12, 13 or 14 digits.'];
         yield 'letters' => ['40063813339A1', 'GTIN must contain digits only.'];
     }
 

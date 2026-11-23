@@ -11,8 +11,8 @@ use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
  * @internal
  *
  * Reads a GS1 element string in any of its notations and checks it against the AI table: data format, linters,
- * repeated AIs and the dictionary's `ex` rule; unmet `req` rules are reported, not refused. Messages name the AI and
- * the reason, never the data, and never an AI that is not in the table.
+ * repeated AIs and the dictionary's `ex` rule; unmet `req` rules are reported, not refused. Messages name the reason
+ * and fixed bounds only: no data, no AI number, no length of the input.
  *
  * Notations: bracketed (`(01)…(10)…`, a literal `(` in data escaped as `\(`), and unbracketed with FNC1 written as
  * GS (U+001D) or `^`, optionally after one of the symbology identifiers of GS1 AI element strings or one leading FNC1.
@@ -43,7 +43,7 @@ final class ElementStringSyntax
     public static function parse(string $input): array
     {
         if (\strlen($input) > self::MAX_LENGTH) {
-            throw self::fail(\sprintf('Element string must have at most %d characters, got %d.', self::MAX_LENGTH, \strlen($input)));
+            throw self::fail(\sprintf('Element string must have at most %d characters.', self::MAX_LENGTH));
         }
 
         $elements = \str_starts_with($input, '(') ? self::bracketed($input) : self::unbracketed($input);
@@ -51,9 +51,8 @@ final class ElementStringSyntax
             throw self::fail('Element string is empty.');
         }
 
-        $length = \strlen(self::bracketedForm($elements));
-        if ($length > self::MAX_LENGTH) {
-            throw self::fail(\sprintf('Element string must have at most %d characters in its bracketed form, got %d.', self::MAX_LENGTH, $length));
+        if (\strlen(self::bracketedForm($elements)) > self::MAX_LENGTH) {
+            throw self::fail(\sprintf('Element string must have at most %d characters in its bracketed form.', self::MAX_LENGTH));
         }
 
         $specs = self::checkRepeats($elements);
@@ -241,7 +240,7 @@ final class ElementStringSyntax
     private static function element(AiSpec $spec, string $value): AiElement
     {
         if ($value === '') {
-            throw self::fail(\sprintf('Element string AI (%s) has no data.', $spec->ai));
+            throw self::fail('Element string has an AI without data.');
         }
 
         self::checkData($spec, $value);
@@ -264,16 +263,16 @@ final class ElementStringSyntax
 
             $part = \substr($value, $position, $component->maxLength);
             if (\strlen($part) < $component->minLength) {
-                throw self::lengthFailure($spec, $length);
+                throw self::lengthFailure($spec);
             }
 
             if (!self::inCharset($component->charset, $part)) {
-                throw self::fail(\sprintf('Element string AI (%s) data contains a character outside its GS1 character set.', $spec->ai));
+                throw self::fail('Element string AI data contains a character outside its GS1 character set.');
             }
 
             foreach ($component->linters as $linter) {
                 if (!AiLinters::passes($linter, $part)) {
-                    throw self::fail(\sprintf('Element string AI (%s) data fails the GS1 %s check.', $spec->ai, $linter));
+                    throw self::fail(\sprintf('Element string AI data fails the GS1 %s check.', $linter));
                 }
             }
 
@@ -281,11 +280,11 @@ final class ElementStringSyntax
         }
 
         if ($position < $length) {
-            throw self::lengthFailure($spec, $length);
+            throw self::lengthFailure($spec);
         }
     }
 
-    private static function lengthFailure(AiSpec $spec, int $length): InvalidElementStringException
+    private static function lengthFailure(AiSpec $spec): InvalidElementStringException
     {
         $min = 0;
         $max = 0;
@@ -296,7 +295,7 @@ final class ElementStringSyntax
 
         $expected = $min === $max ? (string) $max : \sprintf('%d to %d', $min, $max);
 
-        return self::fail(\sprintf('Element string AI (%s) data must have %s characters, got %d.', $spec->ai, $expected, $length));
+        return self::fail(\sprintf('Element string AI data must have %s characters.', $expected));
     }
 
     private static function inCharset(AiCharset $charset, string $part): bool
@@ -323,7 +322,7 @@ final class ElementStringSyntax
         foreach ($elements as $element) {
             $key = 'ai' . $element->spec->ai;
             if (isset($values[$key]) && $values[$key] !== $element->value) {
-                throw self::fail(\sprintf('Element string repeats AI (%s) with a different value.', $element->spec->ai));
+                throw self::fail('Element string repeats an AI with a different value.');
             }
 
             $values[$key] = $element->value;
@@ -340,9 +339,8 @@ final class ElementStringSyntax
     {
         foreach ($specs as $spec) {
             foreach ($spec->excludes as $pattern) {
-                $other = self::find($specs, $pattern, $spec->ai);
-                if ($other !== null) {
-                    throw self::fail(\sprintf('Element string AI (%s) must not appear with AI (%s).', $spec->ai, $other));
+                if (self::find($specs, $pattern, $spec->ai) !== null) {
+                    throw self::fail('Element string has two AIs that must not appear together.');
                 }
             }
         }

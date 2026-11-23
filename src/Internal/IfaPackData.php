@@ -138,7 +138,7 @@ final readonly class IfaPackData
     {
         $length = \strlen($data);
         if ($length > self::MAX_TEXT_LENGTH || \strspn($data, Gs1Charsets::CSET_82) !== $length) {
-            throw new InvalidMarkingCodeException(\sprintf('%s DI %s must have 1 to %d characters of GS1 character set 82, got %d characters.', self::TYPE, $identifier, self::MAX_TEXT_LENGTH, $length));
+            throw new InvalidMarkingCodeException(\sprintf('%s DI %s must have 1 to %d characters of GS1 character set 82.', self::TYPE, $identifier, self::MAX_TEXT_LENGTH));
         }
     }
 
