@@ -460,7 +460,9 @@ Every class is a string value object, so `ValueObjectMapper` (vo-base) and the f
 the stored value is the canonical string, at most the class's public `MAX_LENGTH` characters (frozen for 1.x;
 bridges size their columns by it). Marking and FMD codes carry control characters (GS, RS, EOT) that must be
 stored as they are; an element string is stored in its bracketed form, which has none. For Doctrine use
-[`msstc4php/vo-gs1-doctrine`](https://github.com/msstc4php/vo-gs1-doctrine) (31 ORM and ODM types, `gs1_<snake_name>`).
+[`msstc4php/vo-gs1-doctrine`](https://github.com/msstc4php/vo-gs1-doctrine) (31 ORM and ODM types, `gs1_<snake_name>`). `Udi` and `BasicUdiDi` are
+interfaces, which vo-base does not map: a column for "any UDI" is not offered in 1.0 and will come as a separate,
+additive type.
 
 ## GS1 Application Identifier table
 
