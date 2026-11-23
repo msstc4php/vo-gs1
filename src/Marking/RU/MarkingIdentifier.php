@@ -29,6 +29,9 @@ use Override;
  */
 final class MarkingIdentifier extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x: (01) + 14 digits, (21) + a 20-character serial whose every `(` is escaped as `\(`, (8005) + 6 digits. */
+    public const int MAX_LENGTH = 74;
+
     /**
      * Also reads a payload of vo-gs1 0.x, which stored an ambiguous pack КИ as its bare 25 characters and read them as
      * the pack.

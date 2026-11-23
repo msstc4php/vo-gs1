@@ -21,6 +21,9 @@ use Override;
  */
 final class Grai extends AbstractStringValueObject implements IdentificationKey
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
+    public const int MAX_LENGTH = 14 + self::SERIAL_MAX;
+
     private const string TYPE = 'GRAI';
 
     private const int SERIAL_MAX = 16;

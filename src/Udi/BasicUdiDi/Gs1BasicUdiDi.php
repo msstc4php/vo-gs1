@@ -19,6 +19,9 @@ use Override;
  */
 final class Gs1BasicUdiDi extends AbstractStringValueObject implements BasicUdiDi
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
+    public const int MAX_LENGTH = Gmn::MAX_LENGTH;
+
     #[Override]
     public function issuingAgency(): IssuingAgency
     {

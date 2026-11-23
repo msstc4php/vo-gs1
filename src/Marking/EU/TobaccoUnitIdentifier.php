@@ -29,11 +29,11 @@ use Override;
  */
 final class TobaccoUnitIdentifier extends AbstractStringValueObject
 {
+    public const int MAX_LENGTH = 50;
+
     private const string PATTERN = '/^([0-9A-Za-z]{3,42})([0-9]{2})([0-9]{2})([0-9]{2})([0-9]{2})$/D';
 
     private const int MIN_LENGTH = 11;
-
-    private const int MAX_LENGTH = 50;
 
     private const int LAST_HOUR = 23;
 

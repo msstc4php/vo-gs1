@@ -30,6 +30,9 @@ use Override;
  */
 final class ElementString extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x: the bound of the bracketed (stored) form, a package bound (twice the largest GS1 QR Code). */
+    public const int MAX_LENGTH = ElementStringSyntax::MAX_LENGTH;
+
     /**
      * A cache of what `$value` parses to, so accessors do not parse again; never observable from outside.
      *

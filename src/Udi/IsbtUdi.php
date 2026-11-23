@@ -27,6 +27,9 @@ use Override;
  */
 final class IsbtUdi extends AbstractStringValueObject implements Udi
 {
+    /** Maximum characters of the stored value, frozen for 1.x: the input bound, the largest Data Matrix (GenSpecs 5.6.2); the stored form is never longer than the input. */
+    public const int MAX_LENGTH = IsbtSyntax::MAX_LENGTH;
+
     private const string HEADER_START = '=+';
 
     /** `=+` + `aa` + `bbb`. */

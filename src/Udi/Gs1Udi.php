@@ -10,6 +10,7 @@ use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidUdiException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
+use MSSTC4PHP\ValueObject\Gs1\Internal\ElementStringSyntax;
 use MSSTC4PHP\ValueObject\Gs1\Key\Gtin;
 use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
 use Override;
@@ -24,6 +25,9 @@ use Override;
  */
 final class Gs1Udi extends AbstractStringValueObject implements Udi
 {
+    /** Maximum characters of the stored value, frozen for 1.x: the element string bound. */
+    public const int MAX_LENGTH = ElementStringSyntax::MAX_LENGTH;
+
     /**
      * The 14-digit GTIN of AI (01).
      */

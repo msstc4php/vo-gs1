@@ -23,6 +23,9 @@ use Override;
  */
 final class IfaBasicUdiDi extends AbstractStringValueObject implements BasicUdiDi
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
+    public const int MAX_LENGTH = 25;
+
     private const string PATTERN = '/^PP([0-9A-Z]{5})([0-9A-Z.]{1,16})([0-9]{2})$/D';
 
     #[Override]

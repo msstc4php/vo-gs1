@@ -22,6 +22,9 @@ use Override;
  */
 final class EpcPureIdentityUri extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x: a package bound against oversized input. */
+    public const int MAX_LENGTH = EpcSyntax::MAX_LENGTH;
+
     /**
      * The URI of `$scheme` for the GS1 data in `$elementString`. The length of the GS1 Company Prefix is a registry
      * fact, so the caller gives it: 6 for a 4- or 5-digit prefix (TDS 7.1), 8 for a GTIN-8 (7.3.2), 12 for an

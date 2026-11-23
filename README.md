@@ -445,7 +445,8 @@ One list for the whole package: where no published source gives a rule, the clas
 ## With the bridges
 
 Every class is a string value object, so `ValueObjectMapper` (vo-base) and the framework bridges map it with no codec:
-the stored value is the canonical string. Marking and FMD codes carry control characters (GS, RS, EOT) that must be
+the stored value is the canonical string, at most the class's public `MAX_LENGTH` characters (frozen for 1.x;
+bridges size their columns by it). Marking and FMD codes carry control characters (GS, RS, EOT) that must be
 stored as they are; an element string is stored in its bracketed form, which has none. For Doctrine use
 [`msstc4php/vo-gs1-doctrine`](https://github.com/msstc4php/vo-gs1-doctrine) (31 ORM and ODM types, `gs1_<snake_name>`).
 

@@ -40,6 +40,9 @@ use Override;
  */
 final class MarkingCode extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x: a package bound; the stored form is never longer than the input. */
+    public const int MAX_LENGTH = RuMarkingSyntax::MAX_LENGTH;
+
     /**
      * The tobacco consumer-pack reading of 29 characters (optionally after `]d1`, `]d2` or a GS), never the GS1 one.
      */

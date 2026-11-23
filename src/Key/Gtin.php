@@ -21,6 +21,9 @@ use Override;
  */
 final class Gtin extends AbstractStringValueObject implements IdentificationKey
 {
+    /** Maximum characters of the stored value, frozen for 1.x: the longest accepted form, the GTIN-14. */
+    public const int MAX_LENGTH = 14;
+
     private const string TYPE = 'GTIN';
 
     /**

@@ -5,6 +5,9 @@
   identifier, data structure, date format or EPC scheme/encoding name read from the input; no `excerpt()` (owner
   rule G2, 1.0). Names the class itself requires are fine ("must carry AI (01)", "DI 9N is not a valid PPN").
   `tests/Unit/Exception/MessagesCarryNoInputTest` pins it: an over-long input per class, and input fragments.
+- Every value object has a public `MAX_LENGTH` (the longest stored value, frozen for 1.x, ruling G6); the bridge
+  reads it, never a private or `Internal\` constant. `tests/Unit/Contract/StoredValueBoundsTest` pins every value.
+  `MarkingIdentifier::MAX_LENGTH` is 74 (escaped 20-character serial), not the 255 input cap.
 - Tool configuration is byte-identical to the bundle-standard `php84` templates.
 - php-cs-fixer rewrites `@link` to `@see`: cite sources with `@see <url> <document, section>`.
 - Tests: `tests/Unit` (what Infection runs); generator code lives in `tests/Support` (autoload-dev), the `tools/` script

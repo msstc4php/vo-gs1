@@ -26,6 +26,9 @@ use Override;
  */
 final class HibcUdi extends AbstractStringValueObject implements Udi
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
+    public const int MAX_LENGTH = HibcSyntax::MAX_LENGTH;
+
     /**
      * Joins a primary symbol (`+A123BJC5D6E71G`) and its secondary symbol (`+$$52001510X3GD`, whose link character `G`
      * is the primary check character) into the concatenated form.

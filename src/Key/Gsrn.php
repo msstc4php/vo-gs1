@@ -18,6 +18,9 @@ use Override;
  */
 final class Gsrn extends AbstractStringValueObject implements IdentificationKey
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
+    public const int MAX_LENGTH = 18;
+
     private const string TYPE = 'GSRN';
 
     public static function fromParts(string $companyPrefix, string $reference): self

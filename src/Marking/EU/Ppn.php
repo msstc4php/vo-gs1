@@ -23,6 +23,9 @@ use Override;
  */
 final class Ppn extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x: pRA Code 2, product number at most 24, check digits 2. */
+    public const int MAX_LENGTH = 28;
+
     private const string PATTERN = '/^([0-9A-Z]{2})([0-9A-Z]{7,24})([0-9]{2})$/D';
 
     private const string GERMAN_PRA_CODE = '11';

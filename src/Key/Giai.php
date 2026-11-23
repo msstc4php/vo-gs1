@@ -19,9 +19,9 @@ use Override;
  */
 final class Giai extends AbstractStringValueObject implements IdentificationKey
 {
-    private const string TYPE = 'GIAI';
+    public const int MAX_LENGTH = 30;
 
-    private const int MAX = 30;
+    private const string TYPE = 'GIAI';
 
     public static function fromParts(string $companyPrefix, string $reference): self
     {
@@ -37,7 +37,7 @@ final class Giai extends AbstractStringValueObject implements IdentificationKey
     #[Override]
     protected function parse(string $value): string
     {
-        KeyRules::text($value, self::TYPE, Gs1Charsets::CSET_82, self::MAX);
+        KeyRules::text($value, self::TYPE, Gs1Charsets::CSET_82, self::MAX_LENGTH);
         KeyRules::startsWithPrefixDigits($value, self::TYPE);
 
         return $value;

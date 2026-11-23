@@ -22,6 +22,9 @@ use Override;
  */
 final class IccbbaBasicUdiDi extends AbstractStringValueObject implements BasicUdiDi
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
+    public const int MAX_LENGTH = 18;
+
     private const string PATTERN = '/^' . IsbtSyntax::PPIC . '([0-9]{2})$/D';
 
     #[Override]

@@ -25,7 +25,7 @@ final class HibcSyntax
      * Primary 24 + "/" + serial secondary 36 (`$$+` + `9` and a 5-digit quantity + flag `4` + 8-digit date + 18) +
      * supplemental /S 20, /16D 12, /14D 12, /Q 7 + check character: 113.
      */
-    private const int MAX_LENGTH = 113;
+    public const int MAX_LENGTH = 113;
 
     /** "+", LIC 4, product number up to 18, unit of measure, check character. */
     private const int PRIMARY_LENGTH = 25;

@@ -34,6 +34,9 @@ use Override;
  */
 final class DigitalLink extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x: a package bound against oversized input, not a GS1 rule; the value is the URI as given. */
+    public const int MAX_LENGTH = DigitalLinkSyntax::MAX_LENGTH;
+
     /**
      * The URI of `$elementString` under `$domain` (scheme, host and an optional path stem): the first primary key AI
      * goes to the path with the longest qualifier sequence the data carries, every other AI to the query in the order

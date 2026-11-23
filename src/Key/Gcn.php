@@ -18,6 +18,9 @@ use Override;
  */
 final class Gcn extends AbstractStringValueObject implements IdentificationKey
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
+    public const int MAX_LENGTH = 13 + self::SERIAL_MAX;
+
     private const string TYPE = 'GCN';
 
     private const int SERIAL_MAX = 12;

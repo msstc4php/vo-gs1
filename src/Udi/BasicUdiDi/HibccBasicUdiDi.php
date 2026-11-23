@@ -21,6 +21,9 @@ use Override;
  */
 final class HibccBasicUdiDi extends AbstractStringValueObject implements BasicUdiDi
 {
+    /** Maximum characters of the stored value, frozen for 1.x: `++`, a 4-character LIC, at most 17 characters of model identifier and 2 check characters. */
+    public const int MAX_LENGTH = 25;
+
     private const string PATTERN = '/^\+\+([A-Z][A-Z0-9]{3})([A-Za-z0-9]{1,17})([2-9A-HJ-NP-Z]{2})$/D';
 
     #[Override]

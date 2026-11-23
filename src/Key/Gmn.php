@@ -21,14 +21,14 @@ use Override;
  */
 final class Gmn extends AbstractStringValueObject implements IdentificationKey
 {
-    private const string TYPE = 'GMN';
+    public const int MAX_LENGTH = 25;
 
-    private const int MAX = 25;
+    private const string TYPE = 'GMN';
 
     public static function fromParts(string $companyPrefix, string $reference): self
     {
         $body = KeyRules::textBody(self::TYPE, $companyPrefix, $reference);
-        KeyRules::text($body, 'GMN company prefix and model reference', Gs1Charsets::CSET_82, self::MAX - 2);
+        KeyRules::text($body, 'GMN company prefix and model reference', Gs1Charsets::CSET_82, self::MAX_LENGTH - 2);
 
         return new self($body . GmnCheckCharacters::compute($body));
     }
@@ -42,7 +42,7 @@ final class Gmn extends AbstractStringValueObject implements IdentificationKey
     #[Override]
     protected function parse(string $value): string
     {
-        KeyRules::text($value, self::TYPE, Gs1Charsets::CSET_82, self::MAX);
+        KeyRules::text($value, self::TYPE, Gs1Charsets::CSET_82, self::MAX_LENGTH);
         KeyRules::startsWithPrefixDigits($value, self::TYPE);
         if (GmnCheckCharacters::compute(\substr($value, 0, -2)) !== \substr($value, -2)) {
             throw KeyRules::fail(self::TYPE, 'has wrong check characters');

@@ -19,6 +19,9 @@ use Override;
  */
 final class Ndc12 extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x: 12 digits and two hyphens. */
+    public const int MAX_LENGTH = 14;
+
     private const string PATTERN = '/^(\d{6})-?(\d{4})-?(\d{2})$/D';
 
     /**

@@ -20,6 +20,9 @@ use Override;
  */
 final class Sscc extends AbstractStringValueObject implements IdentificationKey
 {
+    /** Maximum characters of the stored value, frozen for 1.x. */
+    public const int MAX_LENGTH = 18;
+
     private const string TYPE = 'SSCC';
 
     /**

@@ -23,9 +23,9 @@ use Override;
  */
 final class TobaccoUnitIdentifierWithoutTimeStamp extends AbstractStringValueObject
 {
-    private const int MIN_LENGTH = 3;
+    public const int MAX_LENGTH = 42;
 
-    private const int MAX_LENGTH = 42;
+    private const int MIN_LENGTH = 3;
 
     /** The century {@see TobaccoUnitIdentifier} reads the two-digit year in. */
     private const int FIRST_YEAR = 2000;

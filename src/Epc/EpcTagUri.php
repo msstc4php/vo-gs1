@@ -20,6 +20,9 @@ use Override;
  */
 final class EpcTagUri extends AbstractStringValueObject
 {
+    /** Maximum characters of the stored value, frozen for 1.x: a package bound against oversized input. */
+    public const int MAX_LENGTH = EpcSyntax::MAX_LENGTH;
+
     /**
      * The tag URI of `$uri` in `$encoding` (TDS 12.3.2), without control fields.
      *
