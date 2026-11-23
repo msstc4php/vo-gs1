@@ -301,7 +301,9 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   years are 20YY (no clock dependence), an MMYY expiry is the last day of the month, dates are UTC with the hour where
   the format has one. The check character may be a space or `/`; the value keeps it.
 - **`IsbtUdi`** (ICCBBA ST-017): the Compound Message `=+aabbb…` or the human-readable concatenation of the data
-  structures; the value is the latter (`toCompoundMessage()` rebuilds the former with an unspecified sequence). The
+  structures; the value is the form given, so a specified sequence `bbb` is stored losslessly. `equals()` compares
+  the data structures, so the two forms of one UDI are equal (compare on that, not on the stored string);
+  `toCompoundMessage()` gives the value when it is one, else builds it with the unspecified sequence `000`. The
   UDI starts with the Processor Product Identification Code and carries the Donation Identification Number and the
   Product Divisions; expiration date, production date and MPHO lot number are optional; each at most once. The count
   `aa` is checked, and the order for the specified sequences 034-037. Non-UDI data structures after the production

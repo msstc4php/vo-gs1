@@ -28,7 +28,7 @@ core.
 | `Udi\Udi`, `Udi\IssuingAgency` | UDI contract (`deviceIdentifier()`, `issuingAgency()`, `lot()`, `serial()`, `expiryDate()`, `productionDate()`); enum GS1, HIBCC, ICCBBA, IFA (IFA only for Basic UDI-DI) |
 | `Udi\Gs1Udi` | String VO over `ElementString`, must have AI (01); value = bracketed form |
 | `Udi\HibcUdi`, `Internal\HibcSyntax`, `Internal\HibcData` | HIBC LIC primary / concatenated (+ supplemental `/S`, `/16D`, `/14D`, `/Q`); value = concatenated form; `fromSymbols()` joins two symbols via the link character; accessors re-parse |
-| `Udi\IsbtUdi`, `Internal\IsbtSyntax`, `Internal\IsbtData` | ISBT 128 (ST-017): compound `=+aabbb` or HRI in, value = HRI (header dropped); `toCompoundMessage()` |
+| `Udi\IsbtUdi`, `Internal\IsbtSyntax`, `Internal\IsbtData` | ISBT 128 (ST-017): compound `=+aabbb` or HRI in, value = as given (header kept, ruling S8); `equals()` on the structures; `toCompoundMessage()` |
 | `Udi\UdiFactory` | Strips a leading `]xx`, then routes on the next character: `+` HIBC, `=`/`&` ISBT (both built from the data without the identifier), `(` / digit / GS / `^` or data behind an identifier GS1 (given whole); else `InvalidUdiException` |
 | `Udi\BasicUdiDi\*` | `BasicUdiDi` interface (`issuingAgency()`), one class per entity with its check characters; `BasicUdiDiFactory` tries all, 0 → invalid, >1 → `AmbiguousValueException` |
 | `Udi\Ndc`, `Udi\NdcConfiguration`, `Udi\Ndc12` | NDC, 10 digits in five configurations (4-4-2, 5-3-2, 5-4-1, 6-3-2, 6-4-1), hyphens required; bare digits → `AmbiguousValueException([Ndc::class])` + `Ndc::candidates()`; `Ndc12` 6-4-2 |

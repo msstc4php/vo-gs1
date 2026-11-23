@@ -30,7 +30,8 @@ final class IsbtUdiTest extends TestCase
     {
         $udi = IsbtUdi::from(self::FIGURE_6);
 
-        self::assertSame('=/A9999XYZ100T0476=,000025=A99971712345600=>019032=}017032&,1000000000000XYZ123', (string) $udi);
+        self::assertSame(self::FIGURE_6, (string) $udi);
+        self::assertTrue($udi->equals(IsbtUdi::from('=/A9999XYZ100T0476=,000025=A99971712345600=>019032=}017032&,1000000000000XYZ123')));
         self::assertSame(IssuingAgency::Iccbba, $udi->issuingAgency());
         self::assertSame('A9999XYZ100T0476', $udi->deviceIdentifier());
         self::assertSame('A9999', $udi->facilityIdentificationNumber());
@@ -51,6 +52,8 @@ final class IsbtUdiTest extends TestCase
         $readable = IsbtUdi::from(self::HRI);
 
         self::assertTrue($unspecified->equals($readable));
+        self::assertTrue($specified->equals(IsbtUdi::from('=/A9997XYZ100T0479=,000012=A99991712345600=>019031')));
+        self::assertFalse($specified->equals($readable));
         self::assertSame('2019-01-31', $specified->expiryDate()?->format('Y-m-d'));
         self::assertSame('000012', $specified->serial());
         self::assertSame('=+04000' . self::HRI, $readable->toCompoundMessage());
@@ -62,8 +65,20 @@ final class IsbtUdiTest extends TestCase
     {
         $udi = IsbtUdi::from('=+05000' . self::HRI . '=%5100');
 
-        self::assertSame(self::HRI . '=%5100', (string) $udi);
+        self::assertSame('=+05000' . self::HRI . '=%5100', (string) $udi);
         self::assertSame('=+05000' . self::HRI . '=%5100', $udi->toCompoundMessage());
+    }
+
+    public function testTheCompoundMessageHeaderIsKeptSoTheSpecifiedSequenceRoundTrips(): void
+    {
+        $specified = '=+04035=/A9997XYZ100T0479=,000012=A99991712345600=>019031';
+        $udi = IsbtUdi::from($specified);
+
+        self::assertSame($specified, (string) $udi);
+        self::assertSame($specified, $udi->toCompoundMessage());
+        self::assertSame($specified, (string) IsbtUdi::from((string) $udi));
+        self::assertEquals($udi, \unserialize(\serialize($udi)));
+        self::assertSame(self::HRI, (string) IsbtUdi::from(self::HRI));
     }
 
     public function testTheLimits(): void

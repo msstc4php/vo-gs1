@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MSSTC4PHP\ValueObject\Gs1\Udi;
 
 use DateTimeImmutable;
+use MSSTC4PHP\ValueObject\Contract\ValueObject;
 use MSSTC4PHP\ValueObject\Gs1\Internal\IsbtData;
 use MSSTC4PHP\ValueObject\Gs1\Internal\IsbtSyntax;
 use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
@@ -15,8 +16,9 @@ use Override;
  * the Donation Identification Number (`=` + FIN), the Product Divisions (`=,`, the serial number) and, optionally, the
  * expiration date (`=>`), the production date (`=}`) and the MPHO lot number (`&,1`). Accepted as the Compound Message
  * of a Data Matrix (`=+06000=/A9999XYZ100T0476=,000025…`) or as the human-readable concatenation of the data
- * structures; the value is the latter, so both forms of one UDI are equal. {@see toCompoundMessage()} gives the
- * former, with an unspecified sequence.
+ * structures. The value is the form given, so the compound message header (count and sequence `bbb`) survives
+ * storage; {@see equals()} compares the data structures, so both forms of one UDI are equal.
+ * {@see toCompoundMessage()} gives the compound message, with an unspecified sequence when none was given.
  *
  * The DIN flag characters are kept in the value but are not part of the DIN, which reading software "should ignore".
  *
@@ -25,6 +27,11 @@ use Override;
  */
 final class IsbtUdi extends AbstractStringValueObject implements Udi
 {
+    private const string HEADER_START = '=+';
+
+    /** `=+` + `aa` + `bbb`. */
+    private const int HEADER_LENGTH = 7;
+
     /**
      * The 16 characters of the Processor Product Identification Code, without its data identifier.
      */
@@ -118,13 +125,24 @@ final class IsbtUdi extends AbstractStringValueObject implements Udi
      */
     public function toCompoundMessage(): string
     {
-        return \sprintf('=+%02d000', \count($this->data()->structures)) . $this->value;
+        return \str_starts_with($this->value, self::HEADER_START) ? $this->value : \sprintf('=+%02d000', \count($this->data()->structures)) . $this->value;
+    }
+
+    /**
+     * The same data structures, with or without a compound message header.
+     */
+    #[Override]
+    public function equals(ValueObject $other): bool
+    {
+        return $other instanceof self && $other->data()->structures === $this->data()->structures;
     }
 
     #[Override]
     protected function parse(string $value): string
     {
-        return \implode('', IsbtSyntax::parse($value)->structures);
+        $structures = \implode('', IsbtSyntax::parse($value)->structures);
+
+        return \str_starts_with($value, self::HEADER_START) ? \substr($value, 0, self::HEADER_LENGTH) . $structures : $structures;
     }
 
     private function data(): IsbtData

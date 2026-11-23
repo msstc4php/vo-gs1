@@ -14,7 +14,7 @@ gives a rule the class checks the format (README, "Format only").
 | `EpcPureIdentityUri`, `EpcTagUri` | URI with upper-case escape hex | TDS grammar, company prefix 6..12 digits, field limits |
 | `Gs1Udi` | bracketed element string | has AI (01) |
 | `HibcUdi` | primary + secondary concatenated | Mod 43 check character; link character |
-| `IsbtUdi` | human-readable concatenation | data-structure counts and order |
+| `IsbtUdi` | as given: compound message with its header, or the human-readable concatenation; `equals()` compares the structures | data-structure counts and order |
 | `BasicUdiDi\*` | as given | the issuing entity's check characters; an ambiguous value throws `AmbiguousValueException` |
 | `Ndc`, `Ndc12` | hyphenated | configuration; bare digits are ambiguous for `Ndc` |
 | `RU\MarkingCode` | pack as is, or GS1 barcode data with GS | one of five structures; lost GS refused where detectable |
