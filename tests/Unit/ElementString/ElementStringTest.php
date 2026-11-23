@@ -6,6 +6,7 @@ namespace MSSTC4PHP\ValueObject\Gs1\Tests\Unit\ElementString;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use InvalidArgumentException;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\UnmetRequirement;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
@@ -124,6 +125,33 @@ final class ElementStringTest extends TestCase
         self::assertTrue($element->has('17'));
         self::assertFalse($element->has('15'));
         self::assertNull($element->get('15'));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function notAnAi(): iterable
+    {
+        yield 'no AI' => ['1'];
+        yield 'unassigned' => ['23'];
+        yield 'pattern' => ['31nn'];
+        yield 'bracketed' => ['(17)'];
+    }
+
+    #[DataProvider('notAnAi')]
+    public function testGetRefusesAnArgumentThatIsNoAi(string $ai): void
+    {
+        $element = ElementString::from('(01)09506000134352(17)261231');
+
+        try {
+            $element->has($ai);
+            self::fail('has() must refuse an argument that is no AI.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('Element string accessors take an AI of the GS1 table.', $exception->getMessage());
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $element->get($ai);
         $gtin = $element->gtin();
         self::assertNotNull($gtin);
         self::assertTrue(new Gtin(self::GTIN)->equals($gtin));

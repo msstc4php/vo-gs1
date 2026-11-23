@@ -6,8 +6,11 @@ namespace MSSTC4PHP\ValueObject\Gs1\ElementString;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use InvalidArgumentException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiElement;
+use MSSTC4PHP\ValueObject\Gs1\Internal\AiSpec;
+use MSSTC4PHP\ValueObject\Gs1\Internal\AiTable;
 use MSSTC4PHP\ValueObject\Gs1\Internal\ElementStringSyntax;
 use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1Dates;
 use MSSTC4PHP\ValueObject\Gs1\Key\Gtin;
@@ -33,6 +36,9 @@ final class ElementString extends AbstractStringValueObject
     /** Maximum characters of the stored value, frozen for 1.x: the bound of the bracketed (stored) form, a package bound (twice the largest GS1 QR Code). */
     public const int MAX_LENGTH = ElementStringSyntax::MAX_LENGTH;
 
+    /** The GS1 Barcode Syntax Dictionary release the installed AI table was generated from. */
+    public const string AI_TABLE_RELEASE = AiTable::RELEASE;
+
     /**
      * A cache of what `$value` parses to, so accessors do not parse again; never observable from outside.
      *
@@ -41,12 +47,18 @@ final class ElementString extends AbstractStringValueObject
     private ?array $elements = null;
 
     /**
-     * The data of the first occurrence of `$ai`, unescaped.
+     * The data of the first occurrence of `$ai`, unescaped; null when the string does not carry it.
      *
      * @return non-empty-string|null
+     *
+     * @throws InvalidArgumentException when `$ai` is no AI of the installed table (a caller's error, not data)
      */
     public function get(string $ai): ?string
     {
+        if (!AiTable::spec($ai) instanceof AiSpec) {
+            throw new InvalidArgumentException('Element string accessors take an AI of the GS1 table.');
+        }
+
         foreach ($this->elements() as $element) {
             if ($element->spec->ai === $ai) {
                 return $element->value;
@@ -56,6 +68,9 @@ final class ElementString extends AbstractStringValueObject
         return null;
     }
 
+    /**
+     * @throws InvalidArgumentException when `$ai` is no AI of the installed table
+     */
     public function has(string $ai): bool
     {
         return $this->get($ai) !== null;

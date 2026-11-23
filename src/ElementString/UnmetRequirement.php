@@ -13,6 +13,8 @@ namespace MSSTC4PHP\ValueObject\Gs1\ElementString;
 final readonly class UnmetRequirement
 {
     /**
+     * @internal built by {@see ElementString::unmetRequirements()}; the constructor is outside the BC promise
+     *
      * @param non-empty-string $ai
      * @param non-empty-list<non-empty-list<non-empty-string>> $alternatives
      */

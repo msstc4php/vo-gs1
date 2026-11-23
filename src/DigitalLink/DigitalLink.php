@@ -37,12 +37,15 @@ final class DigitalLink extends AbstractStringValueObject
     /** Maximum characters of the stored value, frozen for 1.x: a package bound against oversized input, not a GS1 rule; the value is the URI as given. */
     public const int MAX_LENGTH = DigitalLinkSyntax::MAX_LENGTH;
 
+    /** The domain of the canonical URI (URI Syntax 1.7.0, section 4.12) and the default of {@see fromElementString()}. */
+    public const string CANONICAL_DOMAIN = DigitalLinkSyntax::CANONICAL_STEM;
+
     /**
      * The URI of `$elementString` under `$domain` (scheme, host and an optional path stem): the first primary key AI
      * goes to the path with the longest qualifier sequence the data carries, every other AI to the query in the order
      * given.
      */
-    public static function fromElementString(ElementString $elementString, string $domain = DigitalLinkSyntax::CANONICAL_STEM): self
+    public static function fromElementString(ElementString $elementString, string $domain = self::CANONICAL_DOMAIN): self
     {
         if (\strpbrk($domain, '?#') !== false || !Url::tryFrom($domain) instanceof Url) {
             throw new InvalidDigitalLinkException('GS1 Digital Link domain must be an http or https URL without query or fragment.');

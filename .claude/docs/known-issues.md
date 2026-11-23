@@ -88,6 +88,8 @@
   CAGE/DoDAAC keeps the grammar's I/O exclusion (no contradicting prose).
 - EPC parse validates GS1 schemes by building the element string, so GenSpecs limits (serial ≤ 20, piece ≤ total,
   CSET 82) apply to EPC URIs too.
+- `EpcTagUri::filter()`/`partition()` are `int<0, 63>|null` / `int<0, 6>|null` through no-op `max/min` clamps
+  (ruling N2); their five mutants (bounds ±1, `$filter[0]`) are equivalent: the values are already in range.
 - Infection: ~11 escaped mutants in Digital Link/EPC code are equivalent (regex capture positions of unused components,
   `(int)` of the whole filter match, sort keys of control fields, stem-path slice offsets used only in identity).
 

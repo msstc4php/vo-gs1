@@ -53,11 +53,13 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
     }
 
     /**
+     * Null for a GTIN-8, which GS1 never writes as an EAN-13 (six leading zeros in the 14-digit form).
+     *
      * @return numeric-string|null
      */
     public function asGtin13(): ?string
     {
-        return $this->shortened(13);
+        return $this->isGtin8() ? null : $this->shortened(13);
     }
 
     /**
@@ -81,7 +83,7 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
     {
         $gtin14 = $this->toGtin14();
 
-        return \str_starts_with(\substr($gtin14, 1), '00000')
+        return $this->isGtin8()
             ? Gs1Prefix::fromGtin8Digits(\substr($gtin14, 6))
             : Gs1Prefix::fromDigits(\substr($gtin14, 1));
     }
@@ -102,6 +104,11 @@ final class Gtin extends AbstractStringValueObject implements IdentificationKey
         KeyRules::checkedDigits($value, self::TYPE, \strlen($value));
 
         return $value;
+    }
+
+    private function isGtin8(): bool
+    {
+        return \str_starts_with(\substr($this->toGtin14(), 1), '00000');
     }
 
     /**

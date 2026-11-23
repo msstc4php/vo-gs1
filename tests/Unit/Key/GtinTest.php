@@ -98,7 +98,8 @@ final class GtinTest extends TestCase
 
         $eight = new Gtin('00000096385074');
         self::assertSame('96385074', $eight->asGtin8());
-        self::assertSame('0000096385074', $eight->asGtin13());
+        self::assertNull($eight->asGtin13());
+        self::assertNull(new Gtin('96385074')->asGtin13());
     }
 
     public function testShorterFormsAreNullWhenTheLeadingDigitsAreNotZeros(): void

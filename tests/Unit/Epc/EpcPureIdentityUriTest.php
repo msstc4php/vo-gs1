@@ -235,6 +235,8 @@ final class EpcPureIdentityUriTest extends TestCase
         $this->expectException(InvalidEpcUriException::class);
         $this->expectExceptionMessage($message);
 
+        // Reason: the provider passes lengths outside int<6, 12> on purpose, to reach the runtime check.
+        // @phpstan-ignore argument.type
         EpcPureIdentityUri::fromElementString(ElementString::from($elementString), $scheme, $length);
     }
 

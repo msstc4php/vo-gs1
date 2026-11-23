@@ -35,8 +35,9 @@ final class Grai extends AbstractStringValueObject implements IdentificationKey
         return new self('0' . $body . Gs1CheckDigit::compute($body) . $serial);
     }
 
-    /** The key without its serial: 14 digits starting with a zero. */
     /**
+     * The key without its serial: 14 digits starting with a zero.
+     *
      * @return numeric-string
      */
     public function assetType(): string

@@ -13,7 +13,7 @@ core.
 | `Internal\AiTable` | **Generated** (`tools/generate-ai-table.php`): `spec(ai)`, `matchPrefix(data)`, `ais()`, `RELEASE`, `COMMIT` |
 | `Internal\AiSpec`, `AiComponent`, `AiCharset` | Hand-written readonly shapes the table returns |
 | `ElementString\ElementString` | String VO, canonical = bracketed form (AI order as given); parsed elements cached in a private property; `unmetRequirements()` |
-| `ElementString\UnmetRequirement` | Readonly: `ai`, `alternatives` (groups of AIs/patterns), `describe()` |
+| `ElementString\UnmetRequirement` | Readonly: `ai`, `alternatives` (groups of AIs/patterns), `describe()`; constructor `@internal` |
 | `ElementString\ElementStringBuilder` | Immutable `with(ai, value)` → `build()`; renders the bracketed form and parses it |
 | `Internal\ElementStringSyntax` | Notations (bracketed / GS / `^` / symbology id), per-AI data check (components, charset, linters), repeats, `ex` (refused), `req` (reported via `unmetRequirements()`), size caps |
 | `Internal\AiLinters` | GS1 linters: `IMPLEMENTED`, `NOT_ENFORCED` (always pass), `passes(name, data)` throws `LogicException` on an unknown name; `isCset64()` |

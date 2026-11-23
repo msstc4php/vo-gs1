@@ -91,7 +91,7 @@ length is a registry fact); `gs1Prefix()` reads the GS1 Prefix range instead.
 
 | Class | AI | Notes |
 |---|---|---|
-| `Gtin` | 01 | 8, 12, 13 or 14 digits; keeps the form given, `equals()` compares the 14-digit form; `format()`, `toGtin14()`, `asGtin13/12/8()` |
+| `Gtin` | 01 | 8, 12, 13 or 14 digits; keeps the form given, `equals()` compares the 14-digit form; `format()`, `toGtin14()`, `asGtin13/12/8()` (`asGtin13()` is null for a GTIN-8, which GS1 never writes as an EAN-13) |
 | `Gln` | 410-417 | 13 digits |
 | `Sscc` | 00 | 18 digits; `extensionDigit()` |
 | `Grai` | 8003 | `0` + 13 digits + optional serial; `assetType()`, `serial()` |
@@ -137,7 +137,8 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
 - **Canonical form:** the bracketed form, `(` in data escaped as `\(`. Notations of the same data are equal.
 - **AI order is kept as given.** The same AIs in another order give another canonical string, so they are not
   `equals()`. Normalise the order yourself if you compare element strings from different sources.
-- **Accessors:** `get($ai)`, `has($ai)`, `ais()` (each AI once, in order), `unmetRequirements()`, `gtin()` (AI 01),
+- **Accessors:** `get($ai)`, `has($ai)` (an argument that is no AI of the table, `'31nn'` or `'(17)'` say, throws
+  `\InvalidArgumentException`: a caller's error, not data), `ais()` (each AI once, in order), `unmetRequirements()`, `gtin()` (AI 01),
   `sscc()` (AI 00), `batch()` (10), `serial()` (21), `expiryDate()` (17), `productionDate()` (11), `toBarcodeData()`
   (GS after every AI not of predefined length, except the last).
 - **Stored values and dictionary updates:** the accessors re-read the stored canonical value against the AI table of
@@ -194,10 +195,12 @@ DigitalLink::fromElementString(ElementString::from('(01)09520123456788(17)201225
   else.
 - **`toElementString()`** lists the path AIs, then the query AIs in query order (a repeated attribute at its last
   place). `primaryKey()` returns the key class of the path AI (an ITIP, AI 8006, gives its GTIN).
-- **`fromElementString($elementString, $domain = 'https://id.gs1.org')`** needs a primary key AI: the first one is
+- **`fromElementString($elementString, $domain = DigitalLink::CANONICAL_DOMAIN)`** (`https://id.gs1.org`) needs a primary key AI: the first one is
   the path key, with the longest qualifier sequence the data carries (on a tie, one whose leftover AIs can all be data
   attributes); every other AI must be a data attribute and goes to the query in the order given. Every element string
-  of a link this class accepts converts back. The domain may carry a path stem but no query or fragment.
+  of a link this class accepts converts back. The domain may carry a path stem but no query or fragment. Percent-encoding
+  can make the link longer than its element string: an element string near the 14178-character bound whose data needs
+  many escapes gives a link above the bound, and `fromElementString()` refuses it (the bound is the link's).
 - **Refused:** compressed links (`/ARHKVAdpQgTSoTF0`, `/eh…`, `/ex…`): URI Syntax 1.7.0 no longer defines
   compression, the legacy algorithm is "not approved for use in open supply chain standards" and its successor is a
   separate standard.
@@ -456,7 +459,8 @@ The AI table (data formats, FNC1 rule, linters, mandatory and invalid AI pairs) 
 [GS1 Barcode Syntax Dictionary](https://github.com/gs1/gs1-syntax-dictionary), release 2026-01-27, which is vendored
 unmodified under `resources/` (Apache License 2.0, see [`NOTICE`](NOTICE)). Update policy:
 
-- The dictionary release is pinned (recorded in the header of `src/Internal/AiTable.php`); the generator refuses any
+- The dictionary release is pinned (recorded in the header of `src/Internal/AiTable.php` and public as
+  `ElementString::AI_TABLE_RELEASE`, so you can store which edition validated a value); the generator refuses any
   other release until its constants are updated.
 - A new release is picked up with `php tools/generate-ai-table.php` and ships as a minor release.
 - Stored values are parsed against the installed table (on loading, and again by the accessors of the composite

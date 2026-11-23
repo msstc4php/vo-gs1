@@ -54,6 +54,8 @@ final class EpcTagUri extends AbstractStringValueObject
 
     /**
      * Null for GID-96, which has no filter.
+     *
+     * @return int<0, 63>|null
      */
     public function filter(): ?int
     {
@@ -63,6 +65,8 @@ final class EpcTagUri extends AbstractStringValueObject
     /**
      * The partition value: 12 minus the digits of the GS1 Company Prefix (0 to 6); null for the encodings without a
      * partition table (GID, USDOD, ADI).
+     *
+     * @return int<0, 6>|null
      */
     public function partition(): ?int
     {
@@ -71,7 +75,8 @@ final class EpcTagUri extends AbstractStringValueObject
             return null;
         }
 
-        return 12 - \strlen(EpcSyntax::components($encoding->scheme(), $body)[0]);
+        // The clamp only narrows the type: the company prefix has 6 to 12 digits.
+        return \max(0, \min(6, 12 - \strlen(EpcSyntax::components($encoding->scheme(), $body)[0])));
     }
 
     /**

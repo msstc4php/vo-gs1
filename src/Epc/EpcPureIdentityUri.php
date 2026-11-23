@@ -29,6 +29,8 @@ final class EpcPureIdentityUri extends AbstractStringValueObject
      * The URI of `$scheme` for the GS1 data in `$elementString`. The length of the GS1 Company Prefix is a registry
      * fact, so the caller gives it: 6 for a 4- or 5-digit prefix (TDS 7.1), 8 for a GTIN-8 (7.3.2), 12 for an
      * individually assigned key (7.2).
+     *
+     * @param int<6, 12> $companyPrefixLength
      */
     public static function fromElementString(ElementString $elementString, EpcScheme $scheme, int $companyPrefixLength): self
     {

@@ -177,7 +177,7 @@ final class EpcSyntax
     }
 
     /**
-     * @return array{EpcTagEncoding, int|null, string} the encoding, the filter and the body of the pure identity URI
+     * @return array{EpcTagEncoding, int<0, 63>|null, string} the encoding, the filter and the body of the pure identity URI
      */
     public static function tag(string $canonical): array
     {
@@ -211,7 +211,8 @@ final class EpcSyntax
             throw $reject(\sprintf('EPC Tag URI filter value must be below %d.', $limit));
         }
 
-        $value = (int) $filter[1];
+        // The clamp only narrows the type: the value is already below the field limit of at most 64.
+        $value = \max(0, \min(63, (int) $filter[1]));
 
         return [$encoding, $value, $filter[2]];
     }
