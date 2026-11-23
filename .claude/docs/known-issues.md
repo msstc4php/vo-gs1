@@ -46,7 +46,11 @@
   keep the old spec as legacy (not implemented yet: no such release so far; design it with the first one).
   `AiTableKeepsThe1Dot0AisTest` is the tripwire: every data line of `tests/Fixtures/ai-dictionary-1.0.txt` (the 1.0
   edition, titles stripped, whitespace collapsed) must still be in the vendored dictionary, so a new edition that
-  removes or changes an AI fails until legacy specs exist. Never edit the fixture to make it pass. `MarkingCode` and
+  removes or changes an AI fails until legacy specs exist. Never edit the fixture to make it pass. It also fails on a
+  pure widening (a changed line). Procedure for a new edition: for each failing line decide whether the new spec
+  accepts everything the old one did; if it does (a widening), the old line may be replaced in the fixture by the new
+  one in the same commit, with the reason in the CHANGELOG; if it does not (a removal or tightening), design the
+  legacy spec first. `MarkingCode` and
   `MarkingIdentifier` cache their parsed parts like `ElementString` (ruling CR-009; `parse()` sets the cache, so the
   `??=` → `=` mutant of `parts()` is equivalent); `MarkingIdentifier::__unserialize()` parses once and retries with
   the pack reading only on `AmbiguousValueException` (the failed parse leaves `value` unset, so vo-base's

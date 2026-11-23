@@ -21,6 +21,8 @@ final class KeyRules
 
     private const int COMPANY_PREFIX_MAX = 12;
 
+    private const string COMPANY_PREFIX_RULE = self::COMPANY_PREFIX_MIN . ' to ' . self::COMPANY_PREFIX_MAX . ' digits';
+
     public static function fail(string $subject, string $reason): InvalidIdentificationKeyException
     {
         return new InvalidIdentificationKeyException(\sprintf('%s %s.', $subject, $reason));
@@ -96,7 +98,7 @@ final class KeyRules
      * @param positive-int $minPrefix shortest prefix: 4 (GS1 Company Prefix), 2 for the GS1-8 Prefix of a GTIN-8
      * @param non-empty-string $prefixRule the prefix bounds for the message, the same for every input of the class
      */
-    public static function body(string $subject, string $companyPrefix, string $reference, int|array $bodyLengths, int $minPrefix = self::COMPANY_PREFIX_MIN, string $prefixRule = '4 to 12 digits'): string
+    public static function body(string $subject, string $companyPrefix, string $reference, int|array $bodyLengths, int $minPrefix = self::COMPANY_PREFIX_MIN, string $prefixRule = self::COMPANY_PREFIX_RULE): string
     {
         self::assertCompanyPrefix($subject, $companyPrefix, $minPrefix, $prefixRule);
 
@@ -118,7 +120,7 @@ final class KeyRules
      */
     public static function textBody(string $subject, string $companyPrefix, string $reference): string
     {
-        self::assertCompanyPrefix($subject, $companyPrefix, self::COMPANY_PREFIX_MIN, '4 to 12 digits');
+        self::assertCompanyPrefix($subject, $companyPrefix, self::COMPANY_PREFIX_MIN, self::COMPANY_PREFIX_RULE);
 
         return $companyPrefix . $reference;
     }

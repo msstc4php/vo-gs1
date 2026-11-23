@@ -111,6 +111,16 @@ final class IsbtUdiTest extends TestCase
         self::assertTrue($longest->equals(IsbtUdi::from($message)));
     }
 
+    public function testDataStructuresOf3117CharactersAreRefused(): void
+    {
+        $value = self::HRI . '=%' . \str_repeat('9', 3117 - \strlen(self::HRI) - 2);
+        self::assertSame(3117, \strlen($value));
+
+        $this->expectException(InvalidUdiException::class);
+        $this->expectExceptionMessage('must have at most 3116 characters, 3123 with a compound message header');
+        IsbtUdi::from($value);
+    }
+
     public function testAHeaderDoesNotLengthenTheDataStructures(): void
     {
         $this->expectException(InvalidUdiException::class);

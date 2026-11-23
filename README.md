@@ -201,9 +201,10 @@ DigitalLink::fromElementString(ElementString::from('(01)09520123456788(17)201225
 - **`fromElementString($elementString, $domain = DigitalLink::CANONICAL_DOMAIN)`** (`https://id.gs1.org`) needs a
   primary key AI: the first one is the path key, with the longest qualifier sequence the data carries (on a tie, one
   whose leftover AIs can all be data attributes); every other AI must be a data attribute and goes to the query in the
-  order given. Every element string of a link this class accepts converts back. The domain may carry a path stem but
-  no query or fragment. Percent-encoding can make the link longer than its element string: an element string near the 14178-character bound whose data needs
-  many escapes gives a link above the bound, and `fromElementString()` refuses it (the bound is the link's).
+  order given. Every element string of a link this class accepts converts back. The domain may carry a path stem but no
+  query or fragment. Percent-encoding can make the link longer than its element string: an element string near the
+  14178-character bound whose data needs many escapes gives a link above the bound, and `fromElementString()` refuses it
+  (the bound is the link's).
 - **Refused:** compressed links (`/ARHKVAdpQgTSoTF0`, `/eh…`, `/ex…`): URI Syntax 1.7.0 no longer defines
   compression, the legacy algorithm is "not approved for use in open supply chain standards" and its successor is a
   separate standard.
@@ -459,12 +460,12 @@ One list for the whole package: where no published source gives a rule, the clas
 ## With the bridges
 
 Every class is a string value object, so `ValueObjectMapper` (vo-base) and the framework bridges map it with no codec:
-the stored value is the canonical string, at most the class's public `MAX_LENGTH` characters (frozen for 1.x;
-bridges size their columns by it). Marking and FMD codes carry control characters (GS, RS, EOT) that must be
-stored as they are; an element string is stored in its bracketed form, which has none. For Doctrine use
+the stored value is the canonical string, at most the class's public `MAX_LENGTH` characters (frozen for 1.x; bridges
+size their columns by it). Marking and FMD codes carry control characters (GS, RS, EOT) that must be stored as they are;
+an element string is stored in its bracketed form, which has none. For Doctrine use
 [`msstc4php/vo-gs1-doctrine`](https://github.com/msstc4php/vo-gs1-doctrine) (31 ORM and ODM types, `gs1_<snake_name>`).
-`Udi` and `BasicUdiDi` are interfaces, which vo-base does not map: a column for "any UDI" is not offered in 1.0 and will come as a separate,
-additive type.
+`Udi` and `BasicUdiDi` are interfaces, which vo-base does not map: a column for "any UDI" is not offered in 1.0 and will
+come as a separate, additive type.
 
 ## GS1 Application Identifier table
 
