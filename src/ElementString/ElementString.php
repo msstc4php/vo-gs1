@@ -96,6 +96,8 @@ final class ElementString extends AbstractStringValueObject
 
     /**
      * AI (10).
+     *
+     * @return non-empty-string|null
      */
     public function batch(): ?string
     {
@@ -104,6 +106,8 @@ final class ElementString extends AbstractStringValueObject
 
     /**
      * AI (21).
+     *
+     * @return non-empty-string|null
      */
     public function serial(): ?string
     {

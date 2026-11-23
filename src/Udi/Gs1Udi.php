@@ -51,6 +51,7 @@ final class Gs1Udi extends AbstractStringValueObject implements Udi
     /**
      * AI (10).
      */
+    #[Override]
     public function lot(): ?string
     {
         return $this->elementString()->batch();
@@ -59,6 +60,7 @@ final class Gs1Udi extends AbstractStringValueObject implements Udi
     /**
      * AI (21).
      */
+    #[Override]
     public function serial(): ?string
     {
         return $this->elementString()->serial();
@@ -69,6 +71,7 @@ final class Gs1Udi extends AbstractStringValueObject implements Udi
      *
      * @throws InvalidElementStringException when the century chosen for `$today` has no such day (29 February)
      */
+    #[Override]
     public function expiryDate(?DateTimeImmutable $today = null): ?DateTimeImmutable
     {
         return $this->elementString()->expiryDate($today);
@@ -79,6 +82,7 @@ final class Gs1Udi extends AbstractStringValueObject implements Udi
      *
      * @throws InvalidElementStringException when the century chosen for `$today` has no such day (29 February)
      */
+    #[Override]
     public function productionDate(?DateTimeImmutable $today = null): ?DateTimeImmutable
     {
         return $this->elementString()->productionDate($today);

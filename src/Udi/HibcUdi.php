@@ -81,6 +81,7 @@ final class HibcUdi extends AbstractStringValueObject implements Udi
     /**
      * @return non-empty-string|null
      */
+    #[Override]
     public function lot(): ?string
     {
         return $this->data()->lot;
@@ -93,6 +94,7 @@ final class HibcUdi extends AbstractStringValueObject implements Udi
      *
      * @return non-empty-string|null
      */
+    #[Override]
     public function serial(): ?string
     {
         return $this->data()->serial;
@@ -112,6 +114,7 @@ final class HibcUdi extends AbstractStringValueObject implements Udi
      * The expiry date of the secondary data, else of the supplemental data identifier `14D`. When both are present
      * HIBC does not say which one wins: this returns the secondary data's, {@see supplementalExpiryDate()} the other.
      */
+    #[Override]
     public function expiryDate(): ?DateTimeImmutable
     {
         return $this->data()->expiryDate;
@@ -133,7 +136,8 @@ final class HibcUdi extends AbstractStringValueObject implements Udi
     /**
      * Supplemental data identifier `16D`.
      */
-    public function manufactureDate(): ?DateTimeImmutable
+    #[Override]
+    public function productionDate(): ?DateTimeImmutable
     {
         return $this->data()->manufactureDate;
     }

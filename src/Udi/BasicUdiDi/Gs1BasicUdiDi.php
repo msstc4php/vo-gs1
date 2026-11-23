@@ -20,7 +20,7 @@ use Override;
 final class Gs1BasicUdiDi extends AbstractStringValueObject implements BasicUdiDi
 {
     #[Override]
-    public function issuingEntity(): IssuingAgency
+    public function issuingAgency(): IssuingAgency
     {
         return IssuingAgency::Gs1;
     }

@@ -24,7 +24,7 @@ final class HibccBasicUdiDi extends AbstractStringValueObject implements BasicUd
     private const string PATTERN = '/^\+\+([A-Z][A-Z0-9]{3})([A-Za-z0-9]{1,17})([2-9A-HJ-NP-Z]{2})$/D';
 
     #[Override]
-    public function issuingEntity(): IssuingAgency
+    public function issuingAgency(): IssuingAgency
     {
         return IssuingAgency::Hibcc;
     }

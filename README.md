@@ -251,7 +251,8 @@ EpcTagUri::fromPureIdentityUri($epc, EpcTagEncoding::Sgtin198, 3);
 ## Medical devices: UDI, Basic UDI-DI, NDC
 
 `MSSTC4PHP\ValueObject\Gs1\Udi\` holds one class per issuing agency, all implementing `Udi` (`deviceIdentifier()`,
-`issuingAgency(): IssuingAgency`), the EU Basic UDI-DI of each issuing entity, and the US National Drug Code.
+`issuingAgency(): IssuingAgency`, `lot()`, `serial()`, `expiryDate()`, `productionDate()`), the EU Basic UDI-DI of
+each issuing entity (`BasicUdiDi`, with `issuingAgency()` too), and the US National Drug Code.
 Exceptions are `InvalidUdiException`; ambiguity is vo-base `AmbiguousValueException`.
 
 ```php
@@ -285,7 +286,7 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   primary data structure with its check character; `labelerIdentificationCode()`, `productNumber()`,
   `unitOfMeasure()`, `lot()`, `serial()` (secondary data, else `S`), `supplementalSerial()` (`S`), `expiryDate()`
   (secondary data, else `14D`), `supplementalExpiryDate()` (`14D`), `expiryDateFormat()` (`HibcDateFormat`),
-  `manufactureDate()` (`16D`), `quantity()` (secondary data, else `Q`), `supplementalQuantity()` (`Q`). Every format
+  `productionDate()` (`16D`), `quantity()` (secondary data, else `Q`), `supplementalQuantity()` (`Q`). Every format
   of Appendix F
   is read, including the legacy `$`, `$+` and five-digit Julian forms, and the pre-2.6 quantity forms `$$8`/`$$9`
   (Appendix H: "Existing labels are still valid but should not be used for Unique Device Identification"; layout

@@ -62,7 +62,7 @@ final class BasicUdiDiTest extends TestCase
 
         self::assertInstanceOf($class, $basicUdiDi);
         self::assertSame($value, (string) $basicUdiDi);
-        self::assertSame($entity, $basicUdiDi->issuingEntity());
+        self::assertSame($entity, $basicUdiDi->issuingAgency());
     }
 
     public function testAccessors(): void

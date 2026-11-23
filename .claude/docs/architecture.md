@@ -5,6 +5,7 @@ core.
 
 | Area | Purpose |
 |---|---|
+| `Key\IdentificationKey`, `Udi\Udi`, `Udi\BasicUdiDi\BasicUdiDi` | Package-only interfaces (docblock: "Implemented by this package only; methods may be added in minor releases"); all extend `StringConvertible` + `ValueObject` |
 | `Exception\` | One family per area, all extending vo-base `InvalidValueObjectException`: identification key, element string, Digital Link, EPC URI, UDI, marking code. Ambiguity uses vo-base `AmbiguousValueException` |
 | `Internal\Gs1CheckDigit` | GS1 standard check digit (weights 3/1 from the right); `compute(body)`, `isValid(key)` |
 | `Internal\GmnCheckCharacters` | MOD 1021,32 pair over CSET 82, primes from the right; body at most 23 characters |
@@ -24,12 +25,12 @@ core.
 | `Epc\EpcScheme`, `Epc\EpcTagEncoding` | Backed enums of the 20 pure identity schemes and 22 tag encodings; `hasElementString()`, `filterBits()`, `isPartitioned()` |
 | `Epc\EpcPureIdentityUri`, `Epc\EpcTagUri` | String VOs, value = URI with upper-case escape hex; tag parse re-validates the embedded pure URI |
 | `Internal\EpcSyntax` | Per-scheme grammar (one regex each), CP 6..12, ES mapping both ways, tag parse, control fields, field limits per encoding |
-| `Udi\Udi`, `Udi\IssuingAgency` | UDI contract (`deviceIdentifier()`, `issuingAgency()`); enum GS1, HIBCC, ICCBBA, IFA (IFA only for Basic UDI-DI) |
+| `Udi\Udi`, `Udi\IssuingAgency` | UDI contract (`deviceIdentifier()`, `issuingAgency()`, `lot()`, `serial()`, `expiryDate()`, `productionDate()`); enum GS1, HIBCC, ICCBBA, IFA (IFA only for Basic UDI-DI) |
 | `Udi\Gs1Udi` | String VO over `ElementString`, must have AI (01); value = bracketed form |
 | `Udi\HibcUdi`, `Internal\HibcSyntax`, `Internal\HibcData` | HIBC LIC primary / concatenated (+ supplemental `/S`, `/16D`, `/14D`, `/Q`); value = concatenated form; `fromSymbols()` joins two symbols via the link character; accessors re-parse |
 | `Udi\IsbtUdi`, `Internal\IsbtSyntax`, `Internal\IsbtData` | ISBT 128 (ST-017): compound `=+aabbb` or HRI in, value = HRI (header dropped); `toCompoundMessage()` |
 | `Udi\UdiFactory` | Strips a leading `]xx`, then routes on the next character: `+` HIBC, `=`/`&` ISBT (both built from the data without the identifier), `(` / digit / GS / `^` or data behind an identifier GS1 (given whole); else `InvalidUdiException` |
-| `Udi\BasicUdiDi\*` | `BasicUdiDi` interface (`issuingEntity()`), one class per entity with its check characters; `BasicUdiDiFactory` tries all, 0 → invalid, >1 → `AmbiguousValueException` |
+| `Udi\BasicUdiDi\*` | `BasicUdiDi` interface (`issuingAgency()`), one class per entity with its check characters; `BasicUdiDiFactory` tries all, 0 → invalid, >1 → `AmbiguousValueException` |
 | `Udi\Ndc`, `Udi\NdcConfiguration`, `Udi\Ndc12` | NDC, 10 digits in five configurations (4-4-2, 5-3-2, 5-4-1, 6-3-2, 6-4-1), hyphens required; bare digits → `AmbiguousValueException([Ndc::class])` + `Ndc::candidates()`; `Ndc12` 6-4-2 |
 | `Internal\Iso7064Mod37`, `Internal\IfaMod97`, `Internal\UdiDates` | ICCBBA MOD 37-2 (Horner), IFA mod 97 over ASCII, UTC calendar/ordinal dates (null when the day does not exist) |
 | `Marking\RU\MarkingCode`, `MarkingIdentifier`, `MarkingCodeStructure` | String VOs over `Internal\RuMarkingSyntax` (+ readonly `RuMarkingParts`); code canonical = pack as is / GS1 barcode data with GS; identifier canonical = 25 pack chars / bracketed `(01)…(21)…[(8005)…]` |

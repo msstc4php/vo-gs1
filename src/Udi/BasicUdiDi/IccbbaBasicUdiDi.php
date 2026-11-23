@@ -25,7 +25,7 @@ final class IccbbaBasicUdiDi extends AbstractStringValueObject implements BasicU
     private const string PATTERN = '/^' . IsbtSyntax::PPIC . '([0-9]{2})$/D';
 
     #[Override]
-    public function issuingEntity(): IssuingAgency
+    public function issuingAgency(): IssuingAgency
     {
         return IssuingAgency::Iccbba;
     }

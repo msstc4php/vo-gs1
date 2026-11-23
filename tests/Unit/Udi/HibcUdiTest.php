@@ -42,7 +42,7 @@ final class HibcUdiTest extends TestCase
         self::assertNull($udi->serial());
         self::assertNull($udi->expiryDate());
         self::assertNull($udi->expiryDateFormat());
-        self::assertNull($udi->manufactureDate());
+        self::assertNull($udi->productionDate());
         self::assertNull($udi->quantity());
         self::assertSame('H123', HibcUdi::from('+H123ABC01234567890D')->labelerIdentificationCode());
     }
@@ -76,12 +76,12 @@ final class HibcUdiTest extends TestCase
         self::assertSame(5, $serial->unitOfMeasure());
         self::assertSame('10X3', $serial->lot());
         self::assertSame('77DEFG45', $serial->serial());
-        self::assertSame('2011-12-12', $serial->manufactureDate()?->format('Y-m-d'));
+        self::assertSame('2011-12-12', $serial->productionDate()?->format('Y-m-d'));
         self::assertSame('2020-01-15', $serial->expiryDate()?->format('Y-m-d'));
 
         $expiry = HibcUdi::from('+A99912345/$10X3/16D20111231/14D202001313');
         self::assertSame('10X3', $expiry->lot());
-        self::assertSame('2011-12-31', $expiry->manufactureDate()?->format('Y-m-d'));
+        self::assertSame('2011-12-31', $expiry->productionDate()?->format('Y-m-d'));
         self::assertSame('2020-01-31 00:00:00 UTC', $expiry->expiryDate()?->format('Y-m-d H:i:s T'));
         self::assertSame(HibcDateFormat::Yyyymmdd, $expiry->expiryDateFormat());
 
@@ -344,7 +344,7 @@ final class HibcUdiTest extends TestCase
 
         self::assertTrue($afterLot->equals($concatenated));
         self::assertTrue($beforeCheck->equals($concatenated));
-        self::assertSame('2011-12-12', $afterLot->manufactureDate()?->format('Y-m-d'));
+        self::assertSame('2011-12-12', $afterLot->productionDate()?->format('Y-m-d'));
 
         // Both positions hold the link character, but only the reading "before the check character" is valid data.
         $oneValid = HibcUdi::fromSymbols(self::PRIMARY, '+$$7ABG/16D20111212G' . Mod43::compute('+$$7ABG/16D20111212G'));

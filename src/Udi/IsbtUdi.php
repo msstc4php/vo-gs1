@@ -81,6 +81,7 @@ final class IsbtUdi extends AbstractStringValueObject implements Udi
      *
      * @return non-empty-string
      */
+    #[Override]
     public function serial(): string
     {
         return $this->data()->productDivisions;
@@ -89,11 +90,13 @@ final class IsbtUdi extends AbstractStringValueObject implements Udi
     /**
      * The day "at the end of which the item expires", at 00:00 UTC.
      */
+    #[Override]
     public function expiryDate(): ?DateTimeImmutable
     {
         return $this->data()->expiryDate;
     }
 
+    #[Override]
     public function productionDate(): ?DateTimeImmutable
     {
         return $this->data()->productionDate;
@@ -102,6 +105,7 @@ final class IsbtUdi extends AbstractStringValueObject implements Udi
     /**
      * @return non-empty-string|null
      */
+    #[Override]
     public function lot(): ?string
     {
         return $this->data()->lot;
