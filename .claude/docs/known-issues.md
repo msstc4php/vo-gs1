@@ -28,7 +28,8 @@
 
 - Parse-time date validity is clock-free (owner ruling): `yymmd0`/`yymmdd` check MM/DD with
   `YY % 4 === 0` as leap (so `000229` always parses), unlike `lint_yymmd0.c`, which uses `CURRENT_YEAR`. The century
-  is applied only in `Gs1Dates::toDate()`; the accessors throw when the chosen century lacks the day (2100-02-29).
+  is applied only in `Gs1Dates::toDate()`; the accessors throw `UnresolvableDateException` (final, extends
+  `\DomainException`, not the invalid-value family; ruling S4) when the chosen century lacks the day (2100-02-29).
 - `ElementStringBuilder::with()` refuses a backslash at once: `X\` followed by the next `(` would otherwise be read as
   an escaped `(` and merge two AIs into one valid serial.
 - Lost GS separators are only detectable when the swallowed data breaks the AI's length or charset: `10ABC21XYZ`

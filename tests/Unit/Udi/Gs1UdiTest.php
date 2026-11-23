@@ -9,6 +9,7 @@ use DateTimeZone;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidUdiException;
+use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiCharset;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiComponent;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiElement;
@@ -73,6 +74,14 @@ final class Gs1UdiTest extends TestCase
         $this->expectExceptionMessage('GS1 UDI must carry AI (01), the GTIN of the device.');
 
         Gs1Udi::from('(10)ABC123(17)201225');
+    }
+
+    public function testADateTheCenturyWindowCannotResolveThrowsOnRead(): void
+    {
+        $udi = Gs1Udi::from('(01)09506000134352(11)000229');
+
+        $this->expectException(UnresolvableDateException::class);
+        $udi->productionDate(new DateTimeImmutable('2060-01-01', new DateTimeZone('UTC')));
     }
 
     public function testAnInvalidElementStringIsRefusedWithItsCause(): void

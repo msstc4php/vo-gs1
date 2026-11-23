@@ -9,6 +9,7 @@ use LogicException;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidUdiException;
+use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
 use MSSTC4PHP\ValueObject\Gs1\Key\Gtin;
 use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
 use Override;
@@ -69,7 +70,7 @@ final class Gs1Udi extends AbstractStringValueObject implements Udi
     /**
      * AI (17); see {@see ElementString::expiryDate()} for the century and `$today`.
      *
-     * @throws InvalidElementStringException when the century chosen for `$today` has no such day (29 February)
+     * @throws UnresolvableDateException when the century chosen for `$today` has no such day (29 February)
      */
     #[Override]
     public function expiryDate(?DateTimeImmutable $today = null): ?DateTimeImmutable
@@ -80,7 +81,7 @@ final class Gs1Udi extends AbstractStringValueObject implements Udi
     /**
      * AI (11), read as {@see expiryDate()}.
      *
-     * @throws InvalidElementStringException when the century chosen for `$today` has no such day (29 February)
+     * @throws UnresolvableDateException when the century chosen for `$today` has no such day (29 February)
      */
     #[Override]
     public function productionDate(?DateTimeImmutable $today = null): ?DateTimeImmutable

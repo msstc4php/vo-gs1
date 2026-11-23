@@ -146,7 +146,10 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
 - **Dates:** the century follows GS1's sliding window around the UTC year of `$today` (an argument, default now, so a
   stored value keeps its meaning when you pass the day it was read); `DD = 00` is the last day of the month; the result
   is 00:00:00 UTC. An impossible month or day is refused where the AI's linter says so (`yymmd0`, `yymmdd`); that
-  check never depends on the clock (29 February passes for every `YY` divisible by four, `00` included).
+  check never depends on the clock (29 February passes for every `YY` divisible by four, `00` included). When the
+  century chosen for `$today` lacks the day (`000229` read as 2100-02-29), the accessor (`expiryDate()`,
+  `productionDate()`, also on `Gs1Udi` and `FmdPackCode`) throws `Exception\UnresolvableDateException`, a
+  `\DomainException` outside the `InvalidValueObjectException` family: the value itself stays valid.
 - **Lost separators:** unbracketed data is never split at a guessed position. An AI that is not of predefined length
   runs to the next GS, so a string whose separators were lost is refused when the swallowed data no longer fits.
 - **Mandatory pairs** are not refused: GS1 evaluates them "over the combined data received from all GS1 carriers

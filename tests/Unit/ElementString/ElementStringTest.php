@@ -9,6 +9,7 @@ use DateTimeZone;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\UnmetRequirement;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
+use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiComponent;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiElement;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiLinters;
@@ -221,8 +222,8 @@ final class ElementStringTest extends TestCase
         // 000229 is 2000-02-29 now, but 2100-02-29 (no such day) for a "today" in 2060.
         $element = ElementString::from('(01)09506000134352(17)000229');
 
-        $this->expectException(InvalidElementStringException::class);
-        $this->expectExceptionMessage('Element string AI (17) is not a calendar date in the century chosen for the given day.');
+        $this->expectException(UnresolvableDateException::class);
+        $this->expectExceptionMessage('Element string date is not a calendar date in the century chosen for the given day.');
         $element->expiryDate(new DateTimeImmutable('2060-01-01', new DateTimeZone('UTC')));
     }
 

@@ -7,6 +7,7 @@ namespace MSSTC4PHP\ValueObject\Gs1\Udi;
 use DateTimeImmutable;
 use MSSTC4PHP\ValueObject\Contract\StringConvertible;
 use MSSTC4PHP\ValueObject\Contract\ValueObject;
+use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
 
 /**
  * A Unique Device Identifier as one issuing agency encodes it: the device identifier (UDI-DI) and the production
@@ -35,7 +36,13 @@ interface Udi extends StringConvertible, ValueObject
      */
     public function serial(): ?string;
 
+    /**
+     * @throws UnresolvableDateException {@see Gs1Udi} only: the GS1 century window has no such day
+     */
     public function expiryDate(): ?DateTimeImmutable;
 
+    /**
+     * @throws UnresolvableDateException {@see Gs1Udi} only: the GS1 century window has no such day
+     */
     public function productionDate(): ?DateTimeImmutable;
 }

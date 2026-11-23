@@ -6,7 +6,7 @@ namespace MSSTC4PHP\ValueObject\Gs1\ElementString;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
+use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiElement;
 use MSSTC4PHP\ValueObject\Gs1\Internal\ElementStringSyntax;
 use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1Dates;
@@ -118,7 +118,7 @@ final class ElementString extends AbstractStringValueObject
      * AI (17), at 00:00:00 UTC; the century follows GS1's sliding window around the UTC year of `$today` (default:
      * now), `DD = 00` is the last day of the month.
      *
-     * @throws InvalidElementStringException when the century chosen for `$today` has no such day (29 February)
+     * @throws UnresolvableDateException when the century chosen for `$today` has no such day (29 February)
      */
     public function expiryDate(?DateTimeImmutable $today = null): ?DateTimeImmutable
     {
@@ -128,7 +128,7 @@ final class ElementString extends AbstractStringValueObject
     /**
      * AI (11), read as {@see expiryDate()}.
      *
-     * @throws InvalidElementStringException when the century chosen for `$today` has no such day (29 February)
+     * @throws UnresolvableDateException when the century chosen for `$today` has no such day (29 February)
      */
     public function productionDate(?DateTimeImmutable $today = null): ?DateTimeImmutable
     {
@@ -183,6 +183,6 @@ final class ElementString extends AbstractStringValueObject
         }
 
         return Gs1Dates::toDate($value, $today ?? new DateTimeImmutable('now', new DateTimeZone('UTC')))
-            ?? throw new InvalidElementStringException(\sprintf('Element string AI (%s) is not a calendar date in the century chosen for the given day.', $ai));
+            ?? throw new UnresolvableDateException('Element string date is not a calendar date in the century chosen for the given day.');
     }
 }

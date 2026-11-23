@@ -9,6 +9,7 @@ use LogicException;
 use MSSTC4PHP\ValueObject\Gs1\ElementString\ElementString;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidElementStringException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidMarkingCodeException;
+use MSSTC4PHP\ValueObject\Gs1\Exception\UnresolvableDateException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\IfaPackData;
 use MSSTC4PHP\ValueObject\Gs1\Key\Gtin;
 use MSSTC4PHP\ValueObject\Support\AbstractStringValueObject;
@@ -83,7 +84,7 @@ final class FmdPackCode extends AbstractStringValueObject
      * At 00:00:00 UTC, `DD = 00` as the last day of the month. The IFA format is 2000-2099 by IFA's rule; the GS1
      * format follows {@see ElementString::expiryDate()} and its `$today`.
      *
-     * @throws InvalidElementStringException when the century chosen for `$today` has no such day (29 February)
+     * @throws UnresolvableDateException when the century chosen for `$today` has no such day (29 February)
      */
     public function expiryDate(?DateTimeImmutable $today = null): DateTimeImmutable
     {
