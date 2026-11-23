@@ -109,7 +109,10 @@ final class RuMarkingSyntax
     }
 
     /**
-     * The canonical forms only: the 25 pack characters or the bracketed element string.
+     * The canonical forms only: the 25 pack characters (after `]d1` when they also read as `01` + GTIN + `21` + 7) or
+     * the bracketed element string.
+     *
+     * @throws AmbiguousValueException when 25 characters without `]d1` read both as a pack КИ and as `01…21…`
      */
     public static function identifier(string $input): RuMarkingParts
     {
@@ -118,15 +121,36 @@ final class RuMarkingSyntax
             return self::gs1Identifier(self::elements($input, self::IDENTIFIER), true);
         }
 
-        if (self::isPackShaped($input, self::PACK_IDENTIFIER_LENGTH)) {
+        $marked = \str_starts_with($input, self::NON_GS1_DATA_MATRIX);
+        $pack = $marked ? \substr($input, \strlen(self::NON_GS1_DATA_MATRIX)) : $input;
+        if (self::isPackShaped($pack, self::PACK_IDENTIFIER_LENGTH)) {
             try {
-                return self::packIdentifier($input);
+                $parts = self::packIdentifier($pack);
             } catch (InvalidMarkingCodeException $exception) {
                 throw new InvalidMarkingCodeException($exception->getMessage() . ' 25 characters are read as a pack КИ; read the document form 01…21… with fromDocumentForm().', $exception->getCode(), previous: $exception);
             }
+
+            if (!$marked && $parts->value !== $pack) {
+                throw new AmbiguousValueException(self::IDENTIFIER . ' (both a tobacco consumer pack КИ and AI (01) + (21); build the pack with MarkingIdentifier::fromTobaccoConsumerPack())', [MarkingIdentifier::class]);
+            }
+
+            return $parts;
         }
 
         throw new InvalidMarkingCodeException(self::IDENTIFIER . ' must be the 25 pack characters or the bracketed form (01)…(21)…; read the document form 01…21… with fromDocumentForm().');
+    }
+
+    /**
+     * The tobacco consumer-pack reading of 25 characters (optionally after `]d1`), never the GS1 one.
+     */
+    public static function tobaccoConsumerPackIdentifier(string $input): RuMarkingParts
+    {
+        $pack = \str_starts_with($input, self::NON_GS1_DATA_MATRIX) ? \substr($input, \strlen(self::NON_GS1_DATA_MATRIX)) : $input;
+        if (!self::isPackShaped($pack, self::PACK_IDENTIFIER_LENGTH)) {
+            throw new InvalidMarkingCodeException(self::IDENTIFIER . ' (tobacco consumer pack) must have 25 characters, 14 digits first, and no GS.');
+        }
+
+        return self::packIdentifier($pack);
     }
 
     /**
@@ -238,7 +262,7 @@ final class RuMarkingSyntax
         $identifier = $match[1] . $match[2] . $match[3];
         $canonical = $lostSeparators ? self::NON_GS1_DATA_MATRIX . $match[0] : $match[0];
 
-        return new RuMarkingParts(MarkingCodeStructure::TobaccoConsumerPack, $canonical, $match[1], $match[2], null, $match[4], $identifier, $identifier);
+        return new RuMarkingParts(MarkingCodeStructure::TobaccoConsumerPack, $canonical, $match[1], $match[2], null, $match[4], self::packIdentifierCanonical($identifier), $identifier);
     }
 
     private static function packIdentifier(string $input): RuMarkingParts
@@ -248,8 +272,28 @@ final class RuMarkingSyntax
         }
 
         self::checkPackGtin($match[1], self::IDENTIFIER);
+        $canonical = self::packIdentifierCanonical($match[0]);
 
-        return new RuMarkingParts(MarkingCodeStructure::TobaccoConsumerPack, $match[0], $match[1], $match[2], null, null, $match[0], $match[0]);
+        return new RuMarkingParts(MarkingCodeStructure::TobaccoConsumerPack, $canonical, $match[1], $match[2], null, null, $canonical, $match[0]);
+    }
+
+    /**
+     * `]d1` + the 25 characters when they also read as a valid `01` + GTIN + `21` + 7, which no GS1 code carries
+     * behind `]d1`; otherwise the 25 characters.
+     *
+     * @param non-empty-string $pack
+     *
+     * @return non-empty-string
+     */
+    private static function packIdentifierCanonical(string $pack): string
+    {
+        try {
+            self::gs1Identifier(self::elements($pack, self::IDENTIFIER), false);
+        } catch (InvalidMarkingCodeException) {
+            return $pack;
+        }
+
+        return self::NON_GS1_DATA_MATRIX . $pack;
     }
 
     /**

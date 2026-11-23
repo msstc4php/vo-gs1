@@ -277,7 +277,7 @@ final class MarkingCodeTest extends TestCase
         self::assertSame('01046004399312', (string) $pack->gtin());
         self::assertSame('5621123', $pack->serial());
         self::assertSame('9999', $pack->verificationCode());
-        self::assertSame('0104600439931256211234593', (string) $pack->identifier());
+        self::assertSame(']d10104600439931256211234593', (string) $pack->identifier());
         self::assertTrue($pack->equals(MarkingCode::from((string) $pack)));
         self::assertTrue($pack->equals(MarkingCode::fromTobaccoConsumerPack(']d201046004399312562112345939999')));
         self::assertTrue($pack->equals(MarkingCode::from(']d101046004399312562112345939999')));
@@ -358,8 +358,9 @@ final class MarkingCodeTest extends TestCase
         $code = MarkingCode::from("0104600439930501215U!Mq'XZx9+");
 
         self::assertSame(MarkingCodeStructure::TobaccoConsumerPack, $code->structure());
-        self::assertSame("0104600439930501215U!Mq'X", (string) $code->identifier());
+        self::assertSame("]d10104600439930501215U!Mq'X", (string) $code->identifier());
         self::assertTrue($code->identifier()->isTobaccoConsumerPack());
+        self::assertSame("0104600439930501215U!Mq'X", $code->identifier()->toDocumentForm());
     }
 
     public function testStructureLabels(): void
@@ -409,8 +410,64 @@ final class MarkingCodeTest extends TestCase
             self::assertSame('Ambiguous Russian marking identifier document form (both a tobacco consumer pack КИ and AI (01) + (21)): the value fits MarkingIdentifier.', $exception->getMessage());
         }
 
-        self::assertTrue(MarkingIdentifier::from($value)->isTobaccoConsumerPack());
         self::assertSame('04600439930501', (string) MarkingIdentifier::from("(01)04600439930501(21)5U!Mq'X")->gtin());
+    }
+
+    public function testFromRefuses25CharactersFittingBothReadings(): void
+    {
+        $value = '0104600439930501' . "215U!Mq'X";
+
+        try {
+            MarkingIdentifier::from($value);
+            self::fail('Expected AmbiguousValueException.');
+        } catch (AmbiguousValueException $exception) {
+            self::assertSame([MarkingIdentifier::class], $exception->candidates());
+            self::assertSame('Ambiguous Russian marking identifier (both a tobacco consumer pack КИ and AI (01) + (21); build the pack with MarkingIdentifier::fromTobaccoConsumerPack()): the value fits MarkingIdentifier.', $exception->getMessage());
+        }
+
+        self::assertFalse(MarkingIdentifier::isValid($value));
+    }
+
+    public function testTheAmbiguousPackIdentifierKeepsAMarkerSoItReadsBack(): void
+    {
+        $value = '0104600439930501' . "215U!Mq'X";
+        $identifier = MarkingIdentifier::fromTobaccoConsumerPack($value);
+
+        self::assertSame(']d1' . $value, (string) $identifier);
+        self::assertTrue($identifier->isTobaccoConsumerPack());
+        self::assertSame('01046004399305', (string) $identifier->gtin());
+        self::assertSame('01215U!', $identifier->serial());
+        self::assertSame($value, $identifier->toDocumentForm());
+        self::assertTrue($identifier->equals(MarkingIdentifier::from((string) $identifier)));
+        self::assertTrue($identifier->equals(MarkingIdentifier::fromTobaccoConsumerPack(']d1' . $value)));
+        self::assertEquals($identifier, \unserialize(\serialize($identifier)));
+    }
+
+    public function testAnUnambiguousPackIdentifierHasNoMarker(): void
+    {
+        $value = self::GTIN . "5U!Mq'XAbC1";
+
+        self::assertSame($value, (string) MarkingIdentifier::fromTobaccoConsumerPack($value));
+        self::assertSame($value, (string) MarkingIdentifier::from(']d1' . $value));
+        self::assertSame($value, (string) MarkingIdentifier::from($value));
+    }
+
+    public function testFromTobaccoConsumerPackNeeds25PackCharacters(): void
+    {
+        $this->expectException(InvalidMarkingCodeException::class);
+        $this->expectExceptionMessage('Russian marking identifier (tobacco consumer pack) must have 25 characters, 14 digits first, and no GS.');
+        MarkingIdentifier::fromTobaccoConsumerPack('(01)' . self::GTIN . '(21)5aB3x_Y');
+    }
+
+    public function testA0xPayloadOfAnAmbiguousPackIdentifierStillLoads(): void
+    {
+        // vo-gs1 0.1 stored the ambiguous pack КИ as its bare 25 characters and read them as the pack.
+        $payload = 'O:54:"MSSTC4PHP\ValueObject\Gs1\Marking\RU\MarkingIdentifier":1:{s:5:"value";s:25:"0104600439930501215U!Mq\'X";}';
+        $identifier = \unserialize($payload);
+
+        self::assertInstanceOf(MarkingIdentifier::class, $identifier);
+        self::assertSame("]d10104600439930501215U!Mq'X", (string) $identifier);
+        self::assertTrue($identifier->isTobaccoConsumerPack());
     }
 
     /**

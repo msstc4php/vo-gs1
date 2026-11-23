@@ -138,8 +138,13 @@
 - Opposite residual (ruling: no new heuristic): a `GenericGs1` code with an unpublished serial
   length whose GS after (21) was lost can swallow the next AIs into the serial and be accepted as a different code.
   Undetectable without the separators; a "(92) without (91)" refusal was rejected (would refuse valid generic codes).
-- `MarkingIdentifier::from()` reads any 25 pack-shaped characters as a pack КИ; its check-digit failure message points
-  to `fromDocumentForm()`.
+- `MarkingIdentifier::from()` refuses 25 pack-shaped characters that also read as a valid `01…21…` + 7 with
+  `AmbiguousValueException` (ruling B2, 1.0); `fromTobaccoConsumerPack()` (or `]d1` input) reads the pack and stores
+  `]d1` + 25, exactly as `MarkingCode` does for 29. `RuMarkingSyntax::packIdentifierCanonical()` decides the marker
+  for both, so `MarkingCode::identifier()` never throws. `__unserialize()` maps a 0.x bare-25 payload of such a pack
+  to the `]d1` form (G15); `from()` does not (that is the point of the ambiguity). Its check-digit failure message
+  points to `fromDocumentForm()`. Infection: `gs1Identifier(…, false)` → `true` in `packIdentifierCanonical()` is
+  equivalent (25 characters leave a 7-character serial, a published length, so the lost-GS check returns early).
 - 29 GS-free characters `01` + GTIN + `21` + 5 + `93` + 4 are pack-shaped: ambiguous if the first 14 digits are also a
   valid GTIN, else refused as lost GS. GTIN `04600439931256` happens to give a valid `01046004399312`; tests use
   `04606203086627` for the non-ambiguous case.

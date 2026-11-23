@@ -18,7 +18,7 @@ gives a rule the class checks the format (README, "Format only").
 | `BasicUdiDi\*` | as given | the issuing entity's check characters; an ambiguous value throws `AmbiguousValueException` |
 | `Ndc`, `Ndc12` | hyphenated | configuration; bare digits are ambiguous for `Ndc` |
 | `RU\MarkingCode` | pack as is, or GS1 barcode data with GS | one of five structures; lost GS refused where detectable |
-| `RU\MarkingIdentifier` | 25 pack characters or bracketed `(01)…(21)…` | КИ without the crypto tail |
+| `RU\MarkingIdentifier` | 25 pack characters (`]d1` + 25 when they also read as `01…21…`) or bracketed `(01)…(21)…` | КИ without the crypto tail |
 | `EU\FmdPackCode`, `Ppn` | GS1 barcode data / IFA message with trailer; PPN | IFA mod 97, PZN check |
 | `EU\TobaccoUnitIdentifier(WithoutTimeStamp)` | as given | length, alphanumeric, UTC time stamp (full form only) |
 

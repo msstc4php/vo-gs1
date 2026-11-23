@@ -374,10 +374,14 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   AIs in the order given (store the GS characters too).
 - **`RU\MarkingIdentifier`** (КИ, the code without the crypto tail): (01) + (21); with (8005) for the tobacco group pack
   (Decree No. 224, p. 44: "первые 3 группы"; any serial length, as `GenericGs1` codes have); the first 25 characters of the pack. `from()` takes the
-  canonical forms only: bracketed `(01)…(21)…` or the 25 pack characters (any 25-character string is read as a
-  pack КИ by `from()`). `fromDocumentForm()` reads the operator's
-  `01…21…` (which `toDocumentForm()` gives); 25 characters that read both as a pack КИ and as `01…21…` + 7 throw
-  `AmbiguousValueException` there.
+  canonical forms only: bracketed `(01)…(21)…` or the 25 pack characters. 25 pack characters that also read as
+  `01` + GTIN + `21` + 7 throw `AmbiguousValueException`, never picked silently;
+  `MarkingIdentifier::fromTobaccoConsumerPack()` reads the pack, and its value keeps the `]d1` prefix (as
+  `MarkingCode` does) so it reads back unambiguously; `MarkingCode::identifier()` of such a pack gives that form too.
+  `fromDocumentForm()` reads the operator's `01…21…` (which `toDocumentForm()` gives, always without `]d1`); 25
+  characters that read both ways throw `AmbiguousValueException` there as well. A value stored by 0.x as the bare 25
+  characters of such a pack still unserializes (to the `]d1` form); a database row needs the `]d1` prefix added (see
+  the CHANGELOG).
 - **Russian product groups covered** (structure read on the operator's pages, decree cited there): tobacco and
   nicotine products, light industry, footwear, tyres, perfume, cameras, dairy, packaged water, beer, non-alcoholic beer, non-alcoholic
   beverages, BAD, antiseptics, medical devices, medicines (MDLP), veterinary medicines, canned food, sweets, grocery,
