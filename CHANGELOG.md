@@ -56,10 +56,9 @@ are implemented by this package only and may gain methods in minors. Not covered
 - Implementations of `IdentificationKey`, `Udi` or `BasicUdiDi` outside this package are outside the BC promise; the
   interfaces gained parents and methods.
 - Stored `MarkingIdentifier` values: a 0.x value that is 25 pack characters which also read as `01…21…` + 7 no longer
-  loads through `from()` (it throws `AmbiguousValueException`). Serialized PHP objects still load (to the `]d1`
-  form); a database row needs `]d1` prepended, for example
-  `UPDATE t SET ki = CONCAT(']d1', ki) WHERE …` for the rows `MarkingIdentifier::from()` refuses as ambiguous, or
-  read them with `MarkingIdentifier::fromTobaccoConsumerPack()`.
+  loads through `from()` (it throws `AmbiguousValueException`). Serialized PHP objects and vo-gs1-doctrine 1.0
+  columns still load it as the pack (to the `]d1` form); other stores read such values with
+  `MarkingIdentifier::fromTobaccoConsumerPack()` or prepend `]d1` to them.
 - Stored `FmdPackCode` values longer than 512 characters (an IFA message of 511 or 512 characters given without its
   trailer) could not be read back in 0.x either; the bridge column is now `VARCHAR(512)`.
 - Stored `IsbtUdi` values (the human-readable form) read back unchanged; new compound-message input is now stored

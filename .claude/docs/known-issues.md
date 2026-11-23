@@ -144,7 +144,8 @@
   `AmbiguousValueException` (ruling B2, 1.0); `fromTobaccoConsumerPack()` (or `]d1` input) reads the pack and stores
   `]d1` + 25, exactly as `MarkingCode` does for 29. `RuMarkingSyntax::packIdentifierCanonical()` decides the marker
   for both, so `MarkingCode::identifier()` never throws. `__unserialize()` maps a 0.x bare-25 payload of such a pack
-  to the `]d1` form (G15); `from()` does not (that is the point of the ambiguity). Its check-digit failure message
+  to the `]d1` form (G15), and so do the vo-gs1-doctrine `RuMarkingIdentifierType`s on load; `from()` does not (that
+  is the point of the ambiguity). Its check-digit failure message
   points to `fromDocumentForm()`. Infection: `gs1Identifier(…, false)` → `true` in `packIdentifierCanonical()` is
   equivalent (25 characters leave a 7-character serial, a published length, so the lost-GS check returns early).
 - 29 GS-free characters `01` + GTIN + `21` + 5 + `93` + 4 are pack-shaped: ambiguous if the first 14 digits are also a
