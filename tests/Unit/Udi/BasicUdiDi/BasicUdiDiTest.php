@@ -195,4 +195,23 @@ final class BasicUdiDiTest extends TestCase
         self::assertSame(25, \strlen((string) IfaBasicUdiDi::from($ifa . IfaMod97::compute($ifa))));
         self::assertSame('ABCDE', IfaBasicUdiDi::from('PPABCDE1' . IfaMod97::compute('PPABCDE1'))->manufacturerCode());
     }
+
+    public function testTryFromStringBuildsWhatFromStringBuilds(): void
+    {
+        $value = '++A999MODELIDENTIFIER11S8';
+        $basicUdiDi = BasicUdiDiFactory::tryFromString($value);
+
+        self::assertInstanceOf(HibccBasicUdiDi::class, $basicUdiDi);
+        self::assertEquals(BasicUdiDiFactory::fromString($value), $basicUdiDi);
+    }
+
+    public function testTryFromStringIsNullForAValueOfNoEntity(): void
+    {
+        self::assertNull(BasicUdiDiFactory::tryFromString('++A999MODELIDENTIFIER11S9'));
+    }
+
+    public function testTryFromStringIsNullForAnAmbiguousValue(): void
+    {
+        self::assertNull(BasicUdiDiFactory::tryFromString('PP1234500000007005'));
+    }
 }

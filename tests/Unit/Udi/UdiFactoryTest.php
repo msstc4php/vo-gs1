@@ -146,4 +146,30 @@ final class UdiFactoryTest extends TestCase
 
         UdiFactory::fromString('+A123BJC5D6E71H');
     }
+
+    /**
+     * @param class-string<Udi> $class
+     */
+    #[DataProvider('leadingForms')]
+    public function testTryFromStringBuildsWhatFromStringBuilds(string $value, string $class, string $deviceIdentifier): void
+    {
+        $udi = UdiFactory::tryFromString($value);
+
+        self::assertInstanceOf($class, $udi);
+        self::assertSame($deviceIdentifier, $udi->deviceIdentifier());
+        self::assertEquals(UdiFactory::fromString($value), $udi);
+    }
+
+    #[DataProvider('unknownForms')]
+    public function testTryFromStringIsNullForAnInputOfNoAgency(string $value): void
+    {
+        self::assertNull(UdiFactory::tryFromString($value));
+    }
+
+    public function testTryFromStringIsNullWhenTheAgencyClassRefuses(): void
+    {
+        self::assertNull(UdiFactory::tryFromString('+A123BJC5D6E71H'));
+        self::assertNull(UdiFactory::tryFromString(']C0A9997'));
+        self::assertNull(UdiFactory::tryFromString('&,1LOT'));
+    }
 }

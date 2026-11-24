@@ -282,6 +282,9 @@ Ndc::from('10010-001-01')->toBillingFormat();                        // "1001000
 Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 010010-0001-01
 ```
 
+- **`UdiFactory::tryFromString()`** and **`BasicUdiDiFactory::tryFromString()`** return null where `fromString()`
+  would throw a value refusal (no agency or entity fits, the agency class refuses the data, or several entities fit);
+  `fromString()` says which.
 - **`UdiFactory::fromString()`** sets aside a leading symbology identifier (`]` + two characters), then picks the
   agency by the next character: `+` HIBC, `=` or `&` ISBT 128 (both built from the data without the identifier);
   data behind an identifier, or starting with `(`, a digit, GS or `^`, is GS1 (passed whole, `ElementString` reads the

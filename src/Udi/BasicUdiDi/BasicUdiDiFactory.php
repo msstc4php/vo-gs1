@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MSSTC4PHP\ValueObject\Gs1\Udi\BasicUdiDi;
 
 use MSSTC4PHP\ValueObject\Exception\AmbiguousValueException;
+use MSSTC4PHP\ValueObject\Exception\InvalidValueObjectException;
 use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidUdiException;
 
 /**
@@ -30,5 +31,15 @@ final class BasicUdiDiFactory
             1 => new $matches[0]($value),
             default => throw new AmbiguousValueException('Basic UDI-DI', $matches),
         };
+    }
+
+    /** Null when no issuing entity or several fit; fromString() says which. */
+    public static function tryFromString(string $value): ?BasicUdiDi
+    {
+        try {
+            return self::fromString($value);
+        } catch (InvalidValueObjectException) {
+            return null;
+        }
     }
 }

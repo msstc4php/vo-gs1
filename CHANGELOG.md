@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0] - unreleased
+
+### Added
+
+- `UdiFactory::tryFromString()` and `BasicUdiDiFactory::tryFromString()`: null where `fromString()` throws a value
+  refusal (vo-base `InvalidValueObjectException`, including `AmbiguousValueException`).
+
 ## [1.0.0] - 2026-11-23
 
 First stable release: from here on a breaking change needs 2.0.

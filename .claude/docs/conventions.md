@@ -43,3 +43,6 @@
   `Tobacco unit level UI …`; only the AIs/DIs the structure itself requires are named, data never. All throw `InvalidMarkingCodeException`.
 - Marking canonical forms carry control characters (GS; RS/EOT for the IFA format): tests assert round trips and the
   GS count, and the Doctrine bridge must store them byte for byte.
+
+- Factories (`UdiFactory`, `BasicUdiDiFactory`) have a `tryFromString()` twin since 1.1.0: it catches only vo-base
+  `InvalidValueObjectException` (which `AmbiguousValueException` extends); nothing else is swallowed.
