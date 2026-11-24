@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MSSTC4PHP\ValueObject\Gs1\Key;
 
+use MSSTC4PHP\ValueObject\Gs1\Exception\InvalidIdentificationKeyException;
 use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1Charsets;
 use MSSTC4PHP\ValueObject\Gs1\Internal\KeyRules;
 
@@ -32,6 +33,8 @@ enum Gs1Prefix
      * Decodes the leading digits of a number in the 13-digit key space (GTIN-13 and the keys that start with a GS1
      * Company Prefix): at least three digits. A run of fewer than seven zeros completes to either `0000000`
      * (restricted) or `0000001`-`0000099` (unused), so it decodes as `Unknown`.
+     *
+     * @throws InvalidIdentificationKeyException for fewer than three characters or a non-digit
      */
     public static function fromDigits(string $digits): self
     {
@@ -59,6 +62,8 @@ enum Gs1Prefix
 
     /**
      * Decodes the first three digits of a GTIN-8 (GS1-8 Prefix, Table 1-5).
+     *
+     * @throws InvalidIdentificationKeyException for fewer than three characters or a non-digit
      */
     public static function fromGtin8Digits(string $digits): self
     {

@@ -181,6 +181,16 @@ final class ElementString extends AbstractStringValueObject
     }
 
     /**
+     * AI (7241) as an {@see AidcMediaType}; null when the string does not carry it or its value has no case.
+     */
+    public function aidcMediaType(): ?AidcMediaType
+    {
+        $value = $this->get('7241');
+
+        return $value === null ? null : AidcMediaType::tryFrom($value);
+    }
+
+    /**
      * The unbracketed data a barcode carries: GS (U+001D) after each AI that is not of predefined length, except the
      * last; no symbology identifier and no leading FNC1.
      *

@@ -165,8 +165,8 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
   `gcppos1`/`gcppos2`); linter details in [`docs/sources/GS1.md`](docs/sources/GS1.md), "Linters".
 - **Reported, not refused (1.2):** `hasValidLinterData()` is false when AI (8007) fails the GS1 Barcode Syntax Engine's
   `iban` linter (ISO 3166 country, 11-34 characters of `0-9A-Z`, mod 97) or AI (7241) its `mediatype` linter (`01`-`10`
-  or `80`-`99`); the value stays valid. `AidcMediaType::tryFrom($string->get('7241'))` names the ICCBBA media types
-  `01`-`10` (GenSpecs Table 3-12, `label()` verbatim).
+  or `80`-`99`); the value stays valid. `aidcMediaType()` decodes AI (7241) to `AidcMediaType`, the ICCBBA media
+  types `01`-`10` (GenSpecs Table 3-12, `label()` verbatim); null when the AI is absent or its value has no case.
 
 ## GS1 Digital Link
 
@@ -511,7 +511,8 @@ Rules for minor releases:
 
 - **A minor never refuses a value an earlier 1.x release accepted.** A check that gets an official source later (the
   BIC and IMO check digits of EPC `bic`/`imovn`, the per-country `iban` structure) is reported only, by a new
-  `hasValid…(): bool` method; refusing waits for 2.0.
+  `hasValid…(): bool` method; refusing waits for 2.0. 1.2 did this for GS1's `iban` and `mediatype` linters
+  (`ElementString::hasValidLinterData()`); the per-country `iban` structure is still open.
 - **GS1 table editions** (the AI table from the Barcode Syntax Dictionary) ship in minors and never make an accepted
   value refused: an AI that GS1 removes or tightens stays accepted as legacy. `ElementString::AI_TABLE_RELEASE` names
   the edition installed.

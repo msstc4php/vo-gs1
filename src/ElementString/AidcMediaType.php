@@ -6,8 +6,8 @@ namespace MSSTC4PHP\ValueObject\Gs1\ElementString;
 
 /**
  * The AIDC media types ICCBBA has assigned for AI (7241), GenSpecs 26.0, Table 3-12, by their two-digit value
- * (`AidcMediaType::tryFrom($elementString->get('7241'))`). Values outside `01`-`10` (not used, reserved, local or
- * national use) have no case; new assignments may add cases.
+ * ({@see ElementString::aidcMediaType()}). Values outside `01`-`10` (not used, reserved, local or national use) have
+ * no case; new assignments may add cases.
  *
  * @see https://ref.gs1.org/standards/genspecs/ GS1 General Specifications 26.0, section 3.8.23, Tables 3-11 and 3-12
  */

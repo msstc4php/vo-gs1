@@ -12,18 +12,20 @@ use MSSTC4PHP\ValueObject\Gs1\Internal\AiLinters;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiSpec;
 use MSSTC4PHP\ValueObject\Gs1\Internal\AiTable;
 use MSSTC4PHP\ValueObject\Gs1\Internal\ElementStringSyntax;
+use MSSTC4PHP\ValueObject\Gs1\Internal\Gs1CheckDigit;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(AidcMediaType::class)]
-#[UsesClass(ElementString::class)]
+#[CoversClass(ElementString::class)]
 #[UsesClass(ElementStringSyntax::class)]
 #[UsesClass(AiTable::class)]
 #[UsesClass(AiSpec::class)]
 #[UsesClass(AiComponent::class)]
 #[UsesClass(AiElement::class)]
 #[UsesClass(AiLinters::class)]
+#[UsesClass(Gs1CheckDigit::class)]
 final class AidcMediaTypeTest extends TestCase
 {
     public function testTable312NamesVerbatim(): void
@@ -54,10 +56,11 @@ final class AidcMediaTypeTest extends TestCase
         }
     }
 
-    public function testDecodesTheDataOfAi7241(): void
+    public function testElementStringDecodesAi7241(): void
     {
-        $element = ElementString::from('(7241)01');
-
-        self::assertSame(AidcMediaType::Wristband, AidcMediaType::tryFrom((string) $element->get('7241')));
+        self::assertSame(AidcMediaType::Wristband, ElementString::from('(7241)01')->aidcMediaType());
+        self::assertSame(AidcMediaType::ClinicalNotes, ElementString::from('(7241)10')->aidcMediaType());
+        self::assertNull(ElementString::from('(7241)80')->aidcMediaType());
+        self::assertNull(ElementString::from('(01)09506000134352')->aidcMediaType());
     }
 }

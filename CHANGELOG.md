@@ -11,8 +11,8 @@ No value that 1.1 accepts is refused; canonical forms, `equals()`, `MAX_LENGTH` 
   for none or input that is not 11 digits. FDA Table 1's `10010000101` gives `10010-001-01` and `10010-0001-1`.
 - `ElementString::hasValidLinterData()`: reports (never refuses) AI (8007) data that fails the GS1 Barcode Syntax
   Engine's `iban` linter and AI (7241) data that fails its `mediatype` linter (`01`-`10`, `80`-`99`).
-- `ElementString\AidcMediaType`: the ICCBBA AIDC media types `01`-`10` of GenSpecs 26.0 Table 3-12, with the table's
-  names as `label()`.
+- `ElementString\AidcMediaType` and `ElementString::aidcMediaType()`: the ICCBBA AIDC media types `01`-`10` of
+  GenSpecs 26.0 Table 3-12, with the table's names as `label()`; null for an absent AI (7241) or a value without a case.
 
 ### Documentation
 

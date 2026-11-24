@@ -10,3 +10,7 @@ resources/gs1-syntax-dictionary.txt, and a table generated from it, src/Internal
   Copyright (c) 2021-2025 GS1 AISBL
 
 Licensed under the Apache License, Version 2.0; a copy is in resources/gs1-syntax-dictionary.LICENSE.
+
+src/Internal/AiLinters.php re-implements linters of the GS1 Barcode Syntax Dictionary and the GS1 Barcode Syntax
+Engine (https://github.com/gs1/gs1-syntax-engine, commit 58c1dc85d9ff4eb9368293bcf5264a9fe70bfc72; Apache License 2.0,
+Copyright GS1 AISBL); see docs/sources/GS1.md, "Linters".

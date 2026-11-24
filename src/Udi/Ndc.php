@@ -28,6 +28,18 @@ final class Ndc extends AbstractStringValueObject
 
     private const string PATTERN = '/^(\d{4,6})-(\d{3,4})-(\d{1,2})$/D';
 
+    /** Labeler and product widths of the HIPAA 5-4-2 billing form. */
+    private const int BILLING_LABELER_LENGTH = 5;
+
+    private const int BILLING_PRODUCT_LENGTH = 4;
+
+    /**
+     * The order of {@see candidatesFromBillingFormat()}, frozen for 1.x: the 10-digit configurations.
+     *
+     * @var non-empty-list<NdcConfiguration>
+     */
+    private const array BILLING_CANDIDATE_ORDER = [NdcConfiguration::FourFourTwo, NdcConfiguration::FiveThreeTwo, NdcConfiguration::FiveFourOne];
+
     /**
      * The configurations a bare digit string fits: three for 10 digits, two for 11, none otherwise.
      *
@@ -46,8 +58,8 @@ final class Ndc extends AbstractStringValueObject
     }
 
     /**
-     * Every 10-digit NDC whose {@see toBillingFormat()} is `$elevenDigits`, in the order of {@see NdcConfiguration}
-     * (4-4-2, 5-3-2, 5-4-1); empty when there is none or the input is not 11 digits. The billing form displays "each
+     * Every 10-digit NDC whose {@see toBillingFormat()} is `$elevenDigits`, in the order 4-4-2, 5-3-2, 5-4-1 (frozen
+     * for 1.x); empty when there is none or the input is not 11 digits. The billing form displays "each
      * subcode using its largest valid size" (HHS, 65 FR 50312, p. 50329), so the padding zero sits at the start of the
      * one short segment, and every segment of the input that starts with `0` gives a candidate: `10010000101` is both
      * `10010-001-01` and `10010-0001-1`. More than one candidate is a genuine ambiguity, which only the source of the
@@ -64,13 +76,14 @@ final class Ndc extends AbstractStringValueObject
         }
 
         $candidates = [];
-        foreach (self::candidates(\substr($elevenDigits, 1)) as $configuration) {
-            $labelerPadding = 5 - $configuration->labelerLength();
-            $productPadding = 4 - $configuration->productLength();
+        foreach (self::BILLING_CANDIDATE_ORDER as $configuration) {
+            $labelerPadding = self::BILLING_LABELER_LENGTH - $configuration->labelerLength();
+            $productPadding = self::BILLING_PRODUCT_LENGTH - $configuration->productLength();
             $labeler = \substr($elevenDigits, $labelerPadding, $configuration->labelerLength());
-            $product = \substr($elevenDigits, 5 + $productPadding, $configuration->productLength());
+            $product = \substr($elevenDigits, self::BILLING_LABELER_LENGTH + $productPadding, $configuration->productLength());
             $package = \substr($elevenDigits, -$configuration->packageLength());
             $ndc = new self($labeler . '-' . $product . '-' . $package);
+            // The filter itself: the dropped padding character must have been a zero.
             if ($ndc->toBillingFormat() === $elevenDigits) {
                 $candidates[] = $ndc;
             }

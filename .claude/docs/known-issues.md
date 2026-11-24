@@ -35,6 +35,7 @@
   `passesReported()`); `passes()` still treats them as `NOT_ENFORCED`, so parsing is unchanged. `lint_iban.c` does not
   require digit check characters and has no per-country length: it is weaker than vo-base `Iban` (no public mod-97
   helper there, so the 10-line port lives in `AiLinters`). `packagetype` is not reported (GS1 list not read).
+  `mediatype()` uses `\intval()`: a `(int)` cast on a 2-digit string is an equivalent CastInt mutant.
 - Parse-time date validity is clock-free (owner ruling): `yymmd0`/`yymmdd` check MM/DD with
   `YY % 4 === 0` as leap (so `000229` always parses), unlike `lint_yymmd0.c`, which uses `CURRENT_YEAR`. The century
   is applied only in `Gs1Dates::toDate()`; the accessors throw `UnresolvableDateException` (final, extends

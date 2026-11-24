@@ -25,4 +25,6 @@ gives a rule the class checks the format (README, "Format only").
 Two canonical styles coexist by ruling: `MarkingIdentifier` is bracketed (a raw 25-character КИ is ambiguous), while
 `MarkingCode` and `FmdPackCode` keep the raw form with GS/RS/EOT.
 
-Decoders that never refuse: `Gs1Prefix` (GenSpecs classification only; no Member Organisation names, see known-issues) and `ElementString\AidcMediaType` (Table 3-12, `01`-`10`; `tryFrom()` on AI 7241 data).
+Decoders that never refuse: `Gs1Prefix` (GenSpecs classification only; no Member Organisation names, see
+known-issues) and `ElementString\AidcMediaType` (Table 3-12, `01`-`10`; `ElementString::aidcMediaType()`, null-safe:
+enum `tryFrom(null)` is a TypeError under strict types).

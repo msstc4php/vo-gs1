@@ -14,9 +14,13 @@ use MSSTC4PHP\ValueObject\I18n\CurrencyCode;
  *
  * The GS1 Barcode Syntax Tests ("linters") that the dictionary names on AI components. Each implemented linter
  * follows its reference implementation; a linter in {@see NOT_ENFORCED} always passes (format only), and the reason
- * is recorded in docs/sources/GS1.md.
+ * is recorded in docs/sources/GS1.md. The linters in {@see REPORTED} follow the GS1 Barcode Syntax Engine and are
+ * reported by {@see passesReported()} only.
+ *
+ * Re-implements linters of the GS1 Barcode Syntax Dictionary and Engine (Apache License 2.0, Copyright GS1 AISBL).
  *
  * @see https://github.com/gs1/gs1-syntax-dictionary `src/lint_*.c` at tag 2026-01-27
+ * @see https://github.com/gs1/gs1-syntax-engine/tree/58c1dc85d9ff4eb9368293bcf5264a9fe70bfc72/src/c-lib/syntax `lint_iban.c`, `lint_mediatype.c`
  * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "Linters"
  */
 final class AiLinters
@@ -31,9 +35,9 @@ final class AiLinters
 
     /** @var non-empty-array<non-empty-string, non-empty-string> linter => why it is not enforced */
     public const array NOT_ENFORCED = [
-        'mediatype' => 'AIDC media type code list, grows with ICCBBA and GS1 assignments',
+        'mediatype' => 'AIDC media type code list, grows with ICCBBA and GS1 assignments; reported by passesReported(), refusal waits for 2.0',
         'packagetype' => 'package type code list, grows with UN/ECE Recommendation 21 and GS1 additions',
-        'iban' => 'lint_iban.c refuses more than 1.0 accepted; reported by passesReported()',
+        'iban' => 'lint_iban.c refuses more than 1.x accepts; reported by passesReported(), refusal waits for 2.0',
         'couponcode' => 'North American coupon structure is out of scope',
         'couponposoffer' => 'North American coupon structure is out of scope',
     ];
@@ -42,7 +46,7 @@ final class AiLinters
      * Not-enforced linters whose reference implementation is checked for {@see passesReported()}: the engine refuses
      * more than this package may in 1.x, so the result is a report, never a refusal.
      *
-     * @var non-empty-list<non-empty-string>
+     * @var non-empty-list<'iban'|'mediatype'>
      */
     public const array REPORTED = ['iban', 'mediatype'];
 
@@ -53,6 +57,8 @@ final class AiLinters
     private const int IBAN_MAX_LENGTH = 34;
 
     private const string IBAN_CHARACTERS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    private const int IBAN_MODULUS = 97;
 
     /** `lint_gcppos1.c`: "Currently the shortest GS1 Company Prefix is four digits." */
     private const int GCP_MIN_LENGTH = 4;
@@ -118,7 +124,7 @@ final class AiLinters
     {
         return match ($linter) {
             'iban' => self::iban($data),
-            'mediatype' => \strlen($data) === 2 && self::digits($data) && (($data !== '00' && $data <= '10') || $data >= '80'),
+            'mediatype' => self::mediatype($data),
             default => true,
         };
     }
@@ -147,11 +153,26 @@ final class AiLinters
 
         $remainder = 0;
         foreach (\str_split(\substr($data, 4) . \substr($data, 0, 4)) as $character) {
-            $value = \ord($character) - (\ctype_digit($character) ? 48 : 55);
-            $remainder = ($remainder * ($value < 10 ? 10 : 100) + $value) % 97;
+            $value = \ord($character) - (\ctype_digit($character) ? \ord('0') : \ord('A') - 10);
+            $remainder = ($remainder * ($value < 10 ? 10 : 100) + $value) % self::IBAN_MODULUS;
         }
 
         return $remainder === 1;
+    }
+
+    /**
+     * `lint_mediatype.c`, GenSpecs 26.0 Table 3-11: "01 to 10 Current ICCBBA assignment" and "80 to 99 Reserved for
+     * local or national use" pass; "00 Not used" and the reserved 11 to 79 fail.
+     */
+    private static function mediatype(string $data): bool
+    {
+        if (\strlen($data) !== 2 || !self::digits($data)) {
+            return false;
+        }
+
+        $value = \intval($data);
+
+        return ($value >= 1 && $value <= 10) || $value >= 80;
     }
 
     private static function digits(string $data): bool
