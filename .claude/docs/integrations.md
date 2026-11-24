@@ -14,7 +14,10 @@
 - GS1 Barcode Syntax Engine (<https://github.com/gs1/gs1-syntax-engine>, commit `58c1dc8`): source of the `\(`
   escape, the `^` notation, the splitting rules and the repeated-AI rule, and of the Digital Link parsing procedure
   (`src/c-lib/dl.c`: backward key scan, `URIescape`/`URIunescape`, duplicate and should-be-in-path checks). Not a
-  dependency, quoted in GS1.md only.
+  dependency, quoted in GS1.md only. Since 1.2 its `lint_iban.c` and `lint_mediatype.c` are ported (report only).
+- gs1.org GS1 prefix list (<https://www.gs1.org/standards/id-keys/company-prefix>): NOT embedded. gs1.org terms of
+  use (read 2026-11-24) forbid re-transmitting or distributing site content without GS1's written approval; G2 was
+  built in 1.2 work and dropped by controller decision. Re-add only with approval.
 - vo-base `Network\Url`: `DigitalLink` validates with `Url::tryFrom()` (its `InvalidUrlException` uses `excerpt()`,
   so it is never propagated) and exposes `url()`.
 - GS1 Digital Link URI Syntax 1.7.0 (HTML) and EPC Tag Data Standard 2.3 (PDF): read 2026-11-19, quotes in GS1.md

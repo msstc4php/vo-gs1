@@ -33,10 +33,26 @@ final class AiLinters
     public const array NOT_ENFORCED = [
         'mediatype' => 'AIDC media type code list, grows with ICCBBA and GS1 assignments',
         'packagetype' => 'package type code list, grows with UN/ECE Recommendation 21 and GS1 additions',
-        'iban' => 'per-country IBAN structure is a later wave',
+        'iban' => 'lint_iban.c refuses more than 1.0 accepted; reported by passesReported()',
         'couponcode' => 'North American coupon structure is out of scope',
         'couponposoffer' => 'North American coupon structure is out of scope',
     ];
+
+    /**
+     * Not-enforced linters whose reference implementation is checked for {@see passesReported()}: the engine refuses
+     * more than this package may in 1.x, so the result is a report, never a refusal.
+     *
+     * @var non-empty-list<non-empty-string>
+     */
+    public const array REPORTED = ['iban', 'mediatype'];
+
+    /** `lint_iban.c`: "No clear minimum length; sufficient for check characters" (refused when not longer). */
+    private const int IBAN_MIN_LENGTH = 10;
+
+    /** `lint_iban.c`: "Per specification." */
+    private const int IBAN_MAX_LENGTH = 34;
+
+    private const string IBAN_CHARACTERS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
     /** `lint_gcppos1.c`: "Currently the shortest GS1 Company Prefix is four digits." */
     private const int GCP_MIN_LENGTH = 4;
@@ -95,6 +111,19 @@ final class AiLinters
     }
 
     /**
+     * The reference implementation of a {@see REPORTED} linter (`lint_iban.c`, `lint_mediatype.c` of the GS1 Barcode
+     * Syntax Engine); true for any other linter.
+     */
+    public static function passesReported(string $linter, string $data): bool
+    {
+        return match ($linter) {
+            'iban' => self::iban($data),
+            'mediatype' => \strlen($data) === 2 && self::digits($data) && (($data !== '00' && $data <= '10') || $data >= '80'),
+            default => true,
+        };
+    }
+
+    /**
      * Base64url as AI (8030) uses it: CSET 64 with at most two trailing `=` pad characters.
      */
     public static function isCset64(string $data): bool
@@ -102,6 +131,27 @@ final class AiLinters
         $body = \rtrim($data, '=');
 
         return \strlen($data) - \strlen($body) <= 2 && \strspn($body, self::CSET_64) === \strlen($body);
+    }
+
+    /**
+     * `lint_iban.c`: an ISO 3166 alpha-2 country, 11 to 34 characters of `0-9A-Z`, ISO 7064 mod 97-10 remainder 1 with
+     * the first four characters moved to the end (check digits are not required to be digits).
+     */
+    private static function iban(string $data): bool
+    {
+        $length = \strlen($data);
+        if ($length <= self::IBAN_MIN_LENGTH || $length > self::IBAN_MAX_LENGTH || \strspn($data, self::IBAN_CHARACTERS) !== $length
+            || !CountryCode::tryFrom(\substr($data, 0, 2)) instanceof CountryCode) {
+            return false;
+        }
+
+        $remainder = 0;
+        foreach (\str_split(\substr($data, 4) . \substr($data, 0, 4)) as $character) {
+            $value = \ord($character) - (\ctype_digit($character) ? 48 : 55);
+            $remainder = ($remainder * ($value < 10 ? 10 : 100) + $value) % 97;
+        }
+
+        return $remainder === 1;
     }
 
     private static function digits(string $data): bool

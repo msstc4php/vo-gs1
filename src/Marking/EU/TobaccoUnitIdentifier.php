@@ -23,8 +23,7 @@ use Override;
  * The century is 2000 (a package decision: the regulation dates from 2018 and the time stamp has two year digits).
  * Each of the three issuer elements takes at least one character, so the minimum length is 11.
  *
- * @see https://www.legislation.gov.uk/eur/2018/574/article/8/adopted Implementing Regulation (EU) 2018/574, Article 8 (EUR-Lex unreachable, see GS1.md)
- * @see https://www.legislation.gov.uk/eur/2018/574/article/2/adopted Article 2: time stamp "recorded in UTC"
+ * @see https://eur-lex.europa.eu/eli/reg_impl/2018/574/oj Implementing Regulation (EU) 2018/574, OJ L 96, 16.4.2018, Articles 8 and 2 (time stamp "recorded in UTC")
  * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EU: falsified medicines and tobacco"
  */
 final class TobaccoUnitIdentifier extends AbstractStringValueObject

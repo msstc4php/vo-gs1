@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.2.0] - unreleased
+
+No value that 1.1 accepts is refused; canonical forms, `equals()`, `MAX_LENGTH` and the AI table are unchanged.
+
+### Added
+
+- `Ndc::candidatesFromBillingFormat()`: every 10-digit NDC whose HIPAA 11-digit billing form (HHS, 65 FR 50312,
+  p. 50329: each segment "using its largest valid size", 5-4-2) is the input, in the order 4-4-2, 5-3-2, 5-4-1; empty
+  for none or input that is not 11 digits. FDA Table 1's `10010000101` gives `10010-001-01` and `10010-0001-1`.
+- `ElementString::hasValidLinterData()`: reports (never refuses) AI (8007) data that fails the GS1 Barcode Syntax
+  Engine's `iban` linter and AI (7241) data that fails its `mediatype` linter (`01`-`10`, `80`-`99`).
+- `ElementString\AidcMediaType`: the ICCBBA AIDC media types `01`-`10` of GenSpecs 26.0 Table 3-12, with the table's
+  names as `label()`.
+
+### Documentation
+
+- EU Regulations 2016/161 and 2018/574 cited from the Official Journal text (Publications Office) with ELI links;
+  Commission index of the tobacco ID issuers' specifications; ICCBBA RT017 version control sheet; heating appliances
+  added to the Russian groups (already parsed as `Standard`/`Shortened`; the country digit 1-5 is not checked).
+
 ## [1.1.0] - 2026-11-24
 
 ### Added

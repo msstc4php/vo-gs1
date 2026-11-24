@@ -21,13 +21,15 @@ and are not part of the repository. Later tasks extend the sections they impleme
 | [ICCBBA ST-017, Coding and Labeling of Medical Devices Containing MPHO](https://iccbba.org/wp-content/uploads/2025/08/1a7593_815cf8e500b9438a860dd8fae533b2b4.pdf) | v1.0.1, September 2024 | 2026-11-19 | read (PDF): ISBT 128 is reachable |
 | [21 CFR 207.33 (eCFR, current)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-C/part-207/subpart-B/section-207.33) | current text | 2026-11-19 | read |
 | [FDA final rule, 91 FR 10749, doc 2026-04368](https://www.federalregister.gov/documents/2026/03/05/2026-04368/revising-the-national-drug-code-format-and-drug-label-barcode-requirements) | published 2026-03-05, effective 2033-03-07 | 2026-11-19 | read (full text) |
-| Delegated Regulation (EU) 2016/161 | OJ L 32, 9.2.2016 | 2026-11-19 | EUR-Lex unreachable (retried in Task 8); text read on legislation.gov.uk |
+| [Delegated Regulation (EU) 2016/161](https://eur-lex.europa.eu/eli/reg_del/2016/161/oj) | OJ L 32, 9.2.2016 | 2026-11-24 | read: OJ text from the Publications Office (section 8); first read on legislation.gov.uk |
 | [IFA PPN-Code Specification for Retail Packaging](https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA_Spec_PPN_Code_Handelspackung_EN.pdf) | Version 3.06, 6 November 2023 | 2026-11-19 | read (PDF, 44 pages; section 8) |
 | [IFA Coding System for medical devices (UDI specification)](https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA-Info_Spec_UDI_Code_EN.pdf) | Version 2.5, 1 April 2026 | 2026-11-19 | read (PDF), section 3.5 |
 | [IFA Check Digit Calculations of PZN, PPN and Basic UDI-DI](https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA-Info_Check_Digit_Calculations_PZN_PPN_UDI_EN.pdf) | undated | 2026-11-19 | read (PDF) |
-| Implementing Regulation (EU) 2018/574 | OJ L 96, 16.4.2018 | 2026-11-19 | EUR-Lex unreachable (retried in Task 8); Articles 2, 3, 8, 21 read on legislation.gov.uk |
+| [Implementing Regulation (EU) 2018/574](https://eur-lex.europa.eu/eli/reg_impl/2018/574/oj) | OJ L 96, 16.4.2018 | 2026-11-24 | read: OJ text from the Publications Office (section 8); first read on legislation.gov.uk |
+| [HHS HIPAA transactions rule, 65 FR 50312](https://www.govinfo.gov/content/pkg/FR-2000-08-17/html/00-20820.htm) | FR Doc 00-20820, 2000-08-17 | 2026-11-24 | read (GPO HTML), p. 50329 (section 7) |
+| [GS1 prefix list](https://www.gs1.org/standards/id-keys/company-prefix) | undated web page | 2026-11-24 | read; not embedded (terms of use, section 1, "GS1 Prefix list") |
 | Russian Government decrees per product group | see section 9 | 2026-11-19 | No. 224 read on a mirror; the others cited through the operator's pages |
-| [Operator knowledge base (ЦРПТ, «Честный знак»)](https://markirovka.ru/knowledge/tovarnye-gruppy/) | pages dated 2024-2026 | 2026-11-19 | read: «Состав кода маркировки» of 36 groups (section 9) |
+| [Operator knowledge base (ЦРПТ, «Честный знак»)](https://markirovka.ru/knowledge/tovarnye-gruppy/) | pages dated 2024-2026 | 2026-11-19, 2026-11-24 | read: «Состав кода маркировки» of 37 groups (section 9) |
 
 ## 1. GS1 General Specifications, Release 26.0
 
@@ -97,12 +99,26 @@ Prefixes", section 1.2.3.2, "a unique string of two or more digits"), `Gs1Prefix
 
 (`100 – 199`, `300 – 951` and `953 – 976` "Used to issue GTIN-8s" decode as `MemberOrganisation`; `977 – 999` as
 `Unknown`.) The allocation of a prefix to a given Member Organisation is not in the General Specifications; it is
-GS1's published prefix list (<https://www.gs1.org/standards/id-keys/company-prefix>), not fetched, so `Gs1Prefix` does
-not name Member Organisations. `Gtin::gs1Prefix()` decodes the 14-digit form, so equal GTINs give one result: a form
+GS1's published prefix list, which is not embedded (below). `Gtin::gs1Prefix()` decodes the 14-digit form, so equal GTINs give one result: a form
 with five zeros after the indicator digit (any indicator, so a GTIN-14 over a GTIN-8 too) is read as a GTIN-8 (the
 dictionary's `gcppos1` note normalises a GS1-8 Prefix "by prefixing `00000`" to the 13-digit space), any other by
 dropping the indicator digit. A run of fewer than seven zeros (from `leadingDigits()` of a short key) completes to
 either `0000000` or `0000001 – 0000099`, so it decodes as `Unknown`.
+
+#### Member Organisation per prefix — not built (decision record, 1.2)
+
+GS1's prefix list, <https://www.gs1.org/standards/id-keys/company-prefix>, names the Member Organisation of each GS1
+Prefix range (read 2026-11-24 UTC; it also states "GS1 Prefixes do not identify the country of origin for a given
+product"). A decoder over a snapshot of it was built during 1.2 and dropped before release: the site's terms of use,
+<https://www.gs1.org/terms-use> (read 2026-11-24 08:19:51 UTC), "Copyright Notice":
+
+> The content of this web site is copyright protected. You may download, display, print and reproduce this material
+> in unaltered form only (retaining this notice) for your personal, non-commercial use or use within your organisation.
+> […] You are not permitted to re-transmit, distribute or commercialise the information or material without seeking
+> prior written approval from GS1.
+
+Not built: GS1 terms forbid redistribution without written approval; can be added if approval is obtained. `Gs1Prefix`
+keeps decoding the General Specifications tables only, and no copy of the page is kept in the repository.
 
 > Note: Once a GS1 Prefix is issued, no other GS1 Prefix that begins with the same digits SHALL be issued
 
@@ -287,7 +303,10 @@ before parsing) and for the canonical bracketed form.
 
 Every linter the dictionary names on an AI component. "Enforced" ones follow the reference implementation
 (`src/lint_<name>.c` of the dictionary repository at tag `2026-01-27`, its `@brief` quoted); "not enforced" ones always
-pass and the AI is checked for format only. `AiLintersTest` fails when the dictionary names a linter missing here.
+pass and the AI is checked for format only; for `iban` and `mediatype` the reference
+implementation in the GS1 Barcode Syntax Engine (commit `58c1dc85d9ff4eb9368293bcf5264a9fe70bfc72`) is still reported by
+`ElementString::hasValidLinterData()` (1.2): the engine is stricter than 1.0, so refusing waits for 2.0.
+`AiLintersTest` fails when the dictionary names a linter missing here.
 
 | Linter | Status | Source quote or reason |
 |---|---|---|
@@ -320,9 +339,9 @@ pass and the AI is checked for format only. `AiLintersTest` fails when the dicti
 | `hyphen` | enforced | "ensures that the given data contains only hyphens" |
 | `importeridx` | enforced | "a valid Importer Index … used in the EU 2018/574 system": one of `-`, `0-9`, `A-Z`, `_`, `a-z` |
 | `pcenc` | enforced | "ensures that the data has correct percent-encoding" (RFC 3986 section 2.1) |
-| `mediatype` | not enforced | AIDC media type code list (ICCBBA and GS1 assignments, many ranges "Reserved for future assignment"): a newer list would make a refused value valid |
-| `packagetype` | not enforced | UN/ECE Recommendation 21 codes "extended with additional GS1 code values", a list GS1 maintains: a newer list would make a refused value valid |
-| `iban` | not enforced | the per-country IBAN structure belongs to the finance wave (plan: wave 2) |
+| `mediatype` | not enforced | Reported by `hasValidLinterData()` (1.2). AIDC media type code list (ICCBBA and GS1 assignments, many ranges "Reserved for future assignment"): a newer list would make a refused value valid. `lint_mediatype.c` ("MAINTENANCE NOTE: Updates to the AIDC media type list shall be announced by GSCN") passes `01`-`10` and `80`-`99`, fails `00` and `11`-`79`, as GenSpecs 26.0 Table 3-11: "00 Not used", "01 to 10 Current ICCBBA assignment", "11 to 29 Reserved for ICCBBA future assignment", "30 to 59 Reserved for GS1 assignment", "60 to 79 Reserved for future capacity needs of ICCBBA or GS1 …", "80 to 99 Reserved for local or national use". Table 3-12 names 01-10 (`ElementString\AidcMediaType`, labels verbatim: "Wristband", "Order form", "Sample Tube", "Working list / Lab list / form", "Test report", "Delivery note / issue documentation", "Intended recipient label (attached to container)", "Label affixed to product", "Identity card", "Clinical or progress notes") |
+| `packagetype` | not enforced | UN/ECE Recommendation 21 codes "extended with additional GS1 code values", a list GS1 maintains: a newer list would make a refused value valid. Not reported: the GS1 PackageTypeCode list itself (<https://navigator.gs1.org/edi/codelist-details?name=PackageTypeCode>) was not read |
+| `iban` | not enforced | Reported by `hasValidLinterData()` (1.2). `lint_iban.c`: "The `iban` linter ensures that the data conforms to the format required for an International Bank Account Number (IBAN) number." Fails a length `<= IBAN_MIN_LENGTH` (10, "No clear minimum length; sufficient for check characters") or above `IBAN_MAX_LENGTH` (34), a character outside `0-9A-Z`, leading two characters that are no ISO 3166 alpha-2 code (vo-base `CountryCode`, as `iso3166alpha2`), and a mod 97 remainder other than 1 over the data with its first four characters moved to the end. The per-country length and BBAN pattern (vo-base `Iban`, SWIFT registry) are not part of the linter and not reported; the engine's own unit test vectors are the test data |
 | `couponcode` | not enforced | the North American coupon code structure (AI 8110) is out of scope of this wave |
 | `couponposoffer` | not enforced | the positive offer file coupon structure (AI 8112) is out of scope of this wave |
 
@@ -714,7 +733,13 @@ Rules quoted from 4.1 and chapter 5:
 > correct.
 
 "Elements of the message are divided either by the “=” or the “&” character." Specified sequences 034-037 (Table 3)
-are checked; other RT017 numbers are format only (RT017 is published in ICCBBA's password-protected area). Non-UDI
+are checked; other RT017 numbers are format only (RT017 is published in ICCBBA's password-protected area). Its
+version control sheet is public (fetched 2026-11-24,
+<https://www.isbt128.org/_files/ugd/83d6e1_43e7be9c937d4f75a8b69d510c206f5f.pdf>, redirecting to
+<https://iccbba.org/wp-content/uploads/version-control-sheet-table-w2-rt017.pdf>, "Table W2 [RT017] ICCBBA-Specified
+Compound Messages Version Control Sheet"): "Version 1.9.0 April 20, 2018 … Added new structured message 042 Requested
+by the UK"; earlier versions add 029-031 (1.2.0), 032 (1.3.0), 033 (1.4.0), "034 to 037" (1.5.0), 038-039 (1.6.0),
+040 (1.7.0) and 041 (1.8.0). So RT017 v1.9.0 defines specified messages up to 042; their sequences are not in the sheet. Non-UDI
 data structures are kept unparsed (printable ASCII, at least three characters). The DIN "flag characters … should be
 ignored" (chapter 5) and "shall be set to 00" for medical devices (3.1): reading software ignores them, so any flag of
 the structure's character set is accepted and `donationIdentificationNumber()` returns the first 13 characters.
@@ -776,8 +801,7 @@ Why the hyphens are required (Response 8 and Table 2, "Illustration of Ambiguity
 > if hyphens are removed from an FDA-assigned NDC in an electronic system, there is no reliable way to know where the
 > hyphens were in the original NDC.
 
-The 11-digit billing form (`Ndc::toBillingFormat()`) is HHS's HIPAA standard, which this FDA rule describes (the HHS
-source itself, 65 FR 50312, was not fetched):
+The 11-digit billing form (`Ndc::toBillingFormat()`) is HHS's HIPAA standard, which this FDA rule describes:
 
 > The HIPAA standard 11-digit NDC format is standardized such that the labeler code is always 5 digits, the product
 > code is always 4 digits, and the package code always 2 digits (i.e., 5-4-2 configuration). To convert a 10-digit NDC
@@ -787,11 +811,26 @@ source itself, 65 FR 50312, was not fetched):
 Table 1: `10010-001-01` → `10010-0001-01` → `10010000101`; for a 6-digit labeler code ("Native 11-digit (6-3-2)")
 the rule notes the HIPAA update is "outside the scope of FDA authority", so `toBillingFormat()` returns null for it.
 
-Reading the 11-digit billing form back into an NDC (audit 1.0, N5) is **not implemented**: the quote above gives only
-the 10 → 11 direction ("a leading zero is added to the appropriate segment"), and the HHS rule itself (65 FR 50312) was
-not fetched. Which segment carries the added zero cannot be told from the 11 digits when a segment of the original
-starts with a genuine zero, and no fetched source states a rule for it, so no reverse route is offered. It can be
-added in a minor once the HHS text is read (additive).
+HHS HIPAA transactions rule, 65 FR 50312 (FR Doc 00-20820, 2000-08-17), page 50329, read 2026-11-24 on GPO
+(<https://www.govinfo.gov/content/pkg/FR-2000-08-17/html/00-20820.htm>):
+
+> The NDC was originally developed as a 10-digit identifier made up of three subcodes: the manufacturer code, the
+> product code, and the package size code. Each subcode is variable in length. Some subcodes are reported with leading
+> zeroes and some truncate the leading zero. This leads to variable sizes, such as: 5-4-1, 5-3-2, and 4-4-2.
+> Originally, the subcodes were separated by hyphens. However, when used in computer systems, it is customary to
+> display each subcode using its largest valid size, yielding an 11-digit number: 5-4-2. We are adopting the 11-digit
+> NDC in order that the format is distinctive and will be in place until the Secretary decides to adopt a new code
+> system.
+
+Reading the billing form back (audit 1.0, N5; declined in 1.0 because the HHS text was not read; implemented in 1.2 as
+`Ndc::candidatesFromBillingFormat()`): HHS gives no reverse rule, but the forward rule fixes it. A 10-digit NDC has
+exactly one segment shorter than 5-4-2 (4-4-2, 5-3-2 or 5-4-1), and "its largest valid size" pads that segment with
+one leading zero. So every segment of the 11 digits that starts with `0` is a possible padded segment, and each gives
+one candidate; the decoder returns all of them in the order of `NdcConfiguration` (4-4-2, 5-3-2, 5-4-1) and checks each
+with `toBillingFormat()`. Several candidates are a real ambiguity (FDA Response 8 on hyphen-less NDCs): FDA Table 1's
+own `10010000101` is both `10010-001-01` and `10010-0001-1`. No candidate means the 11 digits are not the billing form
+of any 10-digit NDC. No factory picks one candidate: that would refuse most real values (package codes like `01` are
+common) or guess.
 
 `Ndc::toNdc12()`, Response 14: existing NDCs "would be converted to the uniform, 12-digit format by the addition of
 leading zeros to the labeler code, the product code, and/or the package code segments as needed to produce the 6-4-2
@@ -828,13 +867,20 @@ All four are enforced with their check characters. The factory tries all four; a
 
 ## 8. EU: falsified medicines and tobacco (Task 8) — `Marking\EU\`
 
-### EUR-Lex
+### EUR-Lex and the Official Journal text
 
-EUR-Lex answered with an empty body again on 2026-11-19 (UTC), Task 8 retry: `eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32018R0574`
-and `eur-lex.europa.eu/eli/reg_del/2016/161/oj`. The `@see` links therefore stay on legislation.gov.uk, "Original (As
-adopted by EU)": <https://www.legislation.gov.uk/eur/2016/161/article/4/adopted>, `/eur/2016/161/article/5/adopted`,
-<https://www.legislation.gov.uk/eur/2018/574/article/8/adopted>, `/article/2/adopted`, `/article/3/adopted`,
-`/article/21/adopted`.
+EUR-Lex answered with an empty body on 2026-11-19 (UTC, Task 8 retry: `eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32018R0574`,
+`eur-lex.europa.eu/eli/reg_del/2016/161/oj`) and still answers HTTP 202 with an empty body. On 2026-11-24 the Official
+Journal text was read from the EU Publications Office (Cellar), the OJ manifestation of the CELEX resources
+`https://publications.europa.eu/resource/celex/32016R0161` and `.../celex/32018R0574` (`Accept: application/xhtml+xml`,
+`Accept-Language: eng`), which resolve to
+<http://publications.europa.eu/resource/cellar/645fa920-cef8-11e5-a4b5-01aa75ed71a1.0006.03/DOC_1> ("OJ L 32/1,
+9.2.2016", COMMISSION DELEGATED REGULATION (EU) 2016/161) and
+<http://publications.europa.eu/resource/cellar/0327d8e3-4142-11e8-b5fe-01aa75ed71a1.0006.03/DOC_1> ("OJ L 96/7,
+16.4.2018", COMMISSION IMPLEMENTING REGULATION (EU) 2018/574). These are the texts as published, not consolidated
+versions. Every quote below matches them verbatim (first read on legislation.gov.uk, "Original (As adopted by EU)").
+The `@see` links are the ELI: <https://eur-lex.europa.eu/eli/reg_del/2016/161/oj>,
+<https://eur-lex.europa.eu/eli/reg_impl/2018/574/oj>.
 
 ### Delegated Regulation (EU) 2016/161 — `FmdPackCode`
 
@@ -899,8 +945,27 @@ for each following digit." Example PRA `11` + PZN `03752864`, sum 3409, remainde
   digits are never guessed to be a time stamp), joined with `withTimeStamp()` (UTC) into a `TobaccoUnitIdentifier`.
   No character set beyond "alphanumeric" is given.
 
+Further text read in the OJ (2026-11-24): Article 8(1)(b) serial "whose probability to be guessed shall be negligible
+and in any case lower than one in ten thousand"; Article 8(4) "Unit level UIs shall not include any data elements other
+than those listed in paragraph 1"; Article 3(7): the issuer's identity and identification code are "made publicly
+available and accessible online".
+
 Package decisions: `[0-9A-Za-z]`; minimum length 11 (three elements of at least one character plus eight) for the full
-UI, 3 without the time stamp; century 2000 (`withTimeStamp()` refuses other years).
+UI, 3 without the time stamp; century 2000 (`withTimeStamp()` refuses other years). The OJ text was re-read for them
+on 2026-11-24 and gives no rule beyond "alphanumeric": no minimum length, no century, no list of characters. They stay
+package decisions.
+
+The ID issuers' own UI structures are indexed by the Commission (fetched 2026-11-24):
+<https://health.ec.europa.eu/tobacco/product-regulation/systems-tobacco-traceability-and-security-features_en>, with
+"Unique identifiers - encoding and decoding instructions" ("Updated on: October 2026",
+<https://health.ec.europa.eu/document/download/b77d320f-6f69-4de2-a1b0-c4c0098de217_en?filename=tt_codingstructure_en.pdf>)
+listing per Member State the issuer's own document (e.g. "Germany
+https://www.bundesdruckerei.de/system/files/dokumente/pdf/ID-Issuer-External-Specifications_1.3.pdf", "Poland
+https://idissuer.pl/identifiers-structure"), and the "Overview of the online information on the national ID issuers"
+(26/10/2026,
+<https://health.ec.europa.eu/document/download/1fa94da4-9075-441f-b03a-c1335c6ef33e_en?filename=tt_id_issuers_en_1.pdf>,
+names and websites, not the ISO/IEC 15459-2 issuer codes). The issuer documents were not read; Article 8(4) allows
+encrypted layouts, so a per-issuer decoding could never be a validity rule.
 
 ## 9. Russian marking (Task 8) — `Marking\RU\`, `Internal\RuMarkingSyntax`
 
@@ -913,7 +978,9 @@ UI, 3 without the time stamp; century 2000 (`withTimeStamp()` refuses other year
   29.12.2025", status "Действует", in force from 01.03.2026, amended last by No. 1848 of 20.11.2025 and No. 2192 of
   29.12.2025. Paragraphs 43-45 carry no amendment marks and read as quoted below (the edition of 28.03.2025, read
   first, has the same text). publication.pravo.gov.ru and legalacts.ru closed the socket, consultant.ru showed only
-  the decree's cover text.
+  the decree's cover text. 2026-11-24: publication.pravo.gov.ru answers again, but the decree was not located there
+  (see "Unreachable or deferred"); the original publication is СЗ РФ 2019, № 11, ст. 1117 (from a search result, not
+  itself official). The mirror quote stays.
 - docs.crpt.ru "Описание вариантов передачи КМ / КИ / КиЗ в разрезе товарных групп" (linked from the operator's
   retail page): not found by search.
 - The operator pages give format lines, none prints a real code. The tests build one code per structure from those
@@ -976,8 +1043,23 @@ UI, 3 without the time stamp; century 2000 (`withTimeStamp()` refuses other year
 | Cables | 2026-08-06 | experiment, methodological recommendations p. 41 | 13 | 4 + 44 | 4 | |
 | Optical fibre | 2026-09-23 | experiment, methodological recommendations p. 41 | 13 | 4 + 44 | 4 | |
 | Polymer pipes | 2026-08-06 | methodological recommendations p. 43 | 6 | 4 + 44 ("Состоит из 76 символов") | 4 | |
+| Heating appliances (read 2026-11-24) | 2026-08-06 | experiment, methodological recommendations p. 41 | 6 | 4 + 44 ("Состоит из 76 символов") | 4 ("Состоит из 30 символов") | |
 
-"13 / 6": the long structure has 13, the short one 6. Typical wording (light industry): "1-я группа состоит из 14
+"13 / 6": the long structure has 13, the short one 6.
+
+Heating appliances
+(<https://markirovka.ru/knowledge/tovarnye-gruppy/otopitelnye-pribory/sostav-koda-markirovki-otopitelnye-pribory>,
+"6 августа 2026 14:02", HTML fetch 2026-11-24): "В соответствии с пунктом 41 Методических рекомендаций по проведению
+эксперимента по маркировке средствами идентификации отдельных видов отопительных приборов"; the (21) group "состоит
+из 6 символов … содержит включаемый оператором идентификатор государства – члена Евразийского экономического союза, в
+которой данный код был эмитирован (1 – Республика Армения, 2 – Республика Белоруссия, 3 – Республика Казахстан, 4 –
+Киргизская Республика, 5 – Российская Федерация) (первая цифра), и индивидуальный серийный номер упаковки товара (5
+цифр, строчных и прописных букв латинского алфавита, а также специальных символов)"; format lines "01 + 14 цифр (код
+товара) + 21 + 1 цифра (код страны) + 5 символов (индивидуальный серийный номер) + 91 + 4 символа … + 92 + 44 символа"
+and "… + 93 + 4 символа (код проверки)". Both structures are the merged `Standard` and `Shortened` (serial 6), so such
+codes already parsed in 1.0. The first serial character 1-5 is stricter than the merged structures (other groups with
+a 6-character serial publish no such digit) and is not checked; the package does not model product groups (the group
+is not encoded in the code), so no group is added. Typical wording (light industry): "1-я группа состоит из 14
 цифр", "Завершающим символом для этой группы данных является разделитель, имеющий код 29 в таблице символов ASCII",
 "3-я группа состоит из 4 символов", "4-я группа состоит из 44 символов"; "1-я и 2-я группы образуют код
 идентификации". Medicines: "Группы данных должны располагаться последовательно - от первой к четвертой" → the order
@@ -1033,11 +1115,14 @@ without the separators. No "(92) without (91)" refusal is added: it would refuse
 
 | Source | Date (UTC) | What was tried | Effect |
 |---|---|---|---|
-| EUR-Lex (2016/161, 2018/574) | 2026-11-19 | HTML, PDF and ELI URLs: HTTP 202, empty body; Task 8 retry (CELEX HTML, ELI): empty body | `@see` links on legislation.gov.uk |
-| publication.pravo.gov.ru, legalacts.ru (Decree No. 224) | 2026-11-19 | document view: socket closed | quoted from the КонтурЭкстерн mirror |
+| EUR-Lex (2016/161, 2018/574) | 2026-11-19, 2026-11-24 | HTML, PDF and ELI URLs: HTTP 202, empty body (again 2026-11-24) | the OJ text was read from the Publications Office instead (section 8); `@see` links are the ELI |
+| publication.pravo.gov.ru, legalacts.ru (Decree No. 224) | 2026-11-19, 2026-11-24 | document view: socket closed; 2026-11-24: the portal answers, but Decree No. 224 was not located (numbers 0001201903010001-0070, 0001201903020001-0070, 0001201903040001-0070 scanned by title; search page empty; HTTPS timed out) | quoted from the КонтурЭкстерн mirror |
 | docs.crpt.ru "Описание вариантов передачи КМ / КИ / КиЗ" | 2026-11-19 | search | not found; the per-group operator pages are the source |
-| Operator pages of 10 groups (auto parts, pharmaceutical raw materials, frozen food, heating appliances, titanium, fertilisers, pyrotechnics, fire safety, printed matter, wheelchairs) | 2026-11-19 | group index pages and search | no «Состав кода маркировки» page found; listed as not covered in the README |
+| Operator pages of 9 groups (auto parts, pharmaceutical raw materials, frozen food, titanium, fertilisers, pyrotechnics, fire safety, printed matter, wheelchairs) | 2026-11-19, 2026-11-24 | group index pages and search | no «Состав кода маркировки» page found; listed as not covered in the README (heating appliances found 2026-11-24, section 9) |
 | ICCBBA ST-011 v1.9.0 | 2026-11-19 | the registry page linking it is on a host outside the sandbox allowlist | not needed: ST-017 defines every UDI structure (Task 7) |
 | ICCBBA RT017 (specified compound messages) | 2026-11-19 | published in ICCBBA's password-protected area | sequences other than 034-037 (ST-017 Table 3) are not order-checked |
-| HHS HIPAA rule 65 FR 50312 | 2026-11-19 | not fetched | the 5-4-2 billing form is quoted from the FDA final rule's description of it |
-| GS1 prefix allocation list (MO per prefix) | 2026-11-19 | not fetched | `Gs1Prefix` decodes the General Specifications tables only; Member Organisations are not named |
+| HHS HIPAA rule 65 FR 50312 | 2026-11-19 | not fetched (read 2026-11-24, section 7) | — |
+| GS1 prefix allocation list (MO per prefix) | 2026-11-19, 2026-11-24 | read 2026-11-24; its terms of use forbid redistribution without written approval (section 1) | `Gs1Prefix` names no Member Organisation |
+| GS1 PackageTypeCode list | 2026-11-24 | not read | `packagetype` stays format only and is not reported |
+| ICCBBA RT017 table | 2026-11-24 | the table is not public; its version control sheet is (section 6) | sequences other than 034-037 are not order-checked |
+| EU tobacco ID issuers' own UI specifications | 2026-11-24 | Commission index found, issuer documents not read (section 8) | the UI stays format only between issuer code and time stamp |

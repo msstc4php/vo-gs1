@@ -166,6 +166,21 @@ final class ElementString extends AbstractStringValueObject
     }
 
     /**
+     * False when the data of AI (8007) or (7241) fails the GS1 Barcode Syntax Engine's `iban` or `mediatype` linter,
+     * which this package does not enforce (README, "Format only"): `iban` needs an ISO 3166 alpha-2 country, 11 to 34
+     * characters of `0-9A-Z` and the ISO 7064 mod-97 check; `mediatype` needs a current ICCBBA assignment (`01`-`10`)
+     * or local or national use (`80`-`99`, GenSpecs 26.0, Table 3-11). A report, never a refusal: the value stays
+     * valid. `packagetype` and the coupon linters are not checked.
+     *
+     * @see https://github.com/gs1/gs1-syntax-engine/blob/58c1dc85d9ff4eb9368293bcf5264a9fe70bfc72/src/c-lib/syntax/lint_iban.c
+     * @see https://github.com/gs1/gs1-syntax-engine/blob/58c1dc85d9ff4eb9368293bcf5264a9fe70bfc72/src/c-lib/syntax/lint_mediatype.c
+     */
+    public function hasValidLinterData(): bool
+    {
+        return ElementStringSyntax::passesReportedLinters($this->elements());
+    }
+
+    /**
      * The unbracketed data a barcode carries: GS (U+001D) after each AI that is not of predefined length, except the
      * last; no symbology identifier and no leading FNC1.
      *

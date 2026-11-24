@@ -45,6 +45,40 @@ final class Ndc extends AbstractStringValueObject
         ));
     }
 
+    /**
+     * Every 10-digit NDC whose {@see toBillingFormat()} is `$elevenDigits`, in the order of {@see NdcConfiguration}
+     * (4-4-2, 5-3-2, 5-4-1); empty when there is none or the input is not 11 digits. The billing form displays "each
+     * subcode using its largest valid size" (HHS, 65 FR 50312, p. 50329), so the padding zero sits at the start of the
+     * one short segment, and every segment of the input that starts with `0` gives a candidate: `10010000101` is both
+     * `10010-001-01` and `10010-0001-1`. More than one candidate is a genuine ambiguity, which only the source of the
+     * value can settle.
+     *
+     * @see https://www.govinfo.gov/content/pkg/FR-2000-08-17/html/00-20820.htm 65 FR 50312, p. 50329
+     *
+     * @return list<self>
+     */
+    public static function candidatesFromBillingFormat(string $elevenDigits): array
+    {
+        if (\strlen($elevenDigits) !== 11 || \strspn($elevenDigits, '0123456789') !== 11) {
+            return [];
+        }
+
+        $candidates = [];
+        foreach (self::candidates(\substr($elevenDigits, 1)) as $configuration) {
+            $labelerPadding = 5 - $configuration->labelerLength();
+            $productPadding = 4 - $configuration->productLength();
+            $labeler = \substr($elevenDigits, $labelerPadding, $configuration->labelerLength());
+            $product = \substr($elevenDigits, 5 + $productPadding, $configuration->productLength());
+            $package = \substr($elevenDigits, -$configuration->packageLength());
+            $ndc = new self($labeler . '-' . $product . '-' . $package);
+            if ($ndc->toBillingFormat() === $elevenDigits) {
+                $candidates[] = $ndc;
+            }
+        }
+
+        return $candidates;
+    }
+
     public static function fromDigits(string $digits, NdcConfiguration $configuration): self
     {
         if (!\in_array($configuration, self::candidates($digits), true)) {

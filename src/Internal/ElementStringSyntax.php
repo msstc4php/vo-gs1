@@ -111,6 +111,31 @@ final class ElementStringSyntax
     }
 
     /**
+     * Whether every component passes its {@see AiLinters::REPORTED} linters. The elements were checked by
+     * {@see parse()}, so each component takes the next characters up to its maximum length; an omitted optional
+     * component is not linted.
+     *
+     * @param non-empty-list<AiElement> $elements
+     */
+    public static function passesReportedLinters(array $elements): bool
+    {
+        foreach ($elements as $element) {
+            $position = 0;
+            foreach ($element->spec->components as $component) {
+                $part = \substr($element->value, $position, $component->maxLength);
+                $position += \strlen($part);
+                foreach ($component->linters as $linter) {
+                    if ($part !== '' && !AiLinters::passesReported($linter, $part)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * The `req` attributes no alternative of which is present: each attribute needs one of its alternatives, and an
      * alternative needs all of its AIs. GS1 evaluates them over every carrier of an item, so they are reported, not
      * refused.

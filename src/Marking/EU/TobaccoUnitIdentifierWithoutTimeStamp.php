@@ -17,8 +17,7 @@ use Override;
  * of Article 8(1) less the 8 of the time stamp. Trailing digits are never read as a time stamp; use
  * {@see TobaccoUnitIdentifier} for a full UI and {@see withTimeStamp()} to join the two.
  *
- * @see https://www.legislation.gov.uk/eur/2018/574/article/21/adopted Implementing Regulation (EU) 2018/574, Article 21(4)
- * @see https://www.legislation.gov.uk/eur/2018/574/article/8/adopted Article 8
+ * @see https://eur-lex.europa.eu/eli/reg_impl/2018/574/oj Implementing Regulation (EU) 2018/574, OJ L 96, 16.4.2018, Articles 21(4) and 8
  * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EU: falsified medicines and tobacco"
  */
 final class TobaccoUnitIdentifierWithoutTimeStamp extends AbstractStringValueObject

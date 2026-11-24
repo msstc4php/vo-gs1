@@ -9,14 +9,19 @@
   (`req=A+C,B+C` instead of `req=A,B req=C`); the generator reads both, the table follows tagged releases only.
 - GenSpecs 26.0 does not prescribe the 14-digit database form of a GTIN ("may be stored with or without leading
   zeroes"); the plan's fallback applies (keep the given form, compare the 14-digit form).
-- EUR-Lex answered 202 with an empty body (bot challenge) on 2026-11-19 UTC; EU texts were read on legislation.gov.uk.
+- EUR-Lex answers 202 with an empty body (bot challenge; 2026-11-19 and 2026-11-24 UTC). The OJ text comes from the
+  Publications Office Cellar instead: `https://publications.europa.eu/resource/celex/3XXXXRNNNN` with
+  `Accept: application/xhtml+xml` and `Accept-Language: eng` redirects to the OJ manifestation; `@see` uses the ELI.
+- gs1.org pages need a browser User-Agent with curl (WebFetch gets 403). Their terms of use (gs1.org/terms-use)
+  forbid redistributing site content without written approval: never vendor or embed gs1.org page data.
 
 ## Identification keys
 
 - `Cpid` (AI 8010) is CSET 39 (Table 7-21, dictionary `Y..30`), not CSET 82; `Internal\Gs1Charsets` holds both sets.
 - `Grai::assetType()` / `Gdti::documentType()` return the key without serial (14 / 13 digits), i.e. the AI value minus
   its serial; the company prefix is never split off.
-- `Gs1Prefix` has no Member Organisation names: the allocation list is not in the General Specifications.
+- `Gs1Prefix` has no Member Organisation names: the allocation list is not in the General Specifications, and the
+  gs1.org prefix list may not be redistributed (terms of use; an MO decoder was built and dropped in 1.2).
 - Company prefixes are 4 to 12 digits (GenSpecs 1.2.3.3; 3 for the GS1-8 Prefix of a GTIN-8); `Giai`, `Ginc`, `Cpid`,
   `Gmn` start with 4 digits (dictionary `gcppos1`).
 - `Gtin::gs1Prefix()` decodes the 14-digit form, so equal GTINs agree: six leading zeros mean a GTIN-8 (GS1-8 table).
@@ -26,6 +31,10 @@
 
 ## Element strings
 
+- `ElementString::hasValidLinterData()` (1.2) reports the engine's `iban`/`mediatype` linters (`AiLinters::REPORTED`,
+  `passesReported()`); `passes()` still treats them as `NOT_ENFORCED`, so parsing is unchanged. `lint_iban.c` does not
+  require digit check characters and has no per-country length: it is weaker than vo-base `Iban` (no public mod-97
+  helper there, so the 10-line port lives in `AiLinters`). `packagetype` is not reported (GS1 list not read).
 - Parse-time date validity is clock-free (owner ruling): `yymmd0`/`yymmdd` check MM/DD with
   `YY % 4 === 0` as leap (so `000229` always parses), unlike `lint_yymmd0.c`, which uses `CURRENT_YEAR`. The century
   is applied only in `Gs1Dates::toDate()`; the accessors throw `UnresolvableDateException` (final, extends
@@ -112,6 +121,9 @@
   candidates `[Ndc::class]` and a fixed type string (no configurations, no digit count: they reveal the input length,
   ruling S3/G2); `Ndc::candidates()` is the documented recovery path, then `Ndc::fromDigits()`. The exception is not an `InvalidUdiException` (both are
   `InvalidValueObjectException`).
+- `Ndc::candidatesFromBillingFormat()` (1.2): one candidate per segment of the 11 digits that starts with `0` (4-4-2,
+  5-3-2, 5-4-1 order), each verified by `toBillingFormat()`; FDA Table 1's `10010000101` is ambiguous (2 candidates).
+  No single-result factory by design (most real values have several).
 - `Ndc::toBillingFormat()` is `?string` (not `string`): HIPAA's 5-4-2 has no conversion for 6-digit labeler
   codes (FDA: "outside the scope of FDA authority"), so it returns null for 6-3-2 / 6-4-1.
 - HIBC: the check character can be a space or `/`, so always strip the last character before splitting on `/`. With
@@ -183,7 +195,10 @@
   `IsbtSyntax` caps the data structures at 3116 and the whole value at 3123 (header only recognised within that).
 - `FmdPackCode::pzn()` reads NTIN-DE `04150` + PZN; productCode equality between the formats = `Ppn::toNtin()`
   equals the GTIN (the types differ, so "same product code" is that comparison plus `pzn()`).
-- EUR-Lex stayed blank on a retry; publication.pravo.gov.ru and legalacts.ru close the socket.
+- EUR-Lex stayed blank on a retry; publication.pravo.gov.ru answers since 2026-11-24 but Decree No. 224 is not found
+  there (mirror quote stays); legalacts.ru closes the socket.
+- Heating appliances (1.2, docs only): serial 6 = EAEU country digit 1-5 + 5; not checked (stricter than the merged
+  structures), the package models structures, not product groups.
 - Infection: escaped mutants in the marking code are equivalent or unreachable (negative string offset × 0 in the PZN
   loop, `(int)` casts, `substr` length overshoot in the IFA day, unreachable `LogicException`s, the unused
   `identifier` field of a parsed identifier).

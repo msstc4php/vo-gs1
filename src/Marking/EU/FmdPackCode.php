@@ -27,7 +27,7 @@ use Override;
  * Canonical form: the GS1 barcode data with GS separators, or the IFA message with its trailer; data elements in the
  * order given. Both carry control characters (GS, RS, EOT) that storage must keep.
  *
- * @see https://www.legislation.gov.uk/eur/2016/161/article/4/adopted Delegated Regulation (EU) 2016/161, Article 4 (EUR-Lex unreachable, see GS1.md)
+ * @see https://eur-lex.europa.eu/eli/reg_del/2016/161/oj Delegated Regulation (EU) 2016/161, OJ L 32, 9.2.2016, Article 4
  * @see https://www.ifaffm.de/mandanten/1/documents/04_ifa_coding_system/IFA_Spec_PPN_Code_Handelspackung_EN.pdf IFA, PPN-Code Specification for Retail Packaging, Version 3.06, chapter 5
  * @see https://github.com/msstc4php/vo-gs1/blob/main/docs/sources/GS1.md "EU: falsified medicines and tobacco"
  */

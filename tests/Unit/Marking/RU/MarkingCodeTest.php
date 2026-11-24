@@ -93,6 +93,9 @@ final class MarkingCodeTest extends TestCase
         yield 'standard, serial 6 with "91"' => ['01' . self::GTIN . '21591ab_' . self::GS . '91EE10' . self::GS . '92' . self::CODE_44, MarkingCodeStructure::Standard, '591ab_', 'EE10', self::CODE_44, '(01)' . self::GTIN . '(21)591ab_'];
         yield 'standard, (91) and (93) inside a 44-character (92)' => ['01' . self::GTIN . '215Ab+cDe-fGh.J' . self::GS . '91EE10' . self::GS . '92' . \substr(self::CODE_44, 0, 40) . '3103', MarkingCodeStructure::Standard, '5Ab+cDe-fGh.J', 'EE10', \substr(self::CODE_44, 0, 40) . '3103', '(01)' . self::GTIN . '(21)5Ab+cDe-fGh.J'];
         yield 'shortened, serial 20 (1954, p. 46)' => ['01' . self::GTIN . '2151234567890ABCDEFGHI' . self::GS . '93Ab1+', MarkingCodeStructure::Shortened, '51234567890ABCDEFGHI', null, 'Ab1+', '(01)' . self::GTIN . '(21)51234567890ABCDEFGHI'];
+        // Heating appliances, methodological recommendations p. 41 (operator page of 2026-08-06): country digit + 5.
+        yield 'standard, heating appliances' => ['01' . self::GTIN . '215Ab3x9' . self::GS . '91EE10' . self::GS . '92' . self::CODE_44, MarkingCodeStructure::Standard, '5Ab3x9', 'EE10', self::CODE_44, '(01)' . self::GTIN . '(21)5Ab3x9'];
+        yield 'shortened, heating appliances' => ['01' . self::GTIN . '215Ab3x_' . self::GS . '93Ab1+', MarkingCodeStructure::Shortened, '5Ab3x_', null, 'Ab1+', '(01)' . self::GTIN . '(21)5Ab3x_'];
     }
 
     #[DataProvider('publishedStructures')]

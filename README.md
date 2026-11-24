@@ -69,8 +69,9 @@ that fits several classes throws vo-base `AmbiguousValueException`. Exception me
 | `Key\Giai`, `Ginc`, `Cpid` | length and character set (CSET 82; CSET 39 for `Cpid`), company-prefix position | General Specifications, dictionary `gcppos1` |
 | `Key\Gmn` | character set, the two check characters (MOD 1021,32) | General Specifications 26.0 |
 | `Key\Gs1Prefix`, `GtinFormat` | decoding of the GS1 Prefix and of the GTIN format; never refuses | General Specifications 26.0 (GS1 Prefix and GTIN tables) |
-| `ElementString\ElementString` | AI table: data format, character set, linters, invalid pairs (`ex`), repeats, dates; reports `req` | GS1 Barcode Syntax Dictionary, General Specifications 26.0 |
+| `ElementString\ElementString` | AI table: data format, character set, linters, invalid pairs (`ex`), repeats, dates; reports `req` and the `iban`/`mediatype` linters | GS1 Barcode Syntax Dictionary, General Specifications 26.0 |
 | `ElementString\ElementStringBuilder`, `UnmetRequirement` | immutable builder; one unmet mandatory pair | same |
+| `ElementString\AidcMediaType` | the ICCBBA media types `01`-`10` of AI (7241) | General Specifications 26.0, Table 3-12 |
 | `DigitalLink\DigitalLink` | uncompressed URI: path key and qualifier order, query attributes | GS1 Digital Link URI Syntax 1.7.0 |
 | `Epc\EpcPureIdentityUri`, `EpcTagUri` (+ `EpcScheme`, `EpcTagEncoding`) | TDS grammar of 20 schemes and 22 tag encodings, field limits, partition | EPC Tag Data Standard 2.3 |
 | `Udi\Gs1Udi` | an element string with AI (01) | General Specifications 26.0 (AI 01 as the device identifier) |
@@ -162,6 +163,10 @@ $built = (new ElementStringBuilder())->with('01', '09506000134352')->with('21', 
   `describe()` → `(01) or (02) or …`); check it on the combined data of an item.
 - **Format only:** see [Format only](#format-only) (`mediatype`, `packagetype`, `iban`, coupon AIs, the registry half of
   `gcppos1`/`gcppos2`); linter details in [`docs/sources/GS1.md`](docs/sources/GS1.md), "Linters".
+- **Reported, not refused (1.2):** `hasValidLinterData()` is false when AI (8007) fails the GS1 Barcode Syntax Engine's
+  `iban` linter (ISO 3166 country, 11-34 characters of `0-9A-Z`, mod 97) or AI (7241) its `mediatype` linter (`01`-`10`
+  or `80`-`99`); the value stays valid. `AidcMediaType::tryFrom($string->get('7241'))` names the ICCBBA media types
+  `01`-`10` (GenSpecs Table 3-12, `label()` verbatim).
 
 ## GS1 Digital Link
 
@@ -332,7 +337,10 @@ Ndc::from('10010-001-01')->toNdc12();                                // Ndc12 01
   `Ndc::candidates('9999912345')` (4-4-2, 5-3-2, 5-4-1); build
   the right one with `Ndc::fromDigits($digits, $configuration)` once you know it. `labelerCode()`, `productCode()`,
   `packageCode()`, `configuration()`, `toBillingFormat()` (HIPAA 11-digit 5-4-2, unhyphenated; null for a 6-digit
-  labeler code, for which HIPAA defines no conversion), `toNdc12()`.
+  labeler code, for which HIPAA defines no conversion), `toNdc12()`. Back from the billing form (1.2):
+  `Ndc::candidatesFromBillingFormat('10010000101')` lists every 10-digit NDC with that billing form, in the order
+  4-4-2, 5-3-2, 5-4-1 (here `10010-001-01` and `10010-0001-1`: the padding zero of HHS's 5-4-2 display cannot be told
+  from a genuine one); empty when there is none. It never picks one.
 - **`Ndc12`:** the 6-4-2 format of the FDA final rule of 2026-03-05 (effective 2033-03-07), hyphenated or 12 bare
   digits (one configuration), stored hyphenated.
 - **Format only:** see [Format only](#format-only) (ISBT 128 sequences and non-UDI structures, the alternatively formatted NDC).
@@ -406,7 +414,8 @@ TobaccoUnitIdentifier::from('AB1x9ZqkP3m719052014')->manufacturedAt();   // 2019
   beverages, BAD, antiseptics, medical devices, medicines (MDLP), veterinary medicines, canned food, sweets, grocery,
   meat, caviar, pet food, vegetable oils, sports nutrition, construction materials, household goods, cosmetics and
   household chemicals, toys, bicycles, technical rehabilitation equipment, radio-electronics, electronic nicotine
-  delivery systems, motor oils, cables, optical fibre, polymer pipes.
+  delivery systems, motor oils, cables, optical fibre, polymer pipes, heating appliances (1.2: documented; their codes
+  already parsed as `Standard` or `Shortened`).
 - **Not covered:** see [Not covered](#not-covered); such codes parse as `GenericGs1` when their separators are intact.
 - **`EU\FmdPackCode`** (Delegated Regulation (EU) 2016/161): a GS1 element string with (01), (21), (10), (17), or the
   IFA format `[)>` RS `06` GS `9N…` GS `S…` GS `1T…` GS `D…` RS EOT (ISO/IEC 15434 format 06, ASC data identifiers;
@@ -435,29 +444,30 @@ One list for the whole package: where no published source gives a rule, the clas
 
 | What | Why |
 |---|---|
-| `mediatype`, `packagetype` | code lists that grow; GS1 itself checks the format |
-| `iban` | the per-country structure is not checked; a later minor may report it (`hasValid…()`), refusing waits for 2.0 |
+| `mediatype`, `packagetype` | code lists that grow; `mediatype` is reported by `ElementString::hasValidLinterData()` (1.2), `packagetype` is not (GS1's list not read) |
+| `iban` | GS1's `iban` linter is reported by `ElementString::hasValidLinterData()` (1.2); the per-country length and BBAN pattern are not checked; refusing waits for 2.0 |
 | `couponcode`, `couponposoffer` | coupons are out of scope |
 | Registry half of `gcppos1`/`gcppos2` | whether a prefix is a real GS1 Company Prefix is a registry fact; decoding never refuses |
 | BIC check digit (ISO 6346) and IMO number check digit in EPC schemes `bic`, `imovn` | not in the EPC TDS; a later minor may report them (`hasValid…()`), refusing waits for 2.0 (`vo-identifiers` has both checks) |
 | TDS 7.3.3/7.3.4 (no SGTIN from RCN-8 or internal numbering) | not enforced |
-| ISBT 128 compound sequences other than 034-037; non-UDI ISBT 128 data structures | the order is in ICCBBA's RT017, not public |
+| ISBT 128 compound sequences other than 034-037; non-UDI ISBT 128 data structures | the order is in ICCBBA's RT017 (v1.9.0 defines messages up to 042), not public |
 | Alternatively formatted NDC (21 CFR 207.33(b)(4)) | no published format; not accepted |
 | Russian crypto tail (AI 91/92/93 contents) | verifying it needs the operator's keys; only its format is checked |
 | `GenericGs1` marking codes | AI table only: no page publishes their lengths |
-| EU `TobaccoUnitIdentifier` beyond length, character set and time stamp | the rest is each ID issuer's own, possibly encrypted |
+| EU `TobaccoUnitIdentifier` beyond length, character set and time stamp | the rest is each ID issuer's own, possibly encrypted (the Commission indexes the issuers' documents, see `docs/sources/GS1.md`) |
 | Digital Link extension parameters | kept as given; their meaning is not GS1's |
 
 ## Not covered
 
 - Russian product groups whose structure page was not found (auto parts, pharmaceutical raw materials, frozen and
-  semi-finished food, heating appliances, titanium products, fertilisers, pyrotechnics, fire safety equipment, printed
-  matter, wheelchairs). Their codes still parse as `GenericGs1` or a published structure when the separators are intact.
+  semi-finished food, titanium products, fertilisers, pyrotechnics, fire safety equipment, printed matter,
+  wheelchairs). Their codes still parse as `GenericGs1` or a published structure when the separators are intact.
 - Fur coats (an RFID code, not a Data Matrix code) and alcohol (EGAIS excise stamps, another system).
 - Compressed GS1 Digital Link: URI Syntax 1.7.0 dropped it, so such links are refused.
 - Binary and hex EPC tag encodings, EPC Raw and Class URIs.
 - Verification of cryptographic signatures and tails (Russian marking, FMD).
-- GS1 Member Organisation names for a GS1 Prefix: the allocation list is not in the General Specifications.
+- GS1 Member Organisation names for a GS1 Prefix: not in the General Specifications, and GS1's prefix list
+  (<https://www.gs1.org/standards/id-keys/company-prefix>) may not be redistributed without GS1's written approval.
 - Coupons beyond the format check.
 
 ## With the bridges
