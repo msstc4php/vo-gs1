@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.2.0] - unreleased
+## [1.2.0] - 2026-11-24
 
 No value that 1.1 accepts is refused; canonical forms, `equals()`, `MAX_LENGTH` and the AI table are unchanged.
 
