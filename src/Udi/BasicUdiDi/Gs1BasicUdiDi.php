@@ -37,7 +37,7 @@ final class Gs1BasicUdiDi extends AbstractStringValueObject implements BasicUdiD
     protected function parse(string $value): string
     {
         try {
-            return (new Gmn($value))->value;
+            return new Gmn($value)->value;
         } catch (InvalidIdentificationKeyException $exception) {
             throw new InvalidUdiException('GS1 Basic UDI-DI is not a valid GMN: ' . $exception->getMessage(), $exception->getCode(), previous: $exception);
         }
